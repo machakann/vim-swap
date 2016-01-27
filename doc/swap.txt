@@ -1,0 +1,444 @@
+*swap.txt*	Reorder delimited items.
+						Last change:27-Jan-2016.
+
+Author  : machakann <mckn{at}outlook.jp>
+License : NYSL license
+          Japanese <http://www.kmonos.net/nysl/>
+          English (Unofficial) <http://www.kmonos.net/nysl/index.en.html>
+
+Requirement:	Vim 7.4 or higher
+		|+reltime| feature (optional)
+		|+float| feature (optional)
+
+==============================================================================
+INDEX					*swap-index*
+
+INTRODUCTION				|swap-introduction|
+KEYMAPPINGS				|swap-keymappings|
+CUSTOMIZATION				|swap-customization|
+HIGHLIGHT GROUPS			|swap-highlight-groups|
+CONFIGURATION				|swap-configuration|
+
+==============================================================================
+INTRODUCTION				*swap-introduction*
+
+*swap.vim* is an plugin to reorder delimited items. It works as it swaps two
+items in a delimited string. For example, considering the following code
+snippet, it is easy to swap "arg2" and "arg3" but is annoying work that swaps
+"arg1" and "arg2" since user have to manage a word and a delimiter separately.
+>
+	call foo(arg1, arg2, arg3)
+<
+This plugin serves mappings to make easier to do that kind of operations. This
+plugin defines three mappings in default, `g<`, `g>`, `gs`. `g<` swaps the
+item under the cursor with the former item. Moving cursor on the "arg2" and
+pressing `g<`, then it swaps "arg2" and the former one, "arg1", to get:
+>
+	call foo(arg2, arg1, arg3)
+<
+`g>` swaps the item under the cursor with the latter item. Moving cursor on
+the "arg2" and pressing `g>`, then it swaps "arg2" and the latter one, "arg3",
+to get:
+>
+	call foo(arg1, arg3, arg2)
+<
+`gs` works more interactive. It starts "swap mode", as if there was the
+sub-mode of vim editor. In the mode, use `h`/`l` to swap items, `j`/`k` to
+choose item, numbers `1` ~ `9` to select `n`th item, `u`/`<C-r>` to
+undo/redo, and as you know `<Esc>` to exit "swap mode". `gs` function can be
+used also in |visual-mode|. In |linewise-visual| and |blockwise-visual| mode,
+this plugin always swaps in each line. For example, assume that the three
+lines were in a buffer:
+>
+	foo
+	bar
+	baz
+<
+Select the three lines and press `gsl<Esc>`, then swaps the first line and the
+second line.
+>
+	bar
+	foo
+	baz
+<
+
+------------------------------------------------------------------------------
+This plugin treats the regions like:
+>
+	(foo, bar, baz)
+	[foo, bar, baz]
+	{foo, bar, baz}
+	foo, bar, baz
+<
+As for the first three patterns, groupings by parenthesis and quotes are taken
+into account. That is, the items in the line
+>
+	(foo, 'bar, baz', qux)
+<
+are "foo", "'bar, baz'", "qux".
+
+------------------------------------------------------------------------------
+These all functions can be repeated by |.| command. `g<` and `g>` would takes
+effect on an item under cursor also in repeatings. `gs` is repeated by
+absolute positions, for example if 1st and 2nd items were swapped at first
+then it would repeat swapping 1st and 2nd items regardless of cursor position.
+
+==============================================================================
+KEYMAPPINGS				*swap-keymappings*
+
+This plugin defines three keymappings, |<Plug>(swap-prev)|, |<Plug>(swap-next)|
+and |<Plug>(swap-interactive)|. These keymappings are mapped to `g<`, `g>` and
+`gs` respectively in default. If you do not need default keymappings, define a
+variable named g:swap_no_default_key_mappings in your vimrc.
+>
+	let g:swap_no_default_key_mappings = 1
+<
+
+keymappings			default keymappings
+--------------------------------------------------------------------------
+|<Plug>(swap-prev)|		`g<`
+|<Plug>(swap-next)|		`g>`
+|<Plug>(swap-interactive)|	`gs`
+--------------------------------------------------------------------------
+
+--------------------------------------------------------------------------
+keymappings~
+*<Plug>(swap-prev)*
+	The keymappings swaps the item under the cursor with the former item
+	in a delimited string. It is mapped to `g<` in default.
+
+*<Plug>(swap-next)*
+	The keymappings swaps the item under the cursor with the next item
+	in a delimited string. It is mapped to `g>` in default.
+
+*<Plug>(swap-interactive)*
+	The keymappings starts "swap mode" to reorder items interactively.
+	It is mapped to `gs` in default.
+--------------------------------------------------------------------------
+operation in swap mode~
+
+`h`/`l`
+	Swap the current item with a neighbor.
+	These functions are defined as keymappings,
+	<Plug>(swap-mode-swap-prev)/<Plug>(swap-mode-swap-next).
+
+`j`/`k`
+	Change the current item to a neighbor.
+	These functions are defined as keymappings,
+	<Plug>(swap-mode-move-prev)/<Plug>(swap-mode-move-next).
+
+Numbers `1` to `9`
+	Set `n`th item as the current. These functions are defined as
+	keymappings, <Plug>(swap-mode-1) to <Plug>(swap-mode-9).
+
+`u`/`<C-r>`
+	Simple undo/redo functions. These functions are defined as
+	keymappings, <Plug>(swap-mode-undo)/<Plug>(swap-mode-redo).
+
+`<Esc>`
+	Exit from swap mode to normal mode. The function is defined as
+	keymapping, <Plug>(swap-mode-Esc).
+
+
+
+If user wants to use numbers over 9, write the line in your vimrc.
+>
+	let g:swap#keymappings = g:swap#key_layout_discreet
+<
+Then numbers would not be fixed immediately, use `<CR>` to fix the number and
+`<BS>` to delete the last input.
+
+`<CR>`
+	Fix the inputting number. If nothing has been input, then fix to the
+	current item. The function is defined as keymapping,
+	<Plug>(swap-mode-CR).
+
+`<BS>`
+	Correct the last input. The function is defined as keymapping,
+	<Plug>(swap-mode-BS).
+
+
+
+In addition to the aboves, the following supplementary keymappings are
+available.
+
+<Plug>(swap-mode-fix-nr)
+	Simply fix the inputting number.
+
+<Plug>(swap-mode-current)
+	Simply fix to the current item.
+
+<Plug>(swap-mode-echo)
+	Update cmd-line echoing.
+
+
+
+The default layout is available with g:swap#key_layout_impatient again.
+>
+	let g:swap#keymappings = g:swap#key_layout_impatient
+<
+The detailed statement of g:swap#key_layout_impatient is:
+>
+	lhs	rhs
+ -----------------------------------------------------------
+	1	<Plug>(swap-mode-1)<Plug>(swap-mode-fix-nr)
+	2	<Plug>(swap-mode-2)<Plug>(swap-mode-fix-nr)
+	3	<Plug>(swap-mode-3)<Plug>(swap-mode-fix-nr)
+	4	<Plug>(swap-mode-4)<Plug>(swap-mode-fix-nr)
+	5	<Plug>(swap-mode-5)<Plug>(swap-mode-fix-nr)
+	6	<Plug>(swap-mode-6)<Plug>(swap-mode-fix-nr)
+	7	<Plug>(swap-mode-7)<Plug>(swap-mode-fix-nr)
+	8	<Plug>(swap-mode-8)<Plug>(swap-mode-fix-nr)
+	9	<Plug>(swap-mode-9)<Plug>(swap-mode-fix-nr)
+	<CR>	<Plug>(swap-mode-CR)
+	<BS>	<Plug>(swap-mode-BS)
+	<C-h>	<Plug>(swap-mode-BS)
+	u	<Plug>(swap-mode-undo)
+	<C-r>	<Plug>(swap-mode-redo)
+	<Esc>	<Plug>(swap-mode-Esc)
+	h	<Plug>(swap-mode-swap-prev)
+	l	<Plug>(swap-mode-swap-next)
+	k	<Plug>(swap-mode-move-prev)
+	j	<Plug>(swap-mode-move-next)
+	<Left>	<Plug>(swap-mode-swap-prev)
+	<Right>	<Plug>(swap-mode-swap-next)
+	<Up>	<Plug>(swap-mode-move-prev)
+	<Down>	<Plug>(swap-mode-move-next)
+ -----------------------------------------------------------
+<
+
+The detailed statement of g:swap#key_layout_discreet is:
+>
+	lhs	rhs
+ -----------------------------------------------------------
+	0	<Plug>(swap-mode-0)
+	1	<Plug>(swap-mode-1)
+	2	<Plug>(swap-mode-2)
+	3	<Plug>(swap-mode-3)
+	4	<Plug>(swap-mode-4)
+	5	<Plug>(swap-mode-5)
+	6	<Plug>(swap-mode-6)
+	7	<Plug>(swap-mode-7)
+	8	<Plug>(swap-mode-8)
+	9	<Plug>(swap-mode-9)
+	<CR>	<Plug>(swap-mode-CR)
+	<BS>	<Plug>(swap-mode-BS)
+	<C-h>	<Plug>(swap-mode-BS)
+	u	<Plug>(swap-mode-undo)
+	<C-r>	<Plug>(swap-mode-redo)
+	<Esc>	<Plug>(swap-mode-Esc)
+	h	<Plug>(swap-mode-swap-prev)
+	l	<Plug>(swap-mode-swap-next)
+	k	<Plug>(swap-mode-move-prev)
+	j	<Plug>(swap-mode-move-next)
+	<Left>	<Plug>(swap-mode-swap-prev)
+	<Right>	<Plug>(swap-mode-swap-next)
+	<Up>	<Plug>(swap-mode-move-prev)
+	<Down>	<Plug>(swap-mode-move-next)
+ -----------------------------------------------------------
+<
+
+
+swap#map({lhs}, {rhs})		*swap#map()*
+swap#noremap({lhs}, {rhs})	*swap#noremap()*
+	Define normal mode commands as swap mode keymappings. Give a normal
+	mode command sequence to {rhs} then call it via the key sequence
+	declared via {lhs} in swap mode.
+
+Normal mode commands could be available in swap mode if user declared. Use
+|swap#map()| or |swap#noremap()| in your vimrc.
+>
+	call swap#noremap('zs', 'zs')
+<
+The |<>| description like <Space> would not be converted automatically. Use
+escape sequence to pass these special keys.
+>
+	call swap#noreamp("\<space>", 'z.')
+<
+|swap#map()| expands mappings. Use it for custom mappings.
+>
+	call swap#map("\<CR>", "\<Plug>(swap-mode-fix-nr)")
+<
+NOTE if the buffer was changed, swapped result might not be as you expected.
+
+==============================================================================
+CUSTOMIZATION				*swap-customization*
+
+					*swap#rules*
+User can add settings to treat other kinds of delimited strings. Each setting
+is called "rule" and it is a |Dictionary| which fills up the conditions
+described below. If user add new rules to g:swap#rules, the new rules takes
+effects. It would be better to copy default settings first.
+>
+	let g:swap#rules = deepcopy(g:swap#default_rules)
+<
+
+First, a rule for |Normal| mode should have either "body" key or "surrounds"
+key.  These keys are used to assign a delimited string in an action. The
+"body" key should have a |string| value which is a regular expression pattern
+to match a delimited string. For example, a simple words delimited by spaces
+would be '\%(\h\w*\s\+\)\+\h\w*'. The "surround" key should have a list which
+have two or three elements. The first two elements are regular expression
+patterns to match strings which surrounds a delimited string. The optional
+third element means whether the surroundings makes nest (1) or not (0). If it
+is omitted, then it would not consider nesting. For example, a string
+surrounded by round parenthesis is ['(', ')', 1].
+
+Second, all the rules should have "delimiter" key to delimit a text. The key
+has a |list| value which has not less than one |strings| elements. The strings
+are regular expression patterns to match delimiters in a string. The text
+other than the delimiters in a string would be the swapped item. The pattern
+'^' would be only matched to the head of the target string. If user wants to
+use a pattern related to a new line, then the pattern |\n| would be helpful.
+If user does not want to include a breaking, use |\n|\zs|. For example, to
+delimit every line set "delimiter" value as '\n'.
+
+The essential keys are only two listed in above, but if user wants to make a
+rule for a specific mode or specific filetypes, then use "mode" key and
+"filetype" key. "mode" key has a |string| value which includes "n" for
+|Normal| mode and "x" for |Visual| mode. If a rule does not have "mode" key,
+it is valid in both |Normal| and |Visual| mode. "filetype" key has a list as
+its value, elements of the list are valid filetype names in |string|.
+
+In addition, user can use several supplementary keys.
+"braket" and "quotes" keys can tell possible groupings of items. The braket
+and quotes are !not! regular expressions. It is searched as a simple string.
+See below examples.
+
+"immutable" key is to define neither a swapped string nor a delimiter string.
+This is, indeed, similar to "delimiter" which can separate swapped items.
+However it possible that a swapped string is inserted between successive
+delimiters while it would not happen for both adjacent "delimiter" and
+"immutable" and successive "immutable"s. Similar as the "delimiter" key, its
+value should be a list of regular expressions. For instance, when implied line
+continuations are used, user can use "immutable" key to ignore indentation.
+>
+	call func(foo, bar,
+	          baz, qux)
+	^^^^^^^^^^ Indent is not included to a swapped item.
+<
+The third swapped item is not "          baz" but "baz". To ignore indent like
+this, add the pattern '\n\s+' to the key. Similar as "delimiter" key, the
+pattern '^' is matched only to the head of a target string.
+
+"priority" key can tell priorities of rules.  A target delimited string would
+be searched from items which have higher priorities first and if nothing has
+found then searched from those which have lower priorities. If it is omitted,
+the priority of the rule is 0. If the priority was same, then the rule which
+has the shortest length of the target text would be prior. If lengths of the
+target text was also same, the latter rule in |g:swap#rules| would be prior.
+
+Example 1~
+Words ('\h\w*') delimited by spaces ('\s\+').
+  -> foo bar baz
+>
+	let g:swap#rules += [
+	  \ {
+	  \   'body': '\%(\h\w*\s\+\)\+\h\w*',
+	  \   'delimiter': ['\s\+'],
+	  \ }]
+<
+
+Example 2~
+String surrounded by [], delimited by : or ; with some groupings by quotes.
+  -> [foo:'bar:baz';qux]
+>
+	let g:swap#rules += [
+	  \ {
+	  \   'surrounds': ['\[', '\]', 1],
+	  \   'delimiter': [':', ';'],
+	  \   'quotes': [['"', '"'], ["'", "'"]],
+	  \   'braket': [['(', ')'], ['[', ']']],
+	  \ }]
+<
+
+Example 3~
+A rule specific for |Visual| mode. Not necessary to have "body" and
+"surrounds" key.
+>
+	let g:swap#rules += [
+	  \ {
+	  \   'mode': 'x',
+	  \   'delimiter': ['\s*,\s*'],
+	  \   'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+	  \   'quotes': [['"', '"'], ["'", "'"]],
+	  \ }]
+<
+This rule is included in default rules.
+
+Example 4~
+A string surrounded by braket, igonoring line continuations, a rule for Vim
+script.
+  -> [
+   \   foo,
+   \   bar,
+   \   baz
+   \ ]
+>
+	let g:swap#rules += [
+	  \ {
+	  \   'mode': 'n',
+	  \   'surrounds': ['\[', '\]', 1],
+	  \   'delimiter': ['\s*,\s*'],
+	  \   'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+	  \   'quotes': [['"', '"'], ["'", "'"]],
+	  \   'immutable': ['\n\s*\%(\\\s*\)'],
+	  \   'filetype': ['vim']
+	  \ }]
+<
+This rule is included in default rules.
+
+					*g:swap#default_rules*
+The default rule is in g:swap#default_rules.
+
+==============================================================================
+HIGHLIGHT GROUPS			*swap-highlight-groups*
+
+This plugin highlights items in swap mode. If you don't like this feature,
+write the line in your vimrc.
+>
+	let g:swap#highlight = 0
+<
+If you want to change the highlighting, re-define the following highlight
+groups.
+
+SwapCurrentItem				*hl-SwapCurrentItem*
+	The highlight group is to define the highlight for current item. It is
+	linked to a default highlight group IncSearch |hl-IncSearch| in
+	default.
+>
+	highlight link SwapCurrentItem IncSearch
+<
+
+SwapItem				*hl-SwapItem*
+	The highlight group is to define the highlight for items. It is linked
+	to a default highlight group Underlined |hl-Underlined| in default.
+>
+	highlight link SwapItem Underlined
+<
+==============================================================================
+CONFIGURATION				*swap-configuration*
+
+There are a few variables to configure the behavior of this plugin.
+
+*g:swap#highlight*
+	Switch the highlighting on and off in swap mode. If the value is 1,
+	then the swapped items would be highlighted, this is default. If the
+	value is 0, then the highlighting would not be done. See
+	|swap-highlight-groups| also.
+
+*g:swap#timeoutlen*
+	This value controls the waiting time for following key strokes in swap
+	mode when overlapped mappings exist. This is similar as the Vim
+	intrinsic option 'timeoutlen' and the default value is set as the same
+	value. The value is interpreted in millisecond.
+
+*g:swap#stimeoutlen*
+	This value controls the time to give up text searching for a rule. Not
+	really accurate, but if user makes the value smaller then the response
+	might be better although long candidate text might be ignored. If user
+	used less-powerful computer, it would be better to make it larger. The
+	default value is 50. The value is interpreted in millisecond.
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:noet:

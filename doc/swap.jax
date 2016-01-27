@@ -1,0 +1,436 @@
+*swap.txt*	いれかえたりする。
+						Last change:26-Jan-2016.
+
+書いた人   : machakann <mckn{at}outlook.jp>
+ライセンス : NYSL ライセンス
+          日本語版 <http://www.kmonos.net/nysl/>
+          英語版 (非公式) <http://www.kmonos.net/nysl/index.en.html>
+
+必要要件:	Vim 7.4 かそれ以降の Vim エディタであること
+		|+reltime| オプション (任意)
+		|+float| オプション (任意)
+
+==============================================================================
+INDEX					*swap-index*
+
+INTRODUCTION				|swap-introduction|
+KEYMAPPINGS				|swap-keymappings|
+CUSTOMIZATION				|swap-customization|
+HIGHLIGHT GROUPS			|swap-highlight-groups|
+CONFIGURATION				|swap-configuration|
+
+==============================================================================
+INTRODUCTION				*swap-introduction*
+
+*swap.vim* は区切られた要素を並べ替えるための機能を提供します。基本的には二つ
+の要素を入れ替えることの繰り返しによって再配列を行います。例えば、次のような行
+について考えると、 "arg2" と "arg3" を入れ替えるのはそう難しくありません。しか
+し "arg1" と "arg2" を入れ替えるのは少し面倒な作業になります。なぜなら単語とコ
+ンマを別々に編集せねばならないためです。
+>
+	call foo(arg1, arg2, arg3)
+<
+このプラグインはこの手の作業をより簡単に済ませるために、三つのキーマッピング、
+`g<`, `g>`, `gs` を定義します。 `g<` はカーソル下の要素と直前の要素を入れ替え
+ます。カーソルを "arg2" に合わせ、 `g<` と入力すると "arg2" と直前の要素
+"arg1" が入れ替えられます。
+>
+	call foo(arg2, arg1, arg3)
+<
+また `g>` はカーソル下の要素と直前の要素を入れ替えます。カーソルを "arg2" に
+合わせ、 `g>` と入力すると "arg2" と直後の要素 "arg3" が入れ替えられます。
+>
+	call foo(arg1, arg3, arg2)
+<
+`gs` は入れ替えに際して、より対話的なインターフェースを提供します。これはあた
+かも Vim エディタに新しいモード "swap mode" があるかのように働きます。このモー
+ドでは `h`/`l` により要素を入れ替え、 `j`/`k` により要素間を移動し、また数字の
+`1` ~ `9` により `n` 番目の要素を選択し、 `u`/`<C-r>` により undo/redo し、お
+そらくご存知のように `<Esc>` で "swap mode" を抜けノーマルモードに戻ります。
+`gs` はビジュアルモードでもご使用できます。
+>
+	foo
+	bar
+	baz
+<
+三行を選択し、 `gsl<Esc>` と入力すると最初の行と二行目が入れ替えられます。
+>
+	bar
+	foo
+	baz
+<
+
+------------------------------------------------------------------------------
+このプラグインは次に示されるようなテキストを取り扱います。
+>
+	(foo, bar, baz)
+	[foo, bar, baz]
+	{foo, bar, baz}
+	foo, bar, baz
+<
+最初の三つについては、内部に括弧やクオーテーションによるグループ化がある場合こ
+れを考慮します。つまり、次のような例では要素は、"foo", "'bar, baz'", "qux" の
+三つになります。
+>
+	(foo, 'bar, baz', qux)
+<
+
+------------------------------------------------------------------------------
+以上の機能は |.| コマンドによって繰り返すことができます。`g<` および `g>` は常
+にカーソルとの相対位置によって入れ替え対象を決めますが、 `gs` の場合は絶対位置
+にって決めます。すなわち、最初に一番目と二番目に位置する要素を入れ替えていた場
+合、ドットリピートはカーソル位置にかかわらず、その時の対象テキストの一番目と二
+番目の要素を入れ替えます。
+
+==============================================================================
+KEYMAPPINGS				*swap-keymappings*
+
+このプラグインは |<Plug>(swap-prev)|, |<Plug>(swap-next)|,
+|<Plug>(swap-interactive)| の三つのキーマッピングを定義しそれぞれ `g<`, `g>`,
+`gs` に割り当てます。このデフォルトの割り当てが必要ない場合は
+g:swap_no_default_key_mappings を vimrc で定義してください。
+>
+	let g:swap_no_default_key_mappings = 1
+<
+
+キーマッピング			デフォルトキーマッピング
+--------------------------------------------------------------------------
+|<Plug>(swap-prev)|		`g<`
+|<Plug>(swap-next)|		`g>`
+|<Plug>(swap-interactive)|	`gs`
+--------------------------------------------------------------------------
+
+--------------------------------------------------------------------------
+キーマッピング~
+*<Plug>(swap-prev)*
+	カーソル下の要素と直前の要素を入れ替えます。 `g<` に割り当てられます。
+
+*<Plug>(swap-next)*
+	カーソル下の要素と直後の要素を入れ替えます。 `g>` に割り当てられます。
+
+*<Plug>(swap-interactive)*
+	"swap mode" を開始します。 `gs` に割り当てられます。
+
+--------------------------------------------------------------------------
+swap mode における操作~
+
+`h`/`l`
+	選択中の要素と隣接する要素を入れ替えます。この機能は次のキーマッピング
+	として定義されています。
+	<Plug>(swap-mode-swap-prev)/<Plug>(swap-mode-swap-next)
+
+`j`/`k`
+	隣接する要素へ選択を移します。この機能は次のキーマッピングとして定義さ
+	れています。
+	<Plug>(swap-mode-move-prev)/<Plug>(swap-mode-move-next)
+
+`1` から `9` の数字キー
+	`n` 番目の要素へ選択状態を移します。この機能は次のキーマッピングとして
+	定義されています。
+	<Plug>(swap-mode-1) から <Plug>(swap-mode-9)
+
+`u`/`<C-r>`
+	単純な undo/redo 機能を提供します。この機能は次のキーマッピングとして
+	定義されています。
+	<Plug>(swap-mode-undo)/<Plug>(swap-mode-redo)
+
+`<Esc>`
+	Swap mode を終了しノーマルモードへ戻ります。この機能は次のキーマッピン
+	グとして定義されています。
+	<Plug>(swap-mode-Esc)
+
+
+
+9以上の数字を使いたいのであれば、次の行を vimrc に書き加えましょう。
+>
+	let g:swap#keymappings = g:swap#key_layout_discreet
+<
+こうすると数字はただちには選択状態を移さないようになり、 `<CR>` で決定、
+`<BS>` で修正できるようになります。
+
+`<CR>`
+	入力中の数字を決定します。なにも入力されていないと、現在選択中の要素に
+	決定されます。この機能は次のキーマッピングとして定義されています。
+	<Plug>(swap-mode-CR)
+
+`<BS>`
+	入力中の数値を一文字修正します。この機能は次のキーマッピングとして定義
+	されています。
+	<Plug>(swap-mode-BS)
+
+
+
+以上のキーマッピングに加え、以下の補助的な機能も提供されます。
+
+<Plug>(swap-mode-fix-nr)
+	入力中の数字を決定し、入れ替えの対象の一つとします。
+
+<Plug>(swap-mode-current)
+	現在選択中の要素を入れ替えの対象の一つとして決定します。
+
+<Plug>(swap-mode-echo)
+	コマンドラインの表示を更新します。
+
+
+
+デフォルトのキー配置は g:swap#key_layout_impatient に格納されています。
+>
+	let g:swap#keymappings = g:swap#key_layout_impatient
+<
+g:swap#key_layout_impatient の詳細な内訳を以下に示します。
+>
+	lhs	rhs
+ -----------------------------------------------------------
+	1	<Plug>(swap-mode-1)<Plug>(swap-mode-fix-nr)
+	2	<Plug>(swap-mode-2)<Plug>(swap-mode-fix-nr)
+	3	<Plug>(swap-mode-3)<Plug>(swap-mode-fix-nr)
+	4	<Plug>(swap-mode-4)<Plug>(swap-mode-fix-nr)
+	5	<Plug>(swap-mode-5)<Plug>(swap-mode-fix-nr)
+	6	<Plug>(swap-mode-6)<Plug>(swap-mode-fix-nr)
+	7	<Plug>(swap-mode-7)<Plug>(swap-mode-fix-nr)
+	8	<Plug>(swap-mode-8)<Plug>(swap-mode-fix-nr)
+	9	<Plug>(swap-mode-9)<Plug>(swap-mode-fix-nr)
+	<CR>	<Plug>(swap-mode-CR)
+	<BS>	<Plug>(swap-mode-BS)
+	<C-h>	<Plug>(swap-mode-BS)
+	u	<Plug>(swap-mode-undo)
+	<C-r>	<Plug>(swap-mode-redo)
+	<Esc>	<Plug>(swap-mode-Esc)
+	h	<Plug>(swap-mode-swap-prev)
+	l	<Plug>(swap-mode-swap-next)
+	k	<Plug>(swap-mode-move-prev)
+	j	<Plug>(swap-mode-move-next)
+	<Left>	<Plug>(swap-mode-swap-prev)
+	<Right>	<Plug>(swap-mode-swap-next)
+	<Up>	<Plug>(swap-mode-move-prev)
+	<Down>	<Plug>(swap-mode-move-next)
+ -----------------------------------------------------------
+<
+
+同じように g:swap#key_layout_discreet の詳細な内訳を以下に示します。
+>
+	lhs	rhs
+ -----------------------------------------------------------
+	0	<Plug>(swap-mode-0)
+	1	<Plug>(swap-mode-1)
+	2	<Plug>(swap-mode-2)
+	3	<Plug>(swap-mode-3)
+	4	<Plug>(swap-mode-4)
+	5	<Plug>(swap-mode-5)
+	6	<Plug>(swap-mode-6)
+	7	<Plug>(swap-mode-7)
+	8	<Plug>(swap-mode-8)
+	9	<Plug>(swap-mode-9)
+	<CR>	<Plug>(swap-mode-CR)
+	<BS>	<Plug>(swap-mode-BS)
+	<C-h>	<Plug>(swap-mode-BS)
+	u	<Plug>(swap-mode-undo)
+	<C-r>	<Plug>(swap-mode-redo)
+	<Esc>	<Plug>(swap-mode-Esc)
+	h	<Plug>(swap-mode-swap-prev)
+	l	<Plug>(swap-mode-swap-next)
+	k	<Plug>(swap-mode-move-prev)
+	j	<Plug>(swap-mode-move-next)
+	<Left>	<Plug>(swap-mode-swap-prev)
+	<Right>	<Plug>(swap-mode-swap-next)
+	<Up>	<Plug>(swap-mode-move-prev)
+	<Down>	<Plug>(swap-mode-move-next)
+ -----------------------------------------------------------
+<
+
+
+swap#map({lhs}, {rhs})			*swap#map()*
+swap#noremap({lhs}, {rhs})		*swap#noremap()*
+	ノーマルモードコマンドを swap mode におけるキーマッピングとして定義し
+	ます。ノーマルモードコマンドのキー入力を {rhs} に与えると swap mode で
+	{lhs} に与えたキー入力で呼び出すことができます。
+
+ユーザーが事前に宣言していれば、 swap mode でノーマルモードコマンドを使用でき
+ます。 |swap#map()| あるいは |swap#noremap()| をご使用ください。
+>
+	call swap#noremap('zs', 'zs')
+<
+<Space> などのような |<>| 表記は自動的に変換されません。特殊キーはエスケープシ
+ーケンスを用いて渡してください。
+>
+	call swap#noreamp("\<space>", 'z.')
+<
+|swap#map()| はキーマップを展開します。カスタムキーマッピングなど、展開する必
+要のあるものに使用してください。
+>
+	call swap#map("\<CR>", "\<Plug>(swap-mode-fix-nr)")
+<
+NOTE: もし swap mode 内でバッファが変更された場合、必ずしも期待した通りの結果
+      にならないかもしれません。
+
+==============================================================================
+CONFIGURATION				*swap-configuration*
+
+ユーザーは任意の設定を追加することができます。設定は "rule" と呼ばれ、その実体
+は下記の条件を満たす |Dictionary| 変数です。 g:swap#rules に追加されることで効
+力を発揮します。必要ならまずデフォルトの設定をコピーし、さらに追加していくとよ
+いでしょう。
+>
+	let g:swap#rules = deepcopy(g:swap#default_rules)
+<
+
+まず rule をノーマルモード |Normal| で使用したい場合は "body" キーか
+"surrounds" キーを持っている必要があります。これらのキーは作用する対象の区切ら
+れたテキストを検索するのにつかわれます。 "body" キーは対象テキストにマッチする
+正規表現パターンを値に持ちます。例えば単純なスペースで区切られた単語であれば、
+'\%(\h\w*\s\+\)\+\h\w*' といった具合です。 "surround" キーは二要素あるいは三要
+素のリストを値に持ちます。リストの第一、第二要素は対象文字列を囲む文字列にマッ
+チするパターンです。第三引数は省略可能ですが、真偽値を与えることで囲みがネスト
+を作るかどうかを指定することができます。省略された場合ネストを考慮しません。
+例えば、丸かっこに囲まれたテキストを対象としたい場合 ['(', ')', 1] となりま
+す。
+
+次にすべての rule は "delimiter" キーを持たなければいけません。このキーは最低
+でも一つは要素をもつリストを値に持ち、各要素はテキストを区切る文字列にマッチす
+る正規表現パターンです。この区切り文字以外の部分が入れ替え対象の文字列として認
+識されます。パターン '^' は対象文字列の先頭のみにしかマッチしません。改行を含
+む文字列の場合、行頭にマッチするパターンを使う必要がある場合は |\n| (改行を含
+めたくなければ |\n|\zs|) に続けてパターンを記述してください。例えば、行区切り
+としたい場合は "delimiter" は '\n'です。
+
+最低限必要なキーは以上の二つですが、モードやファイルタイプに固有な rule を作り
+たい場合は "mode" キー、あるいは "filetype" キーが使えます。 "mode" キーは文字
+列 |string| を値に持ち、これに "n" が含まれれば |Normal| モードで有効に、 "x"
+が含まれれば |Visual| モードで有効になります。 rule が "mode" キーを持たない場
+合は両方のモードで有効になります。 "filetype" キーはファイルタイプ名を要素とし
+て持つリストを値に持ちます。このリストに挙げられたファイルタイプでのみ有効にな
+ります。
+
+さらにいくつかの補助的なキーがあります。
+"braket" キーと "quote" キーは括弧やクオーテーションによるグループ化を考慮する
+ために使います。括弧やクオーテーションの指定は正規表現ではありません(!)。文字
+列として検索されます。下の例を参考にしてください。
+
+"immutable" キーは入れ替え文字列でも区切り文字列でもない文字列の指定に使いま
+す。これは "delimiter" に似ていますが、 連続する "delimiter" の間に入れ替えに
+より文字列が配置されることがあるのに対し、"delimiter" と"immutable" が隣接する
+場合また "immutable" が連続する場合にその境界へ入れ替え文字列が配置されること
+はありません。値は正規表現のリストになります。例えば、非明示的な行継続を含む場
+合にインデントを無視することなどに使えます。
+>
+	call func(foo, bar,
+	          baz, qux)
+	^^^^^^^^^^ Indent is not included to a swapped item.
+<
+三つ目の入れ替え文字列は "          baz" ではなく "baz" です。このようにインデ
+ントを"immutable" としたい場合は、 '\n\s+' のような正規表現を使ってください。
+"delimiter" と同じように '^' は対象文字列の先頭のみにしかマッチしません。
+
+"priority" キーは rule の優先度を設定するために使います。編集対象文字列は優先
+度の高いものから探され、見つからなかった場合により低い優先度のものから選ばれま
+す。省略された場合の rule の優先度は 0 です。もし優先度が同じ場合、最も短い対
+象テキストをもつ rule が使われます。対象テキストの長さも同じ場合は (あまり頻繁
+にはおこらないでしょうけど) |g:swap#rules| 内の後方に位置する rule ほど優先さ
+れます。
+
+Example 1~
+スペース ('\s\+') で区切られた単語 ('\h\w*') 。
+  -> foo bar baz
+>
+	let g:swap#rules += [
+	  \ {
+	  \   'body': '\%(\h\w*\s\+\)\+\h\w*',
+	  \   'delimiter': ['\s\+'],
+	  \ }]
+<
+
+Example 2~
+[] で囲まれ、 : および ; で区切られた文字列。グループ化を考慮する。
+  -> [foo:'bar:baz';qux]
+>
+	let g:swap#rules += [
+	  \ {
+	  \   'surrounds': ['\[', '\]', 1],
+	  \   'delimiter': [':', ';'],
+	  \   'quotes': [['"', '"'], ["'", "'"]],
+	  \   'braket': [['(', ')'], ['[', ']']],
+	  \ }]
+<
+
+Example 3~
+|Visual| モードに固有のルール。 "body" や "surrounds" キーを持たなくてもよい。
+>
+	let g:swap#rules += [
+	  \ {
+	  \   'mode': 'x',
+	  \   'delimiter': ['\s*,\s*'],
+	  \   'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+	  \   'quotes': [['"', '"'], ["'", "'"]],
+	  \ }]
+<
+なお、この rule はデフォルトルールに含まれています。
+
+Example 4~
+角かっこ [] に囲まれた文字列。行継続 \ を無視する。 Vim script の編集に固有。
+  -> foo.bar.baz
+>
+	let g:swap#rules += [
+	  \ {
+	  \   'mode': 'n',
+	  \   'surrounds': ['\[', '\]', 1],
+	  \   'delimiter': ['\s*,\s*'],
+	  \   'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+	  \   'quotes': [['"', '"'], ["'", "'"]],
+	  \   'immutable': ['\n\s*\%(\\\s*\)'],
+	  \   'filetype': ['vim']
+	  \ }]
+<
+なお、この rule はデフォルトルールに含まれています。
+
+デフォルトの rule は g:swap#default_rules に格納されています。
+
+==============================================================================
+HIGHLIGHT GROUPS			*swap-highlight-groups*
+
+Swap mode では入れ替え対象の要素をハイライトします。もしこの機能がお気に召さな
+ければ次の行を vimrc に書くことで停止できます。
+>
+	let g:swap#highlight = 0
+<
+また、ハイライトの色を変更したければ次のハイライトグループが使えます。
+
+SwapCurrentItem				*hl-SwapCurrentItem*
+	Swap mode で選択中の要素のハイライトを定義するためのハイライトグループ
+	です。デフォルトでは IncSearch |hl-IncSearch| にリンクされています。
+>
+	highlight link SwapCurrentItem IncSearch
+<
+
+SwapItem				*hl-SwapItem*
+	Swap mode で入れ替え対象の要素のハイライトを定義するためのハイライトグ
+	ループです。デフォルトでは Underlined |hl-Underlined| にリンクされてい
+	ます。
+>
+	highlight link SwapItem Underlined
+<
+==============================================================================
+CONFIGURATION				*swap-configuration*
+
+プラグインの挙動を制御するためのいくつかの変数が存在します。
+
+*g:swap#highlight*
+	スワップモードにおけるハイライト機能のオン・オフを切り替えます。値が 1
+	ならハイライトを行い、 0 ならハイライトを行いません。デフォルト値は 1
+	です。 |swap-highlight-groups| もあわせてご覧ください。
+
+*g:swap#timeoutlen*
+	この変数はスワップモードにおいて、重複するキーマッピングがある場合に次
+	のキー入力があるかどうか待つ時間を制御します。これは Vim の組み込みオ
+	プション 'timeoutlen' とほぼ同じ働きであり、デフォルト値はこれと同じ値
+	になります。値はミリセカンド単位で解釈されます。
+
+*g:swap#stimeoutlen*
+	この変数は各 rule について対象テキストの検索を諦めるまでの時間を制御し
+	ます。これは実際あまり正確ではありません、しかし値を小さくすることでプ
+	ラグインの反応はよくなることでしょう。対象テキストが長くなれば無視され
+	てしまうかもしれませんが。もしあなたのコンピュータが非力であれば大きく
+	した方がよいかもしれません。デフォルト値は 50 です。値はミリセカンド単
+	位で解釈されます。
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:noet:

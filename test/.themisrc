@@ -1,0 +1,2 @@
+execute 'set runtimepath+=' . expand('<sfile>:p:h:h')
+let g:assert = themis#helper('assert')

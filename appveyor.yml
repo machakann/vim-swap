@@ -1,0 +1,47 @@
+version: 1.0.{build}
+clone_depth: 1
+build: off
+test_script:
+- ps: >-
+    git clone --quiet --depth 1 https://github.com/thinca/vim-themis.git themis
+
+
+    $zip_latest = $Env:APPVEYOR_BUILD_FOLDER + '\vim_latest.zip'
+
+    $vim_latest = $Env:APPVEYOR_BUILD_FOLDER + '\vim_latest'
+
+    $zip_old    = $Env:APPVEYOR_BUILD_FOLDER + '\vim_old.zip'
+
+    $vim_old    = $Env:APPVEYOR_BUILD_FOLDER + '\vim_old'
+
+
+    (New-Object Net.WebClient).DownloadFile('http://files.kaoriya.net/vim/vim74-kaoriya-win64.zip', $zip_latest)
+
+    (New-Object Net.WebClient).DownloadFile('http://files.kaoriya.net/vim/vim73-kaoriya-win64.zip', $zip_old)
+
+
+    [Reflection.Assembly]::LoadWithPartialName('System.IO.Compression.FileSystem') > $null
+
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($zip_latest, $vim_latest)
+
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($zip_old,    $vim_old)
+
+
+    $Env:THEMIS_VIM = $vim_latest + '\vim74-kaoriya-win64\vim.exe'
+
+
+    & $Env:THEMIS_VIM --version
+
+    .\themis\bin\themis.bat
+
+    .\test\dot-repeat\test_dot.bat
+
+
+    $Env:THEMIS_VIM = $vim_old + '\vim73-kaoriya-win64\vim.exe'
+
+
+    & $Env:THEMIS_VIM --version
+
+    .\themis\bin\themis.bat
+
+    .\test\dot-repeat\test_dot.bat
