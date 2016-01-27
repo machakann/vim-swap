@@ -1,7 +1,6 @@
 vim-sandwich
 ============
 [![Build Status](https://travis-ci.org/machakann/vim-swap.svg?branch=master)](https://travis-ci.org/machakann/vim-swap)
-
 [![Build status](https://ci.appveyor.com/api/projects/status/iirgmyseg2f9xam9/branch/master?svg=true)](https://ci.appveyor.com/project/machakann/vim-swap/branch/master)
 
 A Vim text editor plugin to swap delimited items.
@@ -13,10 +12,10 @@ Sometimes I want to reorder arguments of a function:
 call func(arg1, arg2, arg3)
 ```
 
-Indeed, it is not difficult to swap `arg2` and `arg3` since just cutting `, arg2` and pasting it following `arg3`. However it is annoying work to swap `arg1` and `arg3` because no way to avoid repeating cut&paste. Anyway I feel bothering in both cases. It should be automated such an boring processes!
+Indeed, it is not difficult to swap `arg2` and `arg3`. Just cutting `, arg2` and pasting it following `arg3`. However it is annoying work to swap `arg1` and `arg3` because no way to avoid repeating cut&paste. Anyway I feel bothering in both cases. It should be automated such an boring processes!
 
 # How to use
-This plugin defines three mappings in default, **g<**, **g>**, **gs**. These all functions can be repeated by dot command.
+This plugin defines three key mappings in default, **g<**, **g>**, **gs**. These all functions can be repeated by dot command.
 
 ## g<
 **g<** swaps the item under the cursor with the former item. Moving cursor on the `arg2` and pressing **g<**, then it swaps `arg2` and the former one, `arg1`, to get:
