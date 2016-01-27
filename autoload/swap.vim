@@ -28,9 +28,11 @@ let s:null_region = {'head': copy(s:null_pos), 'tail': copy(s:null_pos), 'len': 
 
 " patches
 if v:version > 704 || (v:version == 704 && has('patch237'))
+  let s:has_patch_7_4_311 = has('patch-7.4.311')
   let s:has_patch_7_4_358 = has('patch-7.4.358')
   let s:has_patch_7_4_362 = has('patch-7.4.362')
 else
+  let s:has_patch_7_4_311 = v:version == 704 && has('patch311')
   let s:has_patch_7_4_358 = v:version == 704 && has('patch358')
   let s:has_patch_7_4_362 = v:version == 704 && has('patch362')
 endif
@@ -495,7 +497,7 @@ else
       if len - 2 >= i
         let min = len - 1
         for j in range(len - 2, i, -1)
-          if a:list[min]['len'] >= a:list[j]['len']
+          if call(a:func, [a:list[min], a:list[j]]) >= 1
             let min = j
           endif
         endfor
@@ -1261,7 +1263,9 @@ function! s:interface_set_current(idx, items, ...) dict abort "{{{
 
   " update side-scrolling
   " FIXME: Any standard way?
-  call winrestview({})
+  if s:has_patch_7_4_311
+    call winrestview({})
+  endif
 
   let self.idx.last_current = self.idx.current
   let self.idx.current = a:idx
