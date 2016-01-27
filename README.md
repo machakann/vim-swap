@@ -1,4 +1,4 @@
-vim-sandwich
+vim-swap
 ============
 [![Build Status](https://travis-ci.org/machakann/vim-swap.svg?branch=master)](https://travis-ci.org/machakann/vim-swap)
 [![Build status](https://ci.appveyor.com/api/projects/status/iirgmyseg2f9xam9/branch/master?svg=true)](https://ci.appveyor.com/project/machakann/vim-swap/branch/master)
