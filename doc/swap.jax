@@ -1,5 +1,5 @@
 *swap.txt*	いれかえたりする。
-						Last change:26-Jan-2016.
+						Last change:28-Jan-2016.
 
 書いた人   : machakann <mckn{at}outlook.jp>
 ライセンス : NYSL ライセンス
@@ -264,7 +264,7 @@ NOTE: もし swap mode 内でバッファが変更された場合、必ずしも
       にならないかもしれません。
 
 ==============================================================================
-CONFIGURATION				*swap-configuration*
+CUSTOMIZATION				*swap-customization*
 
 ユーザーは任意の設定を追加することができます。設定は "rule" と呼ばれ、その実体
 は下記の条件を満たす |Dictionary| 変数です。 g:swap#rules に追加されることで効
