@@ -1153,7 +1153,6 @@ function! s:interface_start(motionwise, buffer) dict abort "{{{
     endif
   endwhile
   call self.clear_highlight(a:buffer.items)
-  redraw
   return self.order
 endfunction
 "}}}
