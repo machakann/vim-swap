@@ -69,15 +69,14 @@ function! swap#textobject() abort "{{{
   let rules = s:get_rules(mode)
   let objects = map(rules, 's:swap_objectize(v:val)')
 
-  let [virtualedit, whichwrap]   = [&virtualedit, &whichwrap]
-  let [&virtualedit, &whichwrap] = ['onemore', 'h,l']
+  let [virtualedit, whichwrap, selection] = s:displace_options()
   let errormsg = ''
   try
     let swap_obj = s:get_swap_obj(objects, mode)
   catch
     let errormsg = printf('vim-swap: Unanticipated error. [%s] %s', v:throwpoint, v:exception)
   finally
-    let [&virtualedit, &whichwrap] = [virtualedit, whichwrap]
+    call s:restore_options(virtualedit, whichwrap, selection)
 
     if errormsg !=# ''
       echoerr errormsg
@@ -123,7 +122,7 @@ function! swap#operator(motionwise) abort "{{{
   endif
 
   let errormsg = ''
-  let [virtualedit, whichwrap, cursor, cursorline] = s:displace_options()
+  let [virtualedit, whichwrap, selection, cursor, cursorline] = s:displace_options(1)
   try
     call s:swap.execute()
   catch /^Vim:Interrupt$/
@@ -133,7 +132,7 @@ function! swap#operator(motionwise) abort "{{{
     let errormsg = printf('vim-swap: Unanticipated error. [%s] %s', v:throwpoint, v:exception)
   finally
     call s:swap.buffer.clear_highlight()
-    call s:restore_options(virtualedit, whichwrap, cursor, cursorline)
+    call s:restore_options(virtualedit, whichwrap, selection, cursor, cursorline)
 
     let s:swap.state = 0
     if errormsg !=# ''
@@ -1046,30 +1045,38 @@ function! s:clear_highlight_all(buffer) abort "{{{
   endfor
 endfunction
 "}}}
-function! s:displace_options() abort  "{{{
-  let [virtualedit, whichwrap]   = [&virtualedit, &whichwrap]
-  let [&virtualedit, &whichwrap] = ['onemore', 'h,l']
-  if s:has_gui_running
-    let cursor = &guicursor
-    set guicursor+=n-o:block-NONE
+function! s:displace_options(...) abort  "{{{
+  let [ virtualedit,  whichwrap,  selection] = [&virtualedit, &whichwrap, &selection]
+  let [&virtualedit, &whichwrap, &selection] = ['onemore', 'h,l', 'inclusive']
+  if a:0 > 0
+    if s:has_gui_running
+      let cursor = &guicursor
+      set guicursor+=n-o:block-NONE
+    else
+      let cursor = &t_ve
+      set t_ve=
+    endif
+    let cursorline = &l:cursorline
+    setlocal nocursorline
+    return [virtualedit, whichwrap, selection, cursor, cursorline]
   else
-    let cursor = &t_ve
-    set t_ve=
+    return [virtualedit, whichwrap, selection]
   endif
-  let cursorline = &l:cursorline
-  setlocal nocursorline
-  return [virtualedit, whichwrap, cursor, cursorline]
 endfunction
 "}}}
-function! s:restore_options(virtualedit, whichwrap, cursor, cursorline) abort "{{{
-  let [&virtualedit, &whichwrap] = [a:virtualedit, a:whichwrap]
-  if s:has_gui_running
-    set guicursor&
-    let &guicursor = a:cursor
-  else
-    let &t_ve = a:cursor
+function! s:restore_options(virtualedit, whichwrap, selection, ...) abort "{{{
+  let [&virtualedit, &whichwrap, &selection] = [a:virtualedit, a:whichwrap, a:selection]
+  if a:0 > 1
+    let cursor     = a:1
+    let cursorline = a:2
+    if s:has_gui_running
+      set guicursor&
+      let &guicursor = cursor
+    else
+      let &t_ve = cursor
+    endif
+    let &l:cursorline = cursorline
   endif
-  let &l:cursorline = a:cursorline
 endfunction
 "}}}
 function! s:keymap(noremap, lhs, rhs) abort  "{{{

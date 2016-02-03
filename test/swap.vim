@@ -5,6 +5,7 @@ let s:swap = s:scope.funcs('autoload/swap.vim')
 
 function! s:suite.before_each() abort "{{{
   %delete
+  set selection&
   unlet! rule
   unlet! g:swap#rules
 endfunction
@@ -679,6 +680,44 @@ function! s:suite.integration_normal() abort  "{{{
   call setline(1, '(foo, bar, baz)')
   execute "normal gg11lg<"
   call g:assert.equals(getline('.'), '(foo, baz, bar)', 'failed at #26')
+endfunction
+"}}}
+function! s:suite.integration_normal_selection_option() abort  "{{{
+  " #1
+  set selection=exclusive
+  call setline(1, '(foo, bar, baz)')
+  normal ggfbg<
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #1')
+
+  " #2
+  set selection=old
+  call setline(1, '(foo, bar, baz)')
+  normal ggfbg<
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #2')
+
+  " #3
+  set selection=exclusive
+  call setline(1, '(foo, bar, baz)')
+  normal ggfbg>
+  call g:assert.equals(getline('.'), '(foo, baz, bar)', 'failed at #3')
+
+  " #4
+  set selection=old
+  call setline(1, '(foo, bar, baz)')
+  normal ggfbg>
+  call g:assert.equals(getline('.'), '(foo, baz, bar)', 'failed at #4')
+
+  " #5
+  set selection=exclusive
+  call setline(1, '(foo, bar, baz)')
+  execute "normal gglgsl\<Esc>"
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #5')
+
+  " #6
+  set selection=old
+  call setline(1, '(foo, bar, baz)')
+  execute "normal gglgsl\<Esc>"
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #6')
 endfunction
 "}}}
 function! s:suite.integration_visual() abort  "{{{
