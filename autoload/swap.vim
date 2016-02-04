@@ -8,6 +8,8 @@
 let g:swap#timeoutlen  = get(g:, 'swap#timeoutlen', &timeoutlen)
 let g:swap#stimeoutlen = get(g:, 'swap#stimeoutlen', 50)
 let g:swap#highlight   = get(g:, 'swap#highlight', 1)
+let g:swap#hl_itemnr   = 'Special'
+let g:swap#hl_arrow    = 'NONE'
 let g:swap#default_rules = [
       \   {'mode': 'x', 'delimiter': ['\s*,\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"'], ["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']},
       \   {'mode': 'n', 'body': '\%(\h\w*,\s*\)\+\%(\h\w*\)\?', 'delimiter': ['\s*,\s*'], 'priority': -10},
@@ -1217,27 +1219,57 @@ endfunction
 "}}}
 function! s:interface_echo() dict abort "{{{
   if self.phase == 0 || self.phase == 1
-    let message = ''
-    for order in self.history[: -1*(self.undolevel+1)]
-      let message .= printf('%s <=> %s,  ', order[0], order[1])
-    endfor
+    let max_len = &columns - 25
+    let message = []
 
+    for order in self.history[: -1*(self.undolevel+1)]
+      let message += [[order[0], g:swap#hl_itemnr]]
+      let message += [[' <=> ', g:swap#hl_arrow]]
+      let message += [[order[1], g:swap#hl_itemnr]]
+      let message += [[', ', 'NONE']]
+    endfor
     if self.phase == 0
-      let message .= self.order[0]
-    elseif self.phase == 1
-      let message .= printf('%s <=> %s', self.order[0], self.order[1])
+      if self.order[0] ==# ''
+        if message != []
+          call remove(message, -1)
+        endif
+      else
+        let message += [[self.order[0], g:swap#hl_itemnr]]
+      endif
+    elseif self.phase == 0
+      let message += [[self.order[0], g:swap#hl_itemnr]]
+      let message += [[' <=> ', g:swap#hl_arrow]]
+      let message += [[self.order[1], g:swap#hl_itemnr]]
     endif
-    let message = message[-1*(&columns-25) : -1]
-    echohl ModeMsg
-    echo 'Swap mode: '
-    echohl NONE
-    echon message
+
+    if message != []
+      let len = eval(join(map(copy(message), 'strwidth(v:val[0])'), '+'))
+      if len > max_len
+        while len > max_len
+          let mes  = remove(message, 0)
+          let len -= strwidth(mes[0])
+        endwhile
+        if len < 0
+          let mes = [mes[0][len :], mes[1]]
+          call insert(message, mes)
+        endif
+      endif
+
+      echohl ModeMsg
+      echo 'Swap mode: '
+      echohl NONE
+      for mes in message
+        call self.echon(mes[0], mes[1])
+      endfor
+    endif
   endif
 endfunction
 "}}}
-function! s:interface_echon(addition) dict abort "{{{
-  " NOTE: Use for tiny change, like just adding a character.
-  execute 'echon ' . a:addition
+function! s:interface_echon(str, ...) dict abort "{{{
+  let hl = get(a:000, 0, 'NONE')
+  execute 'echohl ' . hl
+  echon a:str
+  echohl NONE
 endfunction
 "}}}
 function! s:interface_normal(key) abort "{{{
@@ -1345,7 +1377,7 @@ endfunction
 function! s:interface_key_nr(nr) dict abort  "{{{
   if self.phase == 0 || self.phase == 1
     let self.order[self.phase] .= a:nr
-    call self.echon(a:nr)
+    call self.echon(a:nr, g:swap#hl_itemnr)
   endif
 endfunction
 "}}}
