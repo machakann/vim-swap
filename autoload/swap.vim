@@ -735,7 +735,7 @@ function! s:shift_to_something_start(text, targets, idx) abort  "{{{
 endfunction
 "}}}
 function! s:shift_to_delimiter_end(text, delimiter, idx) abort  "{{{
-  return s:matchend(a:text, [0, a:delimiter, 0], a:idx)[0]
+  return s:matchend(a:text, [0, a:delimiter, 0], a:idx, 1)[0]
 endfunction
 "}}}
 function! s:shift_to_quote_end(text, pair, idx) abort  "{{{
