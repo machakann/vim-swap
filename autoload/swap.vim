@@ -638,9 +638,9 @@ function! s:parse_charwise(text, rule) abort  "{{{
         endif
         if idx == last_delimiter_tail
           " successive delimiters
-          let [head, idx] = [idx, s:shift_to_delimiter_end(a:text, pattern, idx+1)]
+          let [head, idx] = [idx, s:shift_to_delimiter_end(a:text, pattern, idx, 0)]
         else
-          let [head, idx] = [idx, s:shift_to_delimiter_end(a:text, pattern, idx)]
+          let [head, idx] = [idx, s:shift_to_delimiter_end(a:text, pattern, idx, 1)]
         endif
         call s:add_buffer_text(buffer, 'delimiter', a:text, head, idx)
         if idx < 0 || idx >= end
@@ -734,8 +734,8 @@ function! s:shift_to_something_start(text, targets, idx) abort  "{{{
   return result
 endfunction
 "}}}
-function! s:shift_to_delimiter_end(text, delimiter, idx) abort  "{{{
-  return s:matchend(a:text, [0, a:delimiter, 0], a:idx, 1)[0]
+function! s:shift_to_delimiter_end(text, delimiter, idx, current_match) abort  "{{{
+  return s:matchend(a:text, [0, a:delimiter, 0], a:idx, a:current_match)[0]
 endfunction
 "}}}
 function! s:shift_to_quote_end(text, pair, idx) abort  "{{{
@@ -846,6 +846,26 @@ endfunction
 function! s:match(string, target, idx, ...) abort "{{{
   " NOTE: current_match is like 'c' flag in search()
   let current_match = get(a:000, 0, 1)
+
+  " NOTE: Because s:match_by_occurence() is heavy, it is used only when
+  "       a pattern includes '\zs', '\@<=' and '\@<!'.
+  if match(a:target[1], '[^\\]\%(\\\\\)*\\zs') > -1 || match(a:target[1], '[^\\]\%(\\\\\)*\\@\d*<[!=]') > -1
+    return s:match_by_occurence(a:string, a:target, a:idx, current_match)
+  else
+    return s:match_by_idx(a:string, a:target, a:idx, current_match)
+  endif
+endfunction
+"}}}
+function! s:match_by_idx(string, target, idx, current_match) abort  "{{{
+  let [idx, pattern, occurrence] = a:target
+  let idx = match(a:string, pattern, a:idx)
+  if !a:current_match && idx == a:idx
+    let idx = match(a:string, pattern, a:idx, 2)
+  endif
+  return [idx, pattern, occurrence]
+endfunction
+"}}}
+function! s:match_by_occurence(string, target, idx, current_match) abort  "{{{
   let [idx, pattern, occurrence] = a:target
   if a:idx < idx
     let occurrence = 0
@@ -854,7 +874,7 @@ function! s:match(string, target, idx, ...) abort "{{{
     let idx = match(a:string, pattern, 0, occurrence + 1)
     if idx >= 0
       let occurrence += 1
-      if (current_match && idx < a:idx) || (!current_match && idx <= a:idx)
+      if (a:current_match && idx < a:idx) || (!a:current_match && idx <= a:idx)
         continue
       endif
     endif
@@ -866,6 +886,17 @@ endfunction
 function! s:matchend(string, target, idx, ...) abort "{{{
   " NOTE: current_match is like 'c' flag in search()
   let current_match = get(a:000, 0, 1)
+
+  " NOTE: Because s:match_by_occurence() is heavy, it is used only when
+  "       a pattern includes '\zs', '\@<=' and '\@<!'.
+  if match(a:target[1], '[^\\]\%(\\\\\)*\\zs') > -1 || match(a:target[1], '[^\\]\%(\\\\\)*\\@\d*<[!=]') > -1
+    return s:matchend_by_occurence(a:string, a:target, a:idx, current_match)
+  else
+    return s:matchend_by_idx(a:string, a:target, a:idx, current_match)
+  endif
+endfunction
+"}}}
+function! s:matchend_by_occurence(string, target, idx, current_match) abort "{{{
   let [idx, pattern, occurrence] = a:target
   if a:idx < idx
     let occurrence = 0
@@ -874,12 +905,21 @@ function! s:matchend(string, target, idx, ...) abort "{{{
     let idx = matchend(a:string, pattern, 0, occurrence + 1)
     if idx >= 0
       let occurrence += 1
-      if (current_match && idx < a:idx) || (!current_match && idx <= a:idx)
+      if (a:current_match && idx < a:idx) || (!a:current_match && idx <= a:idx)
         continue
       endif
     endif
     break
   endwhile
+  return [idx, pattern, occurrence]
+endfunction
+"}}}
+function! s:matchend_by_idx(string, target, idx, current_match) abort "{{{
+  let [idx, pattern, occurrence] = a:target
+  let idx = matchend(a:string, pattern, a:idx)
+  if !a:current_match && idx == a:idx
+    let idx = matchend(a:string, pattern, a:idx, 2)
+  endif
   return [idx, pattern, occurrence]
 endfunction
 "}}}
