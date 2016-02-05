@@ -10,6 +10,7 @@ let g:swap#stimeoutlen = get(g:, 'swap#stimeoutlen', 50)
 let g:swap#highlight   = get(g:, 'swap#highlight', 1)
 let g:swap#hl_itemnr   = 'Special'
 let g:swap#hl_arrow    = 'NONE'
+let g:swap#arrow       = ' <=> '
 let g:swap#default_rules = [
       \   {'mode': 'x', 'delimiter': ['\s*,\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"'], ["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']},
       \   {'mode': 'n', 'body': '\%(\h\w*,\s*\)\+\%(\h\w*\)\?', 'delimiter': ['\s*,\s*'], 'priority': -10},
@@ -1270,7 +1271,7 @@ function! s:interface_echo() dict abort "{{{
 
     for order in self.history[: -1*(self.undolevel+1)]
       let message += [[order[0], g:swap#hl_itemnr]]
-      let message += [[' <=> ', g:swap#hl_arrow]]
+      let message += [[g:swap#arrow, g:swap#hl_arrow]]
       let message += [[order[1], g:swap#hl_itemnr]]
       let message += [[', ', 'NONE']]
     endfor
@@ -1284,14 +1285,14 @@ function! s:interface_echo() dict abort "{{{
       endif
     elseif self.phase == 0
       let message += [[self.order[0], g:swap#hl_itemnr]]
-      let message += [[' <=> ', g:swap#hl_arrow]]
+      let message += [[g:swap#arrow, g:swap#hl_arrow]]
       let message += [[self.order[1], g:swap#hl_itemnr]]
     endif
 
     if message != []
       let len = eval(join(map(copy(message), 'strwidth(v:val[0])'), '+'))
       if len > max_len
-        while len > max_len
+        while len > max_len-1
           let mes  = remove(message, 0)
           let len -= strwidth(mes[0])
         endwhile
@@ -1299,15 +1300,18 @@ function! s:interface_echo() dict abort "{{{
           let mes = [mes[0][len :], mes[1]]
           call insert(message, mes)
         endif
+        let precedes = matchstr(&listchars, 'precedes:\zs.\ze')
+        let precedes = precedes ==# '' ? '<' : precedes
+        call insert(message, [precedes, 'SpecialKey'])
       endif
-
-      echohl ModeMsg
-      echo 'Swap mode: '
-      echohl NONE
-      for mes in message
-        call self.echon(mes[0], mes[1])
-      endfor
     endif
+
+    echohl ModeMsg
+    echo 'Swap mode: '
+    echohl NONE
+    for mes in message
+      call self.echon(mes[0], mes[1])
+    endfor
   endif
 endfunction
 "}}}
