@@ -819,7 +819,8 @@ function! s:shift_to_braket_end(text, pair, quotes, idx) abort  "{{{
 endfunction
 "}}}
 function! s:shift_to_immutable_end(text, immutable, idx) abort  "{{{
-  return s:matchend(a:text, [0, a:immutable, 0], a:idx)[0]
+  " NOTE: Zero-width immutable would not be considered.
+  return s:matchend(a:text, [0, a:immutable, 0], a:idx, 0)[0]
 endfunction
 "}}}
 function! s:add_buffer_text(buffer, attr, text, head, next_head) abort  "{{{
