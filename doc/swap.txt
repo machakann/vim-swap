@@ -1,5 +1,5 @@
 *swap.txt*	Reorder delimited items.
-						Last change:27-Jan-2016.
+						Last change:06-Feb-2016.
 
 Author  : machakann <mckn{at}outlook.jp>
 License : NYSL license
@@ -267,12 +267,14 @@ CUSTOMIZATION				*swap-customization*
 					*swap#rules*
 User can add settings to treat other kinds of delimited strings. Each setting
 is called "rule" and it is a |Dictionary| which fills up the conditions
-described below. If user add new rules to g:swap#rules, the new rules takes
-effects. It would be better to copy default settings first.
+described below. It might not be easy to define new rules, thus feel free to
+ask at <https://github.com/machakann/vim-swap/issues>.
+
+If user add new rules to g:swap#rules, the new rules takes effects. It would
+be better to copy default settings first.
 >
 	let g:swap#rules = deepcopy(g:swap#default_rules)
 <
-
 First, a rule for |Normal| mode should have either "body" key or "surrounds"
 key.  These keys are used to assign a delimited string in an action. The
 "body" key should have a |string| value which is a regular expression pattern
