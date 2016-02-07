@@ -1178,14 +1178,19 @@ let s:clock = {
 "}}}
 
 " interface object  "{{{
-function! s:interface_start(motionwise, buffer) dict abort "{{{
+function! s:interface_start() dict abort "{{{
   let self.phase = 0
   let self.order = ['', '']
-  let self.idx.current = a:buffer.symbols['#']
-  let self.idx.end     = len(a:buffer.items)
+  let self.idx.current = self.buffer.symbols['#']
+  let self.idx.end     = len(self.buffer.items)
   let self.idx.last_current = -1
 
-  call self.highlight(a:buffer.items)
+  "  (foo, bar, , baz)
+  " skip empty items
+  if self.buffer.items[self.idx.current-1].string ==# ''
+    let self.idx.current = s:move_next_skipping_blank(self.buffer, self.idx.current, self.idx.end)
+  endif
+  call self.highlight(self.buffer.items)
   call self.set_current(self.idx.current, self.buffer.items, 0)
   call self.echo()
   redraw
@@ -1202,7 +1207,7 @@ function! s:interface_start(motionwise, buffer) dict abort "{{{
       break
     endif
   endwhile
-  call self.clear_highlight(a:buffer.items)
+  call self.clear_highlight(self.buffer.items)
   return self.order
 endfunction
 "}}}
@@ -1406,6 +1411,36 @@ function! s:is_input_matched(candidate, input, flag) abort "{{{
   endif
 endfunction
 "}}}
+function! s:move_prev_skipping_blank(buffer, current) abort  "{{{
+  " skip empty items
+  let idx = a:current - 1
+  while idx > 1
+    if a:buffer.items[idx-1].string !=# ''
+      break
+    endif
+    let idx -= 1
+  endwhile
+  if a:buffer.items[idx-1].string ==# ''
+    let idx = a:current
+  endif
+  return idx
+endfunction
+"}}}
+function! s:move_next_skipping_blank(buffer, current, end) abort  "{{{
+  " skip empty items
+  let idx = a:current + 1
+  while idx < a:end
+    if a:buffer.items[idx-1].string !=# ''
+      break
+    endif
+    let idx += 1
+  endwhile
+  if a:buffer.items[idx-1].string ==# ''
+    let idx = a:current
+  endif
+  return idx
+endfunction
+"}}}
 
 " NOTE: Function list
 "    {0~9} : Input {0~9} to specify an item.
@@ -1506,7 +1541,8 @@ endfunction
 function! s:interface_key_move_prev() dict abort  "{{{
   if self.phase == 0 || self.phase == 1
     if self.idx.current > 1
-      call self.set_current(self.idx.current-1, self.buffer.items)
+      let idx = s:move_prev_skipping_blank(self.buffer, self.idx.current)
+      call self.set_current(idx, self.buffer.items)
     endif
   endif
 endfunction
@@ -1514,7 +1550,8 @@ endfunction
 function! s:interface_key_move_next() dict abort  "{{{
   if self.phase == 0 || self.phase == 1
     if self.idx.current < self.idx.end
-      call self.set_current(self.idx.current+1, self.buffer.items)
+      let idx = s:move_next_skipping_blank(self.buffer, self.idx.current, self.idx.end)
+      call self.set_current(idx, self.buffer.items)
     endif
   endif
 endfunction
@@ -1860,7 +1897,7 @@ function! s:swap_execute() dict abort "{{{
     let s:interface = deepcopy(s:interface_prototype)
     let s:interface.buffer = self.buffer
     while 1
-      let order = s:interface.start(self.motionwise, self.buffer)
+      let order = s:interface.start()
       let self.undojoin += 1
       if order != []
         call self.swap(order)
