@@ -940,15 +940,9 @@ function! s:sharp(curpos, buffer) abort  "{{{
     if s:is_ahead(a:buffer.all[0].region.head, a:curpos)
       let sharp = 1
     else
-      for text in a:buffer.all
-        if text.attr ==# 'item'
-          let sharp += 1
-        endif
-
-        if s:is_in_between(a:curpos, text.region.head, text.region.tail)
-          if text.attr !=# 'item'
-            let sharp += 1
-          endif
+      for text in a:buffer.items
+        let sharp += 1
+        if s:is_ahead(text.region.tail, a:curpos)
           break
         endif
       endfor
