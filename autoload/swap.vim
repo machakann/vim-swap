@@ -280,18 +280,15 @@ endfunction
 "}}}
 function! s:get_outer_pos(surrounds, region) abort  "{{{
   let n_line = count(split(a:surrounds[0]), "\n")
-  let stopline = line('.') - n_line
-  let stopline = stopline < 1 ? 1 : stopline
+  let stopline = max([line('.') - n_line, 1])
   call setpos('.', a:region.head)
   let head = s:c2p(searchpos(a:surrounds[0], 'b', stopline))
   if head != s:null_pos
     let head = s:get_left_pos(head)
   endif
 
-  let endline = line('$')
   let n_line = count(split(a:surrounds[1]), "\n")
-  let stopline = line('.') + n_line
-  let stopline = stopline > endline ? endline : stopline
+  let stopline = min([line('.') + n_line, line('$')])
   call setpos('.', a:region.tail)
   let tail = s:c2p(searchpos(a:surrounds[1], 'e', stopline))
   if tail != s:null_pos
@@ -498,8 +495,7 @@ else
     " FIXME: The number of item in a:list would not be large, but if there was
     "        any efficient argorithm, I would rewrite here.
     let len = len(a:list)
-    let n = get(a:000, 0, len)
-    let n = n > len ? len : n
+    let n = min([get(a:000, 0, len), len])
     for i in range(n)
       if len - 2 >= i
         let min = len - 1
