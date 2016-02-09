@@ -1181,7 +1181,6 @@ function! s:interface_start() dict abort "{{{
   let self.idx.end     = len(self.buffer.items)
   let self.idx.last_current = -1
 
-  "  (foo, bar, , baz)
   " skip empty items
   if self.buffer.items[self.idx.current-1].string ==# ''
     let self.idx.current = s:move_next_skipping_blank(self.buffer, self.idx.current, self.idx.end)
@@ -1271,17 +1270,12 @@ function! s:interface_echo() dict abort "{{{
       let message += [[', ', 'NONE']]
     endfor
     if self.phase == 0
-      if self.order[0] ==# ''
-        if message != []
-          call remove(message, -1)
-        endif
-      else
-        let message += [[self.order[0], g:swap#hl_itemnr]]
+      if message != []
+        call remove(message, -1)
       endif
-    elseif self.phase == 0
+    elseif self.phase == 1
       let message += [[self.order[0], g:swap#hl_itemnr]]
       let message += [[g:swap#arrow, g:swap#hl_arrow]]
-      let message += [[self.order[1], g:swap#hl_itemnr]]
     endif
 
     if message != []
