@@ -1,5 +1,5 @@
 " The vim plugin to reorder delimited items.
-" Last Change: 09-Feb-2016.
+" Last Change: 10-Feb-2016.
 " Maintainer : Masaaki Nakamura <mckn@outlook.jp>
 
 " License    : NYSL
@@ -43,6 +43,7 @@ nnoremap <silent> <Plug>(swap-mode-Esc) :<C-u>call swap#swapmode_key_ESC()<CR>
 
 highlight default link SwapItem Underlined
 highlight default link SwapCurrentItem IncSearch
+highlight default link SwapSelectedItem Visual
 
 """ default keymappings
 " If g:swap_no_default_key_mappings has been defined, then quit immediately.

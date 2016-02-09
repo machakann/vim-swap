@@ -1178,15 +1178,16 @@ function! s:interface_start() dict abort "{{{
   let self.phase = 0
   let self.order = ['', '']
   let self.idx.current = self.buffer.symbols['#']
-  let self.idx.end     = len(self.buffer.items)
+  let self.idx.end = len(self.buffer.items)
   let self.idx.last_current = -1
+  let self.idx.selected = -1
 
   " skip empty items
   if self.buffer.items[self.idx.current-1].string ==# ''
     let self.idx.current = s:move_next_skipping_blank(self.buffer, self.idx.current, self.idx.end)
   endif
-  call self.highlight(self.buffer.items)
-  call self.set_current(self.idx.current, self.buffer.items, 0)
+  call self.highlight()
+  call self.set_current(self.idx.current, self.buffer.items)
   call self.echo()
   redraw
   while self.phase < 2
@@ -1202,7 +1203,7 @@ function! s:interface_start() dict abort "{{{
       break
     endif
   endwhile
-  call self.clear_highlight(self.buffer.items)
+  call self.clear_highlight()
   return self.order
 endfunction
 "}}}
@@ -1334,8 +1335,7 @@ function! s:interface_truncate_history() dict abort  "{{{
   return self.history
 endfunction
 "}}}
-function! s:interface_set_current(idx, items, ...) dict abort "{{{
-  let highlight = get(a:000, 0, 1)
+function! s:interface_set_current(idx, items) dict abort "{{{
   call a:items[a:idx-1].cursor()
 
   " update side-scrolling
@@ -1346,19 +1346,15 @@ function! s:interface_set_current(idx, items, ...) dict abort "{{{
 
   let self.idx.last_current = self.idx.current
   let self.idx.current = a:idx
-
-  if highlight
-    call self.update_highlight(a:items)
-  endif
 endfunction
 "}}}
-function! s:interface_highlight(items) dict abort "{{{
+function! s:interface_highlight() dict abort "{{{
   if !g:swap#highlight
     return
   endif
 
   let idx = 0
-  for item in a:items
+  for item in self.buffer.items
     let idx += 1
     if idx == self.idx.current
       call item.highlight('SwapCurrentItem')
@@ -1368,19 +1364,40 @@ function! s:interface_highlight(items) dict abort "{{{
   endfor
 endfunction
 "}}}
-function! s:interface_clear_highlight(items) dict abort  "{{{
-  call s:clear_highlight_all(a:items)
+function! s:interface_clear_highlight() dict abort  "{{{
+  call s:clear_highlight_all(self.buffer.items)
 endfunction
 "}}}
-function! s:interface_update_highlight(items) dict abort  "{{{
+function! s:interface_update_highlight() dict abort  "{{{
   if !g:swap#highlight
     return
   endif
 
-  call a:items[self.idx.last_current-1].clear_highlight()
-  call a:items[self.idx.last_current-1].highlight('SwapItem')
-  call a:items[self.idx.current-1].clear_highlight()
-  call a:items[self.idx.current-1].highlight('SwapCurrentItem')
+  let items = self.buffer.items
+  call items[self.idx.last_current-1].clear_highlight()
+  call items[self.idx.last_current-1].highlight('SwapItem')
+  if self.idx.selected > 0 && self.idx.selected <= len(items)
+    call items[self.idx.selected-1].clear_highlight()
+    call items[self.idx.selected-1].highlight('SwapSelectedItem')
+  endif
+  call items[self.idx.current-1].clear_highlight()
+  call items[self.idx.current-1].highlight('SwapCurrentItem')
+endfunction
+"}}}
+function! s:interface_goto_phase(phase) dict abort "{{{
+  " NOTE: If a negative value n is given, this func proceed phase to abs(n)
+  "       without operating side-processes.
+  let self.phase = abs(a:phase)
+  if a:phase == 1
+    let self.idx.selected = str2nr(self.order[0])
+    call self.echo()
+  elseif a:phase == 2
+    call self.add_history()
+  endif
+endfunction
+"}}}
+function! s:interface_exit() dict abort  "{{{
+  call self.goto_phase(-2)
 endfunction
 "}}}
 function! s:is_input_matched(candidate, input, flag) abort "{{{
@@ -1468,8 +1485,10 @@ function! s:interface_key_BS() dict abort  "{{{
     if self.order[1] !=# ''
       let self.order[1] = self.order[1][0:-2]
     else
-      let self.phase = 0
       let self.order[0] = self.order[0][0:-2]
+      call self.goto_phase(0)
+      let self.idx.selected = -1
+      call self.update_highlight()
     endif
     call self.echo()
   endif
@@ -1481,7 +1500,7 @@ function! s:interface_key_undo() dict abort "{{{
       let prev_order = self.history[-1*(self.undolevel+1)]
       let self.order = [prev_order[1], prev_order[0]]
       let self.undolevel += 1
-      let self.phase = 2
+      call self.exit()
     endif
   endif
 endfunction
@@ -1492,7 +1511,7 @@ function! s:interface_key_redo() dict abort "{{{
       let next_order = self.history[-1*self.undolevel]
       let self.order = next_order
       let self.undolevel -= 1
-      let self.phase = 2
+      call self.exit()
     endif
   endif
 endfunction
@@ -1500,12 +1519,10 @@ endfunction
 function! s:interface_key_current() dict abort "{{{
   if self.phase == 0
     let self.order[0] = string(self.idx.current)
-    let self.phase = 1
-    call self.echo()
+    call self.goto_phase(1)
   elseif self.phase == 1
     let self.order[1] = string(self.idx.current)
-    let self.phase = 2
-    call self.add_history()
+    call self.goto_phase(2)
   endif
 endfunction
 "}}}
@@ -1514,14 +1531,13 @@ function! s:interface_key_fix_nr() dict abort "{{{
     let idx = str2nr(self.order[self.phase])
     if idx > 0 && idx <= len(self.buffer.items)
       call self.set_current(idx, self.buffer.items)
-      let self.phase = 1
+      call self.goto_phase(1)
+      call self.update_highlight()
     endif
-    call self.echo()
   elseif self.phase == 1
     let idx = str2nr(self.order[self.phase])
     if idx > 0 && idx <= len(self.buffer.items)
-      let self.phase = 2
-      call self.add_history()
+      call self.goto_phase(2)
     else
       call self.echo()
     endif
@@ -1533,6 +1549,7 @@ function! s:interface_key_move_prev() dict abort  "{{{
     if self.idx.current > 1
       let idx = s:move_prev_skipping_blank(self.buffer, self.idx.current)
       call self.set_current(idx, self.buffer.items)
+      call self.update_highlight()
     endif
   endif
 endfunction
@@ -1542,6 +1559,7 @@ function! s:interface_key_move_next() dict abort  "{{{
     if self.idx.current < self.idx.end
       let idx = s:move_next_skipping_blank(self.buffer, self.idx.current, self.idx.end)
       call self.set_current(idx, self.buffer.items)
+      call self.update_highlight()
     endif
   endif
 endfunction
@@ -1550,8 +1568,7 @@ function! s:interface_key_swap_prev() dict abort  "{{{
   if self.phase == 0 || self.phase == 1
     if self.idx.current > 1
       let self.order = [self.idx.current, self.idx.current-1]
-      let self.phase = 2
-      call self.add_history()
+      call self.goto_phase(2)
     endif
   endif
 endfunction
@@ -1560,8 +1577,7 @@ function! s:interface_key_swap_next() dict abort  "{{{
   if self.phase == 0 || self.phase == 1
     if self.idx.current < self.idx.end
       let self.order = [self.idx.current, self.idx.current+1]
-      let self.phase = 2
-      call self.add_history()
+      call self.goto_phase(2)
     endif
   endif
 endfunction
@@ -1711,6 +1727,7 @@ let s:interface_prototype = {
       \     'current': -1,
       \     'end'    : -1,
       \     'last_current': -1,
+      \     'selected': -1,
       \   },
       \   'buffer' : {},
       \   'escaped': 0,
@@ -1727,6 +1744,8 @@ let s:interface_prototype = {
       \   'highlight': function('s:interface_highlight'),
       \   'clear_highlight': function('s:interface_clear_highlight'),
       \   'update_highlight': function('s:interface_update_highlight'),
+      \   'goto_phase': function('s:interface_goto_phase'),
+      \   'exit': function('s:interface_exit'),
       \   'key_nr': function('s:interface_key_nr'),
       \   'key_CR': function('s:interface_key_CR'),
       \   'key_BS': function('s:interface_key_BS'),
