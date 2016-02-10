@@ -1187,16 +1187,17 @@ function! s:interface_start() dict abort "{{{
     let idx = s:move_next_skipping_blank(self.buffer.items, idx)
   endif
 
-  call self.set_current(idx, self.buffer.items)
+  call self.set_current(idx)
   call self.highlight()
   call self.echo()
   redraw
   while self.phase < 2
     let self.escaped = 0
     let key_map = deepcopy(get(g:, 'swap#keymappings', g:swap#default_keymappings))
-    let key = self.query(key_map)
+    let key = s:query(key_map)
     if has_key(key, 'output')
       call self.normal(key)
+      call self.revise_cursor_pos()
       redraw
     endif
     if self.escaped
@@ -1206,58 +1207,6 @@ function! s:interface_start() dict abort "{{{
   endwhile
   call self.clear_highlight()
   return self.order
-endfunction
-"}}}
-function! s:interface_query(key_map) abort "{{{
-  let key_map = insert(a:key_map, {'input': "\<Esc>", 'output': "\<Plug>(swap-mode-Esc)"})   " for safety
-  let clock   = deepcopy(s:clock)
-  let timeoutlen = g:swap#timeoutlen
-
-  let input = ''
-  let last_compl_match = ['', []]
-  while key_map != []
-    let c = getchar(0)
-    if c == 0
-      if clock.started && timeoutlen > 0 && clock.elapsed() > timeoutlen
-        let [input, key_map] = last_compl_match
-        break
-      else
-        sleep 20m
-        continue
-      endif
-    endif
-
-    let c = type(c) == s:type_num ? nr2char(c) : c
-    let input .= c
-
-    " check forward match
-    let n_fwd = len(filter(key_map, 's:is_input_matched(v:val, input, 0)'))
-
-    " check complete match
-    let n_comp = len(filter(copy(key_map), 's:is_input_matched(v:val, input, 1)'))
-    if n_comp
-      if len(key_map) == n_comp
-        break
-      else
-        call clock.stop()
-        call clock.start()
-        let last_compl_match = [input, copy(key_map)]
-      endif
-    else
-      if clock.started && !n_fwd
-        let [input, key_map] = last_compl_match
-        break
-      endif
-    endif
-  endwhile
-  call clock.stop()
-
-  if filter(key_map, 's:is_input_matched(v:val, input, 1)') != []
-    let key_seq = key_map[-1]
-  else
-    let key_seq = {}
-  endif
-  return key_seq
 endfunction
 "}}}
 function! s:interface_echo() dict abort "{{{
@@ -1313,12 +1262,35 @@ function! s:interface_echon(str, ...) dict abort "{{{
   echohl NONE
 endfunction
 "}}}
-function! s:interface_normal(key) abort "{{{
+function! s:interface_normal(key) dict abort "{{{
   if has_key(a:key, 'noremap') && a:key.noremap
     execute 'normal! ' . a:key.output
   else
     execute 'normal ' . a:key.output
   endif
+endfunction
+"}}}
+function! s:interface_revise_cursor_pos() dict abort  "{{{
+  let curpos = getpos('.')
+  if self.idx.is_valid(self.idx.current)
+    let item = self.buffer.items[self.idx.current]
+    if s:is_in_between(curpos, item.region.head, item.region.tail) && curpos != item.region.tail
+      " no problem!
+      return
+    endif
+  endif
+
+  let head = self.buffer.items[0].region.head
+  let tail = self.buffer.items[self.idx.end].region.tail
+  let self.idx.last_current = self.idx.current
+  if s:is_ahead(head, curpos)
+    let self.idx.current = -1
+  elseif curpos == tail || s:is_ahead(curpos, tail)
+    let self.idx.current = self.idx.end + 1
+  else
+    let self.idx.current = s:sharp(curpos, self.buffer) - 1
+  endif
+  call self.update_highlight()
 endfunction
 "}}}
 function! s:interface_add_history() dict abort  "{{{
@@ -1336,8 +1308,8 @@ function! s:interface_truncate_history() dict abort  "{{{
   return self.history
 endfunction
 "}}}
-function! s:interface_set_current(idx, items) dict abort "{{{
-  call a:items[a:idx].cursor()
+function! s:interface_set_current(idx) dict abort "{{{
+  call self.buffer.items[a:idx].cursor()
 
   " update side-scrolling
   " FIXME: Any standard way?
@@ -1407,6 +1379,58 @@ endfunction
 "}}}
 function! s:interface_idx_is_valid(idx) dict abort  "{{{
   return a:idx >= 0 && a:idx <= self.end
+endfunction
+"}}}
+function! s:query(key_map) abort "{{{
+  let key_map = insert(a:key_map, {'input': "\<Esc>", 'output': "\<Plug>(swap-mode-Esc)"})   " for safety
+  let clock   = deepcopy(s:clock)
+  let timeoutlen = g:swap#timeoutlen
+
+  let input = ''
+  let last_compl_match = ['', []]
+  while key_map != []
+    let c = getchar(0)
+    if c == 0
+      if clock.started && timeoutlen > 0 && clock.elapsed() > timeoutlen
+        let [input, key_map] = last_compl_match
+        break
+      else
+        sleep 20m
+        continue
+      endif
+    endif
+
+    let c = type(c) == s:type_num ? nr2char(c) : c
+    let input .= c
+
+    " check forward match
+    let n_fwd = len(filter(key_map, 's:is_input_matched(v:val, input, 0)'))
+
+    " check complete match
+    let n_comp = len(filter(copy(key_map), 's:is_input_matched(v:val, input, 1)'))
+    if n_comp
+      if len(key_map) == n_comp
+        break
+      else
+        call clock.stop()
+        call clock.start()
+        let last_compl_match = [input, copy(key_map)]
+      endif
+    else
+      if clock.started && !n_fwd
+        let [input, key_map] = last_compl_match
+        break
+      endif
+    endif
+  endwhile
+  call clock.stop()
+
+  if filter(key_map, 's:is_input_matched(v:val, input, 1)') != []
+    let key_seq = key_map[-1]
+  else
+    let key_seq = {}
+  endif
+  return key_seq
 endfunction
 "}}}
 function! s:is_input_matched(candidate, input, flag) abort "{{{
@@ -1534,7 +1558,7 @@ function! s:interface_key_fix_nr() dict abort "{{{
   if self.phase == 0
     let idx = str2nr(self.order[self.phase]) - 1
     if self.idx.is_valid(idx)
-      call self.set_current(idx, self.buffer.items)
+      call self.set_current(idx)
       call self.goto_phase(1)
       call self.update_highlight()
     endif
@@ -1551,8 +1575,8 @@ endfunction
 function! s:interface_key_move_prev() dict abort  "{{{
   if self.phase == 0 || self.phase == 1
     if self.idx.current > 0
-      let idx = s:move_prev_skipping_blank(self.buffer.items, self.idx.current)
-      call self.set_current(idx, self.buffer.items)
+      let idx = s:move_prev_skipping_blank(self.buffer.items, min([self.idx.current, self.idx.end+1]))
+      call self.set_current(idx)
       call self.update_highlight()
     endif
   endif
@@ -1561,8 +1585,8 @@ endfunction
 function! s:interface_key_move_next() dict abort  "{{{
   if self.phase == 0 || self.phase == 1
     if self.idx.current < self.idx.end
-      let idx = s:move_next_skipping_blank(self.buffer.items, self.idx.current)
-      call self.set_current(idx, self.buffer.items)
+      let idx = s:move_next_skipping_blank(self.buffer.items, max([-1, self.idx.current]))
+      call self.set_current(idx)
       call self.update_highlight()
     endif
   endif
@@ -1570,7 +1594,7 @@ endfunction
 "}}}
 function! s:interface_key_swap_prev() dict abort  "{{{
   if self.phase == 0 || self.phase == 1
-    if self.idx.current > 0
+    if self.idx.current > 0 && self.idx.current <= self.idx.end
       let self.order = [self.idx.current+1, self.idx.current]
       call self.goto_phase(2)
     endif
@@ -1579,7 +1603,7 @@ endfunction
 "}}}
 function! s:interface_key_swap_next() dict abort  "{{{
   if self.phase == 0 || self.phase == 1
-    if self.idx.current < self.idx.end
+    if self.idx.current >= 0 && self.idx.current < self.idx.end
       let self.order = [self.idx.current+1, self.idx.current+2]
       call self.goto_phase(2)
     endif
@@ -1739,10 +1763,10 @@ let s:interface_prototype = {
       \   'history': [],
       \   'undolevel': 0,
       \   'start': function('s:interface_start'),
-      \   'query': function('s:interface_query'),
       \   'echo' : function('s:interface_echo'),
       \   'echon': function('s:interface_echon'),
       \   'normal': function('s:interface_normal'),
+      \   'revise_cursor_pos': function('s:interface_revise_cursor_pos'),
       \   'add_history' : function('s:interface_add_history'),
       \   'truncate_history': function('s:interface_truncate_history'),
       \   'set_current': function('s:interface_set_current'),
