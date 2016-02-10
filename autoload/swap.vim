@@ -1177,17 +1177,18 @@ let s:clock = {
 function! s:interface_start() dict abort "{{{
   let self.phase = 0
   let self.order = ['', '']
-  let self.idx.current = self.buffer.symbols['#']
-  let self.idx.end = len(self.buffer.items)
+  let self.idx.current = -1
   let self.idx.last_current = -1
   let self.idx.selected = -1
+  let self.idx.end = len(self.buffer.items) - 1
 
-  " skip empty items
-  if self.buffer.items[self.idx.current-1].string ==# ''
-    let self.idx.current = s:move_next_skipping_blank(self.buffer, self.idx.current, self.idx.end)
+  let idx = self.buffer.symbols['#'] - 1
+  if self.buffer.items[idx].string ==# ''
+    let idx = s:move_next_skipping_blank(self.buffer.items, idx)
   endif
+
+  call self.set_current(idx, self.buffer.items)
   call self.highlight()
-  call self.set_current(self.idx.current, self.buffer.items)
   call self.echo()
   redraw
   while self.phase < 2
@@ -1336,7 +1337,7 @@ function! s:interface_truncate_history() dict abort  "{{{
 endfunction
 "}}}
 function! s:interface_set_current(idx, items) dict abort "{{{
-  call a:items[a:idx-1].cursor()
+  call a:items[a:idx].cursor()
 
   " update side-scrolling
   " FIXME: Any standard way?
@@ -1355,12 +1356,12 @@ function! s:interface_highlight() dict abort "{{{
 
   let idx = 0
   for item in self.buffer.items
-    let idx += 1
     if idx == self.idx.current
       call item.highlight('SwapCurrentItem')
     else
       call item.highlight('SwapItem')
     endif
+    let idx += 1
   endfor
 endfunction
 "}}}
@@ -1374,14 +1375,18 @@ function! s:interface_update_highlight() dict abort  "{{{
   endif
 
   let items = self.buffer.items
-  call items[self.idx.last_current-1].clear_highlight()
-  call items[self.idx.last_current-1].highlight('SwapItem')
-  if self.idx.selected > 0 && self.idx.selected <= len(items)
-    call items[self.idx.selected-1].clear_highlight()
-    call items[self.idx.selected-1].highlight('SwapSelectedItem')
+  if self.idx.is_valid(self.idx.last_current)
+    call items[self.idx.last_current].clear_highlight()
+    call items[self.idx.last_current].highlight('SwapItem')
   endif
-  call items[self.idx.current-1].clear_highlight()
-  call items[self.idx.current-1].highlight('SwapCurrentItem')
+  if self.idx.is_valid(self.idx.selected)
+    call items[self.idx.selected].clear_highlight()
+    call items[self.idx.selected].highlight('SwapSelectedItem')
+  endif
+  if self.idx.is_valid(self.idx.current)
+    call items[self.idx.current].clear_highlight()
+    call items[self.idx.current].highlight('SwapCurrentItem')
+  endif
 endfunction
 "}}}
 function! s:interface_goto_phase(phase) dict abort "{{{
@@ -1389,7 +1394,7 @@ function! s:interface_goto_phase(phase) dict abort "{{{
   "       without operating side-processes.
   let self.phase = abs(a:phase)
   if a:phase == 1
-    let self.idx.selected = str2nr(self.order[0])
+    let self.idx.selected = str2nr(self.order[0]) - 1
     call self.echo()
   elseif a:phase == 2
     call self.add_history()
@@ -1398,6 +1403,10 @@ endfunction
 "}}}
 function! s:interface_exit() dict abort  "{{{
   call self.goto_phase(-2)
+endfunction
+"}}}
+function! s:interface_idx_is_valid(idx) dict abort  "{{{
+  return a:idx >= 0 && a:idx <= self.end
 endfunction
 "}}}
 function! s:is_input_matched(candidate, input, flag) abort "{{{
@@ -1418,34 +1427,29 @@ function! s:is_input_matched(candidate, input, flag) abort "{{{
   endif
 endfunction
 "}}}
-function! s:move_prev_skipping_blank(buffer, current) abort  "{{{
+function! s:move_prev_skipping_blank(items, current) abort  "{{{
   " skip empty items
   let idx = a:current - 1
-  while idx > 1
-    if a:buffer.items[idx-1].string !=# ''
+  while idx >= 0
+    if a:items[idx].string !=# ''
       break
     endif
     let idx -= 1
   endwhile
-  if a:buffer.items[idx-1].string ==# ''
-    let idx = a:current
-  endif
-  return idx
+  return idx < 0 ? a:current : idx
 endfunction
 "}}}
-function! s:move_next_skipping_blank(buffer, current, end) abort  "{{{
+function! s:move_next_skipping_blank(items, current) abort  "{{{
   " skip empty items
   let idx = a:current + 1
-  while idx < a:end
-    if a:buffer.items[idx-1].string !=# ''
+  let end = len(a:items) - 1
+  while idx <= end
+    if a:items[idx].string !=# ''
       break
     endif
     let idx += 1
   endwhile
-  if a:buffer.items[idx-1].string ==# ''
-    let idx = a:current
-  endif
-  return idx
+  return idx > end ? a:current : idx
 endfunction
 "}}}
 
@@ -1518,25 +1522,25 @@ endfunction
 "}}}
 function! s:interface_key_current() dict abort "{{{
   if self.phase == 0
-    let self.order[0] = string(self.idx.current)
+    let self.order[0] = string(self.idx.current) + 1
     call self.goto_phase(1)
   elseif self.phase == 1
-    let self.order[1] = string(self.idx.current)
+    let self.order[1] = string(self.idx.current) + 1
     call self.goto_phase(2)
   endif
 endfunction
 "}}}
 function! s:interface_key_fix_nr() dict abort "{{{
   if self.phase == 0
-    let idx = str2nr(self.order[self.phase])
-    if idx > 0 && idx <= len(self.buffer.items)
+    let idx = str2nr(self.order[self.phase]) - 1
+    if self.idx.is_valid(idx)
       call self.set_current(idx, self.buffer.items)
       call self.goto_phase(1)
       call self.update_highlight()
     endif
   elseif self.phase == 1
-    let idx = str2nr(self.order[self.phase])
-    if idx > 0 && idx <= len(self.buffer.items)
+    let idx = str2nr(self.order[self.phase]) - 1
+    if self.idx.is_valid(idx)
       call self.goto_phase(2)
     else
       call self.echo()
@@ -1546,8 +1550,8 @@ endfunction
 "}}}
 function! s:interface_key_move_prev() dict abort  "{{{
   if self.phase == 0 || self.phase == 1
-    if self.idx.current > 1
-      let idx = s:move_prev_skipping_blank(self.buffer, self.idx.current)
+    if self.idx.current > 0
+      let idx = s:move_prev_skipping_blank(self.buffer.items, self.idx.current)
       call self.set_current(idx, self.buffer.items)
       call self.update_highlight()
     endif
@@ -1557,7 +1561,7 @@ endfunction
 function! s:interface_key_move_next() dict abort  "{{{
   if self.phase == 0 || self.phase == 1
     if self.idx.current < self.idx.end
-      let idx = s:move_next_skipping_blank(self.buffer, self.idx.current, self.idx.end)
+      let idx = s:move_next_skipping_blank(self.buffer.items, self.idx.current)
       call self.set_current(idx, self.buffer.items)
       call self.update_highlight()
     endif
@@ -1566,8 +1570,8 @@ endfunction
 "}}}
 function! s:interface_key_swap_prev() dict abort  "{{{
   if self.phase == 0 || self.phase == 1
-    if self.idx.current > 1
-      let self.order = [self.idx.current, self.idx.current-1]
+    if self.idx.current > 0
+      let self.order = [self.idx.current+1, self.idx.current]
       call self.goto_phase(2)
     endif
   endif
@@ -1576,7 +1580,7 @@ endfunction
 function! s:interface_key_swap_next() dict abort  "{{{
   if self.phase == 0 || self.phase == 1
     if self.idx.current < self.idx.end
-      let self.order = [self.idx.current, self.idx.current+1]
+      let self.order = [self.idx.current+1, self.idx.current+2]
       call self.goto_phase(2)
     endif
   endif
@@ -1728,6 +1732,7 @@ let s:interface_prototype = {
       \     'end'    : -1,
       \     'last_current': -1,
       \     'selected': -1,
+      \     'is_valid': function('s:interface_idx_is_valid'),
       \   },
       \   'buffer' : {},
       \   'escaped': 0,
@@ -1942,24 +1947,25 @@ function! s:swap_swap(order) dict abort "{{{
   " evaluate after substituting symbols
   call map(order, 'type(v:val) == s:type_char ? eval(v:val) : v:val')
 
-  let n = len(self.buffer.items)
-  if order[0] < 1 || order[0] > n || order[1] < 1 || order[1] > n
+  let n = len(self.buffer.items) - 1
+  let idx = map(copy(order), 'type(v:val) == s:type_num ? v:val - 1 : -1')
+  if idx[0] < 0 || idx[0] > n || idx[1] < 0 || idx[1] > n
     " the index is out of range
     return
   endif
 
   " swap items in buffer
-  let item0 = s:extractall(self.buffer.items[order[0]-1])
-  let item1 = s:extractall(self.buffer.items[order[1]-1])
-  call extend(self.buffer.items[order[0]-1], item1, 'force')
-  call extend(self.buffer.items[order[1]-1], item0, 'force')
+  let item0 = s:extractall(self.buffer.items[idx[0]])
+  let item1 = s:extractall(self.buffer.items[idx[1]])
+  call extend(self.buffer.items[idx[0]], item1, 'force')
+  call extend(self.buffer.items[idx[1]], item0, 'force')
   let motionwise = self.motionwise ==# 'V'      ? 'line'
                \ : self.motionwise ==# "\<C-v>" ? 'block'
                \ : 'char'
   call s:address_{motionwise}wise(self.buffer.all, self.region.head)
 
   " reflect to the buffer
-  call self.reflect(order[1])
+  call self.reflect(idx[1])
 endfunction
 "}}}
 function! s:swap_reflect(cursor_idx) dict abort "{{{
@@ -1973,8 +1979,8 @@ function! s:swap_reflect(cursor_idx) dict abort "{{{
 
   " move cursor
   call winrestview(self.view)
-  call self.buffer.items[a:cursor_idx-1].cursor()
-  let self.buffer.symbols['#'] = a:cursor_idx
+  call self.buffer.items[a:cursor_idx].cursor()
+  let self.buffer.symbols['#'] = a:cursor_idx + 1
 endfunction
 "}}}
 function! s:buffer_clear_highlight(...) dict abort  "{{{
