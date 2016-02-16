@@ -1394,6 +1394,15 @@ function! s:interface_exit() dict abort  "{{{
   call self.goto_phase(-2)
 endfunction
 "}}}
+function! s:interface_undo_order() dict abort  "{{{
+  let prev_order = self.history[-1*(self.undolevel+1)]
+  return [prev_order[1], prev_order[0]]
+endfunction
+"}}}
+function! s:interface_redo_order() dict abort  "{{{
+  return copy(self.history[-1*self.undolevel])
+endfunction
+"}}}
 function! s:interface_idx_is_valid(idx) dict abort  "{{{
   return a:idx >= 0 && a:idx <= self.end
 endfunction
@@ -1542,8 +1551,7 @@ endfunction
 function! s:interface_key_undo() dict abort "{{{
   if self.phase == 0 || self.phase == 1
     if len(self.history) > self.undolevel
-      let prev_order = self.history[-1*(self.undolevel+1)]
-      let self.order = [prev_order[1], prev_order[0]]
+      let self.order = self.undo_order()
       let self.undolevel += 1
       call self.exit()
     endif
@@ -1553,8 +1561,7 @@ endfunction
 function! s:interface_key_redo() dict abort "{{{
   if self.phase == 0 || self.phase == 1
     if self.undolevel
-      let next_order = self.history[-1*self.undolevel]
-      let self.order = next_order
+      let self.order = self.redo_order()
       let self.undolevel -= 1
       call self.exit()
     endif
@@ -1792,6 +1799,8 @@ let s:interface_prototype = {
       \   'update_highlight': function('s:interface_update_highlight'),
       \   'goto_phase': function('s:interface_goto_phase'),
       \   'exit': function('s:interface_exit'),
+      \   'undo_order': function('s:interface_undo_order'),
+      \   'redo_order': function('s:interface_redo_order'),
       \   'key_nr': function('s:interface_key_nr'),
       \   'key_CR': function('s:interface_key_CR'),
       \   'key_BS': function('s:interface_key_BS'),
