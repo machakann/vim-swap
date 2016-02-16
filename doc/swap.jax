@@ -1,5 +1,5 @@
 *swap.txt*	いれかえたりする。
-						Last change:10-Feb-2016.
+						Last change:16-Feb-2016.
 
 書いた人   : machakann <mckn{at}outlook.jp>
 ライセンス : NYSL ライセンス
@@ -266,6 +266,7 @@ NOTE: もし swap mode 内でバッファが変更された場合、必ずしも
 ==============================================================================
 CUSTOMIZATION				*swap-customization*
 
+					*g:swap#rules*
 ユーザーは任意の設定を追加することができます。設定は "rule" と呼ばれ、その実体
 は下記の条件を満たす |Dictionary| 変数です。新しいルールの定義は簡単ではないか
 もしれません、その場合は気軽に <https://github.com/machakann/vim-swap/issues>
@@ -292,9 +293,9 @@ CUSTOMIZATION				*swap-customization*
 でも一つは要素をもつリストを値に持ち、各要素はテキストを区切る文字列にマッチす
 る正規表現パターンです。この区切り文字以外の部分が入れ替え対象の文字列として認
 識されます。パターン '^' は対象文字列の先頭のみにしかマッチしません。改行を含
-む文字列の場合、行頭にマッチするパターンを使う必要がある場合は |\n| (改行を含
-めたくなければ |\n|\zs|) に続けてパターンを記述してください。例えば、行区切り
-としたい場合は "delimiter" は '\n'です。
+む文字列の場合、行頭にマッチするパターンを使う必要がある場合は '\n' |/\n|(改行
+を含めたくなければ '\n\zs' |/\zs|) に続けてパターンを記述してください。
+例えば、行区切りとしたい場合は "delimiter" は '\n'です。
 
 最低限必要なキーは以上の二つですが、モードやファイルタイプに固有な rule を作り
 たい場合は "mode" キー、あるいは "filetype" キーが使えます。 "mode" キーは文字
@@ -417,8 +418,8 @@ SwapCurrentItem				*hl-SwapCurrentItem*
 
 SwapItem				*hl-SwapItem*
 	Swap mode で入れ替え対象の要素のハイライトを定義するためのハイライトグ
-	ループです。デフォルトでは Underlined |hl-Underlined| にリンクされてい
-	ます。
+	ループです。デフォルトでは Underlined (参考: |group-name|) にリンクさ
+	れています。
 >
 	highlight link SwapItem Underlined
 <

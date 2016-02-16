@@ -1,5 +1,5 @@
 *swap.txt*	Reorder delimited items.
-						Last change:10-Feb-2016.
+						Last change:16-Feb-2016.
 
 Author  : machakann <mckn{at}outlook.jp>
 License : NYSL license
@@ -86,7 +86,7 @@ then it would repeat swapping 1st and 2nd items regardless of cursor position.
 ==============================================================================
 KEYMAPPINGS				*swap-keymappings*
 
-This plugin defines three keymappings, |<Plug>(swap-prev)|, |<Plug>(swap-next)|
+This plugin defines three keymappings |<Plug>(swap-prev)|, |<Plug>(swap-next)|
 and |<Plug>(swap-interactive)|. These keymappings are mapped to `g<`, `g>` and
 `gs` respectively in default. If you do not need default keymappings, define a
 variable named g:swap_no_default_key_mappings in your vimrc.
@@ -264,7 +264,7 @@ NOTE if the buffer was changed, swapped result might not be as you expected.
 ==============================================================================
 CUSTOMIZATION				*swap-customization*
 
-					*swap#rules*
+					*g:swap#rules*
 User can add settings to treat other kinds of delimited strings. Each setting
 is called "rule" and it is a |Dictionary| which fills up the conditions
 described below. It might not be easy to define new rules, thus feel free to
@@ -287,13 +287,13 @@ is omitted, then it would not consider nesting. For example, a string
 surrounded by round parenthesis is ['(', ')', 1].
 
 Second, all the rules should have "delimiter" key to delimit a text. The key
-has a |list| value which has not less than one |strings| elements. The strings
+has a |list| value which has not less than one |string| elements. The strings
 are regular expression patterns to match delimiters in a string. The text
 other than the delimiters in a string would be the swapped item. The pattern
 '^' would be only matched to the head of the target string. If user wants to
-use a pattern related to a new line, then the pattern |\n| would be helpful.
-If user does not want to include a breaking, use |\n|\zs|. For example, to
-delimit every line set "delimiter" value as '\n'.
+use a pattern related to a new line, then the pattern '\n' |/\n|  would be
+helpful.  If user does not want to include a breaking, use '\n\zs' |/\zs|. For
+example, to delimit every line set "delimiter" value as '\n'.
 
 The essential keys are only two listed in above, but if user wants to make a
 rule for a specific mode or specific filetypes, then use "mode" key and
@@ -415,7 +415,7 @@ SwapCurrentItem				*hl-SwapCurrentItem*
 
 SwapItem				*hl-SwapItem*
 	The highlight group is to define the highlight for items. It is linked
-	to a default highlight group Underlined |hl-Underlined| in default.
+	to a default highlight group Underlined (see |group-name|) in default.
 >
 	highlight link SwapItem Underlined
 <
