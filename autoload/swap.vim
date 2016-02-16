@@ -27,7 +27,7 @@ let g:swap#default_rules = [
       \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\n'], 'filetype': ['c'], 'braket': [['(', ')'], ['[', ']'], ['{', '}'], ['/*', '*/']], 'quotes': [['"', '"'], ["'", "'"]], 'immutable': ['^\n', '\n\zs\s\+']},
       \ ]
 
-let s:type_char   = type('')
+let s:type_str    = type('')
 let s:type_num    = type(0)
 let s:type_list   = type([])
 let s:null_coord  = [0, 0]
@@ -984,7 +984,7 @@ endfunction
 "}}}
 function! s:substitute_symbol(order, symbol, symbol_idx) abort "{{{
   let symbol = s:escape(a:symbol)
-  return map(a:order, 'type(v:val) == s:type_char ? substitute(v:val, symbol, a:symbol_idx, "") : v:val')
+  return map(a:order, 'type(v:val) == s:type_str ? substitute(v:val, symbol, a:symbol_idx, "") : v:val')
 endfunction
 "}}}
 function! s:extractall(dict) abort "{{{
@@ -1238,12 +1238,22 @@ function! s:interface_echo() dict abort "{{{
       let message += [[', ', 'NONE']]
     endfor
     if self.phase == 0
-      if message != []
-        call remove(message, -1)
+      if self.order[0] !=# ''
+        let message += [[self.order[0], self.idx.is_valid(self.order[0]) ? g:swap#hl_itemnr : 'ErrorMsg']]
+      else
+        if message != []
+          call remove(message, -1)
+        endif
       endif
     elseif self.phase == 1
-      let message += [[self.order[0], g:swap#hl_itemnr]]
-      let message += [[g:swap#arrow, g:swap#hl_arrow]]
+      if self.order[1] !=# ''
+        let message += [[self.order[0], g:swap#hl_itemnr]]
+        let message += [[g:swap#arrow, g:swap#hl_arrow]]
+        let message += [[self.order[1], self.idx.is_valid(self.order[1]) ? g:swap#hl_itemnr : 'ErrorMsg']]
+      else
+        let message += [[self.order[0], g:swap#hl_itemnr]]
+        let message += [[g:swap#arrow, g:swap#hl_arrow]]
+      endif
     endif
 
     if message != []
@@ -1404,7 +1414,13 @@ function! s:interface_redo_order() dict abort  "{{{
 endfunction
 "}}}
 function! s:interface_idx_is_valid(idx) dict abort  "{{{
-  return a:idx >= 0 && a:idx <= self.end
+  if type(a:idx) == s:type_num
+    return a:idx >= 0 && a:idx <= self.end
+  elseif type(a:idx) == s:type_str
+    return str2nr(a:idx) >= 0 && str2nr(a:idx) <= self.end
+  else
+    return 0
+  endif
 endfunction
 "}}}
 function! s:query(key_map) abort "{{{
@@ -1517,7 +1533,7 @@ endfunction
 function! s:interface_key_nr(nr) dict abort  "{{{
   if self.phase == 0 || self.phase == 1
     let self.order[self.phase] .= a:nr
-    call self.echon(a:nr, g:swap#hl_itemnr)
+    call self.echo()
   endif
 endfunction
 "}}}
@@ -1995,7 +2011,7 @@ function! s:swap_swap(order) dict abort "{{{
   endfor
 
   " evaluate after substituting symbols
-  call map(order, 'type(v:val) == s:type_char ? eval(v:val) : v:val')
+  call map(order, 'type(v:val) == s:type_str ? eval(v:val) : v:val')
 
   let n = len(self.buffer.items) - 1
   let idx = map(copy(order), 'type(v:val) == s:type_num ? v:val - 1 : -1')
