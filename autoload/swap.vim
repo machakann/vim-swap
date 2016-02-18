@@ -12,18 +12,18 @@ let g:swap#hl_itemnr   = 'Special'
 let g:swap#hl_arrow    = 'NONE'
 let g:swap#arrow       = ' <=> '
 let g:swap#default_rules = [
-      \   {'mode': 'x', 'delimiter': ['\s*,\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'apostrophes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']},
+      \   {'mode': 'x', 'delimiter': ['\s*,\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'solid_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']},
       \   {'mode': 'n', 'body': '\%(\h\w*,\s*\)\+\%(\h\w*\)\?', 'delimiter': ['\s*,\s*'], 'priority': -10},
-      \   {'mode': 'n', 'surrounds': ['\[', '\]', 1], 'delimiter': ['\s*,\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'apostrophes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s\+']},
-      \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\s*,\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'apostrophes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s\+']},
-      \   {'mode': 'n', 'surrounds': ['(', ')', 1],   'delimiter': ['\s*,\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'apostrophes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s\+']},
-      \   {'mode': 'n', 'surrounds': ['\[', '\]', 1], 'delimiter': ['\s*,\s*'], 'filetype': ['vim'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'apostrophes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s*\\\s*']},
-      \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\s*,\s*'], 'filetype': ['vim'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'apostrophes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s*\\\s*']},
-      \   {'mode': 'n', 'surrounds': ['(', ')', 1],   'delimiter': ['\s*,\s*'], 'filetype': ['vim'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'apostrophes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s*\\\s*']},
-      \   {'mode': 'n', 'surrounds': ['(', ')', 1],   'delimiter': ['\s*,\s*'], 'filetype': ['fortran'], 'braket': [['(', ')'], ['[', ']']], 'quotes': [['"', '"']], 'apostrophes': [["'", "'"]], 'immutable': ['\s*&\s*\%(!.\{-}\)\?\n\s*\%(&\s*\)\?']},
-      \   {'mode': 'n', 'surrounds': ['\[', '\]', 1], 'delimiter': ['\s*[,;]\?\s*'], 'filetype': ['matlab'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'apostrophes': [["'", "'"]], 'immutable': ['\s*\.\{3}\s*\n\s*']},
-      \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\s*[,;]\?\s*'], 'filetype': ['matlab'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'apostrophes': [["'", "'"]], 'immutable': ['\s*\.\{3}\s*\n\s*']},
-      \   {'mode': 'n', 'surrounds': ['(', ')', 1],   'delimiter': ['\s*,\s*'],      'filetype': ['matlab'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'apostrophes': [["'", "'"]], 'immutable': ['\s*\.\{3}\s*\n\s*']},
+      \   {'mode': 'n', 'surrounds': ['\[', '\]', 1], 'delimiter': ['\s*,\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'solid_quotes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s\+']},
+      \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\s*,\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'solid_quotes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s\+']},
+      \   {'mode': 'n', 'surrounds': ['(', ')', 1],   'delimiter': ['\s*,\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'solid_quotes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s\+']},
+      \   {'mode': 'n', 'surrounds': ['\[', '\]', 1], 'delimiter': ['\s*,\s*'], 'filetype': ['vim'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'solid_quotes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s*\\\s*']},
+      \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\s*,\s*'], 'filetype': ['vim'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'solid_quotes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s*\\\s*']},
+      \   {'mode': 'n', 'surrounds': ['(', ')', 1],   'delimiter': ['\s*,\s*'], 'filetype': ['vim'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'solid_quotes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s*\\\s*']},
+      \   {'mode': 'n', 'surrounds': ['(', ')', 1],   'delimiter': ['\s*,\s*'], 'filetype': ['fortran'], 'braket': [['(', ')'], ['[', ']']], 'quotes': [['"', '"']], 'solid_quotes': [["'", "'"]], 'immutable': ['\s*&\s*\%(!.\{-}\)\?\n\s*\%(&\s*\)\?']},
+      \   {'mode': 'n', 'surrounds': ['\[', '\]', 1], 'delimiter': ['\s*[,;]\?\s*'], 'filetype': ['matlab'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'solid_quotes': [["'", "'"]], 'immutable': ['\s*\.\{3}\s*\n\s*']},
+      \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\s*[,;]\?\s*'], 'filetype': ['matlab'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'solid_quotes': [["'", "'"]], 'immutable': ['\s*\.\{3}\s*\n\s*']},
+      \   {'mode': 'n', 'surrounds': ['(', ')', 1],   'delimiter': ['\s*,\s*'],      'filetype': ['matlab'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'solid_quotes': [["'", "'"]], 'immutable': ['\s*\.\{3}\s*\n\s*']},
       \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\n'], 'filetype': ['c'], 'braket': [['(', ')'], ['[', ']'], ['{', '}'], ['/*', '*/']], 'quotes': [['"', '"'], ["'", "'"]], 'immutable': ['^\n', '\n\zs\s\+']},
       \ ]
 
@@ -607,12 +607,12 @@ function! s:parse_charwise(text, rule) abort  "{{{
   let buffer = []
 
   let targets = {}
-  let targets.delimiter   = map(copy(get(a:rule, 'delimiter', [])), '[-1, v:val, 0, "delimiter"]')
-  let targets.immutable   = map(copy(get(a:rule, 'immutable', [])), '[-1, v:val, 0, "immutable"]')
-  let targets.braket      = map(copy(get(a:rule, 'braket', [])), '[-1, v:val, 0, "braket"]')
-  let targets.quotes      = map(copy(get(a:rule, 'quotes', [])), '[-1, v:val, 0, "quotes"]')
-  let targets.apostrophes = map(copy(get(a:rule, 'apostrophes', [])), '[-1, v:val, 0, "apostrophes"]')
-  let targets.all = targets.delimiter + targets.immutable + targets.braket + targets.quotes + targets.apostrophes
+  let targets.delimiter    = map(copy(get(a:rule, 'delimiter', [])), '[-1, v:val, 0, "delimiter"]')
+  let targets.immutable    = map(copy(get(a:rule, 'immutable', [])), '[-1, v:val, 0, "immutable"]')
+  let targets.braket       = map(copy(get(a:rule, 'braket', [])), '[-1, v:val, 0, "braket"]')
+  let targets.quotes       = map(copy(get(a:rule, 'quotes', [])), '[-1, v:val, 0, "quotes"]')
+  let targets.solid_quotes = map(copy(get(a:rule, 'solid_quotes', [])), '[-1, v:val, 0, "solid_quotes"]')
+  let targets.all = targets.delimiter + targets.immutable + targets.braket + targets.quotes + targets.solid_quotes
 
   while idx < end
     unlet! pattern  " ugly...
@@ -661,9 +661,9 @@ function! s:parse_charwise(text, rule) abort  "{{{
           call s:add_buffer_text(buffer, 'item', a:text, head, idx)
           break
         endif
-      elseif kind ==# 'apostrophes'
-        " an apostrophe is found
-        let idx = s:shift_to_apostrophe_end(a:text, pattern, idx)
+      elseif kind ==# 'solid_quotes'
+        " an solid quote (non-escaped quote) is found
+        let idx = s:shift_to_solidquote_end(a:text, pattern, idx)
         if idx < 0 || idx >= end
           call s:add_buffer_text(buffer, 'item', a:text, head, idx)
           break
@@ -828,13 +828,13 @@ function! s:shift_to_quote_end(text, pair, idx) abort  "{{{
   return idx
 endfunction
 "}}}
-function! s:shift_to_apostrophe_end(text, pair, idx) abort  "{{{
+function! s:shift_to_solidquote_end(text, pair, idx) abort  "{{{
   let idx = s:stridxend(a:text, a:pair[0], a:idx)
-  let apostrophe = s:stridxend(a:text, a:pair[1], idx)
-  if apostrophe == idx
-    let apostrophe = s:stridxend(a:text, a:pair[1], idx+1)
+  let solid_quote = s:stridxend(a:text, a:pair[1], idx)
+  if solid_quote == idx
+    let solid_quote = s:stridxend(a:text, a:pair[1], idx+1)
   endif
-  return apostrophe
+  return solid_quote
 endfunction
 "}}}
 function! s:shift_to_immutable_end(text, immutable, idx) abort  "{{{
