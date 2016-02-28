@@ -1,5 +1,5 @@
 *swap.txt*	Reorder delimited items.
-						Last change:16-Feb-2016.
+						Last change:28-Feb-2016.
 
 Author  : machakann <mckn{at}outlook.jp>
 License : NYSL license
@@ -303,10 +303,10 @@ it is valid in both |Normal| and |Visual| mode. "filetype" key has a list as
 its value, elements of the list are valid filetype names in |string|.
 
 In addition, user can use several supplementary keys.
-"braket", "quotes" and "apostrophe" keys can tell possible groupings of items.
-These are !not! regular expressions. It is searched as a simple string.
+"braket", "quotes" and "solid_quotes" keys can tell possible groupings of
+items. These are !not! regular expressions. It is searched as a simple string.
 "braket" makes nest but the others do not. 'quoteescape' is applied for
-"quotes" but is not for "apostrophe". See below examples.
+"quotes" but is not for "solid_quotes". See below examples.
 
 "immutable" key is to define neither a swapped string nor a delimiter string.
 This is, indeed, similar to "delimiter" which can separate swapped items.
@@ -350,8 +350,9 @@ String surrounded by [], delimited by : or ; with some groupings by quotes.
 	  \ {
 	  \   'surrounds': ['\[', '\]', 1],
 	  \   'delimiter': [':', ';'],
-	  \   'quotes': [['"', '"'], ["'", "'"]],
 	  \   'braket': [['(', ')'], ['[', ']']],
+	  \   'quotes': [['"', '"']],
+	  \   'solid_quotes': [["'", "'"]],
 	  \ }]
 <
 
@@ -364,7 +365,9 @@ A rule specific for |Visual| mode. Not necessary to have "body" and
 	  \   'mode': 'x',
 	  \   'delimiter': ['\s*,\s*'],
 	  \   'braket': [['(', ')'], ['[', ']'], ['{', '}']],
-	  \   'quotes': [['"', '"'], ["'", "'"]],
+	  \   'quotes': [['"', '"']],
+	  \   'solid_quotes': [["'", "'"]],
+	  \   'immutable': ['\%(^\s\|\n\)\s*'],
 	  \ }]
 <
 This rule is included in default rules.
@@ -384,7 +387,8 @@ script.
 	  \   'surrounds': ['\[', '\]', 1],
 	  \   'delimiter': ['\s*,\s*'],
 	  \   'braket': [['(', ')'], ['[', ']'], ['{', '}']],
-	  \   'quotes': [['"', '"'], ["'", "'"]],
+	  \   'quotes': [['"', '"']],
+	  \   'solid_quotes': [["'", "'"]],
 	  \   'immutable': ['\n\s*\%(\\\s*\)'],
 	  \   'filetype': ['vim']
 	  \ }]

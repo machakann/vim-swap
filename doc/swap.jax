@@ -1,5 +1,5 @@
 *swap.txt*	いれかえたりする。
-						Last change:16-Feb-2016.
+						Last change:28-Feb-2016.
 
 書いた人   : machakann <mckn{at}outlook.jp>
 ライセンス : NYSL ライセンス
@@ -306,11 +306,11 @@ CUSTOMIZATION				*swap-customization*
 ります。
 
 さらにいくつかの補助的なキーがあります。
-"braket" キー、 "quotes" キー及び "apostrophes" は括弧やクオーテーションによる
-グループ化を考慮するために使います。括弧やクオーテーションの指定は正規表現では
-ありません(!)。文字列として検索されます。違いとしては "braket" はネスト構造を
-作りますが、他二つはネストを考慮しません。また、 "quotes" には 'quoteescape'
-が適用されますが、 "apostrophes" には適用されません。下の例を参考にしてくださ
+"braket" キー、 "quotes" キー及び "solid_quotes" は括弧やクオーテーションによ
+るグループ化を考慮するために使います。括弧やクオーテーションの指定は正規表現で
+はありません(!)。文字列として検索されます。違いとしては "braket" はネスト構造
+を作りますが、他二つはネストを考慮しません。また、 "quotes" には 'quoteescape'
+が適用されますが、 "solid_quotes" には適用されません。下の例を参考にしてくださ
 い。
 
 "immutable" キーは入れ替え文字列でも区切り文字列でもない文字列の指定に使いま
@@ -356,7 +356,7 @@ Example 2~
 	  \   'delimiter': [':', ';'],
 	  \   'braket': [['(', ')'], ['[', ']']],
 	  \   'quotes': [['"', '"']],
-	  \   'apostrophes': [["'", "'"]],
+	  \   'solid_quotes': [["'", "'"]],
 	  \ }]
 <
 
@@ -369,7 +369,7 @@ Example 3~
 	  \   'delimiter': ['\s*,\s*'],
 	  \   'braket': [['(', ')'], ['[', ']'], ['{', '}']],
 	  \   'quotes': [['"', '"']],
-	  \   'apostrophes': [["'", "'"]],
+	  \   'solid_quotes': [["'", "'"]],
 	  \   'immutable': ['\%(^\s\|\n\)\s*'],
 	  \ }]
 <
@@ -390,13 +390,14 @@ Example 4~
 	  \   'delimiter': ['\s*,\s*'],
 	  \   'braket': [['(', ')'], ['[', ']'], ['{', '}']],
 	  \   'quotes': [['"', '"']],
-	  \   'apostrophes': [["'", "'"]],
+	  \   'solid_quotes': [["'", "'"]],
 	  \   'immutable': ['\%(^\|\n\)\s*\\\s*']
 	  \   'filetype': ['vim']
 	  \ }]
 <
 なお、この rule はデフォルトルールに含まれています。
 
+					*g:swap#default_rules*
 デフォルトの rule は g:swap#default_rules に格納されています。
 
 ==============================================================================
