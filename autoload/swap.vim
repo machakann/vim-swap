@@ -1434,7 +1434,7 @@ function! s:query(key_map) abort "{{{
   let last_compl_match = ['', []]
   while key_map != []
     let c = getchar(0)
-    if c == 0
+    if empty(c)
       if clock.started && timeoutlen > 0 && clock.elapsed() > timeoutlen
         let [input, key_map] = last_compl_match
         break
