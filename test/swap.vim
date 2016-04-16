@@ -17,13 +17,13 @@ endfunction
 
 " unit tests
 function! s:suite.shift_to_something_start() abort  "{{{
-  let rule = {'surrounds': ['(', ')', 1], 'delimiter': [',\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'solid_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']}
+  let rule = {'surrounds': ['(', ')', 1], 'delimiter': [',\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']}
   let targets = []
   let targets += map(copy(get(rule, 'delimiter', [])), '[-1, v:val, 0, "delimiter"]')
   let targets += map(copy(get(rule, 'immutable', [])), '[-1, v:val, 0, "immutable"]')
   let targets += map(copy(get(rule, 'braket', [])), '[-1, v:val, 0, "braket"]')
   let targets += map(copy(get(rule, 'quotes', [])), '[-1, v:val, 0, "quotes"]')
-  let targets += map(copy(get(rule, 'solid_quotes', [])), '[-1, v:val, 0, "solid_quotes"]')
+  let targets += map(copy(get(rule, 'literal_quotes', [])), '[-1, v:val, 0, "literal_quotes"]')
 
   let [idx, pattern, occurence, kind] = s:swap.shift_to_something_start('foo"bar"', deepcopy(targets), 0)
   call g:assert.equals(idx, 3)
@@ -69,7 +69,7 @@ function! s:suite.shift_to_something_start() abort  "{{{
 endfunction
 "}}}
 function! s:suite.shift_to_braket_end() abort  "{{{
-  let rule = {'surrounds': ['(', ')', 1], 'delimiter': [',\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'solid_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']}
+  let rule = {'surrounds': ['(', ')', 1], 'delimiter': [',\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']}
   let quotes = map(copy(get(rule, 'quotes', [])), '[-1, v:val, 0, "quotes"]')
 
   let idx = s:swap.shift_to_braket_end('(foo)', ['(', ')'], deepcopy(quotes), 0)
@@ -189,7 +189,7 @@ function! s:suite.shift_to_solidquote_end() abort "{{{
 endfunction
 "}}}
 function! s:suite.parse_charwise() abort  "{{{
-  let rule = {'surrounds': ['(', ')', 1], 'delimiter': [',\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'solid_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']}
+  let rule = {'surrounds': ['(', ')', 1], 'delimiter': [',\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']}
 
   " #1
   let stuffs = s:swap.parse_charwise('foo, bar', rule)

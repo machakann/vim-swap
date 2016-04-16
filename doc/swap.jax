@@ -1,5 +1,5 @@
 *swap.txt*	いれかえたりする。
-						Last change:28-Feb-2016.
+						Last change:16-Apr-2016.
 
 書いた人   : machakann <mckn{at}outlook.jp>
 ライセンス : NYSL ライセンス
@@ -306,11 +306,11 @@ CUSTOMIZATION				*swap-customization*
 ります。
 
 さらにいくつかの補助的なキーがあります。
-"braket" キー、 "quotes" キー及び "solid_quotes" は括弧やクオーテーションによ
+"braket" キー、 "quotes" キー及び "literal_quotes" は括弧やクオーテーションによ
 るグループ化を考慮するために使います。括弧やクオーテーションの指定は正規表現で
 はありません(!)。文字列として検索されます。違いとしては "braket" はネスト構造
 を作りますが、他二つはネストを考慮しません。また、 "quotes" には 'quoteescape'
-が適用されますが、 "solid_quotes" には適用されません。下の例を参考にしてくださ
+が適用されますが、 "literal_quotes" には適用されません。下の例を参考にしてくださ
 い。
 
 "immutable" キーは入れ替え文字列でも区切り文字列でもない文字列の指定に使いま
@@ -352,11 +352,11 @@ Example 2~
 >
 	let g:swap#rules += [
 	  \ {
-	  \   'surrounds': ['\[', '\]', 1],
-	  \   'delimiter': [':', ';'],
-	  \   'braket': [['(', ')'], ['[', ']']],
-	  \   'quotes': [['"', '"']],
-	  \   'solid_quotes': [["'", "'"]],
+	  \   'surrounds' : ['\[', '\]', 1],
+	  \   'delimiter' : [':', ';'],
+	  \   'braket'    : [['(', ')'], ['[', ']']],
+	  \   'quotes'    : [['"', '"']],
+	  \   'literal_quotes': [["'", "'"]],
 	  \ }]
 <
 
@@ -365,12 +365,12 @@ Example 3~
 >
 	let g:swap#rules += [
 	  \ {
-	  \   'mode': 'x',
-	  \   'delimiter': ['\s*,\s*'],
-	  \   'braket': [['(', ')'], ['[', ']'], ['{', '}']],
-	  \   'quotes': [['"', '"']],
-	  \   'solid_quotes': [["'", "'"]],
-	  \   'immutable': ['\%(^\s\|\n\)\s*'],
+	  \   'mode'      : 'x',
+	  \   'delimiter' : ['\s*,\s*'],
+	  \   'braket'    : [['(', ')'], ['[', ']'], ['{', '}']],
+	  \   'quotes'    : [['"', '"']],
+	  \   'immutable' : ['\%(^\s\|\n\)\s*'],
+	  \   'literal_quotes': [["'", "'"]],
 	  \ }]
 <
 なお、この rule はデフォルトルールに含まれています。
@@ -385,14 +385,14 @@ Example 4~
 >
 	let g:swap#rules += [
 	  \ {
-	  \   'mode': 'n',
-	  \   'surrounds': ['\[', '\]', 1],
-	  \   'delimiter': ['\s*,\s*'],
-	  \   'braket': [['(', ')'], ['[', ']'], ['{', '}']],
-	  \   'quotes': [['"', '"']],
-	  \   'solid_quotes': [["'", "'"]],
-	  \   'immutable': ['\%(^\|\n\)\s*\\\s*']
-	  \   'filetype': ['vim']
+	  \   'mode'      : 'n',
+	  \   'surrounds' : ['\[', '\]', 1],
+	  \   'delimiter' : ['\s*,\s*'],
+	  \   'braket'    : [['(', ')'], ['[', ']'], ['{', '}']],
+	  \   'quotes'    : [['"', '"']],
+	  \   'immutable' : ['\%(^\|\n\)\s*\\\s*']
+	  \   'filetype'  : ['vim']
+	  \   'literal_quotes': [["'", "'"]],
 	  \ }]
 <
 なお、この rule はデフォルトルールに含まれています。
