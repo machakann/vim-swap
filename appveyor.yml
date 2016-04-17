@@ -29,19 +29,27 @@ test_script:
 
     $Env:THEMIS_VIM = $vim_latest + '\vim74-kaoriya-win64\vim.exe'
 
-
     & $Env:THEMIS_VIM --version
 
     .\themis\bin\themis.bat
 
-    .\test\dot-repeat\test_dot.bat
+    if ($?) {
 
+      .\test\dot-repeat\test_dot.bat
 
-    $Env:THEMIS_VIM = $vim_old + '\vim73-kaoriya-win64\vim.exe'
+      if ($?) {
 
+        $Env:THEMIS_VIM = $vim_old + '\vim73-kaoriya-win64\vim.exe'
 
-    & $Env:THEMIS_VIM --version
+        & $Env:THEMIS_VIM --version
 
-    .\themis\bin\themis.bat
+        .\themis\bin\themis.bat
 
-    .\test\dot-repeat\test_dot.bat
+        if ($?) {
+
+          .\test\dot-repeat\test_dot.bat
+
+        }
+      }
+    }
+
