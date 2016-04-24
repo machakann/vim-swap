@@ -2043,6 +2043,8 @@ function! s:swap_reflect(cursor_idx) dict abort "{{{
   call setreg('"', join(map(copy(self.buffer.all), 'v:val.string'), ''), self.motionwise)
   call setpos('.', self.region.head)
   execute printf('%snormal! "_d%s:call setpos(".", %s)%s""P:', undojoin, self.motionwise, string(self.region.tail), "\<CR>")
+  let self.region.head = getpos("'[")
+  let self.region.tail = getpos("']")
   call call('setreg', reg)
 
   " move cursor

@@ -725,6 +725,16 @@ function! s:suite.integration_normal() abort  "{{{
   call setline(1, '(foo, bar, baz)')
   execute "normal gg11lg<"
   call g:assert.equals(getline('.'), '(foo, baz, bar)', 'failed at #26')
+
+  " The case for changing the end position of region.
+  " #27
+  call append(0, ['(', 'f,', 'b,', 'baz)'])
+  execute "normal 2Ggsllh\<Esc>"
+  call g:assert.equals(getline(1), '(',    'failed at #27')
+  call g:assert.equals(getline(2), 'b,',   'failed at #27')
+  call g:assert.equals(getline(3), 'f,',   'failed at #27')
+  call g:assert.equals(getline(4), 'baz)', 'failed at #27')
+  %delete
 endfunction
 "}}}
 function! s:suite.integration_normal_selection_option() abort  "{{{
