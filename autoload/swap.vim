@@ -651,7 +651,7 @@ function! s:parse_charwise(text, rule) abort  "{{{
         endif
       elseif kind ==# 'braket'
         " a bra is found
-        let idx = s:shift_to_braket_end(a:text, pattern, targets.quotes, idx)
+        let idx = s:shift_to_braket_end(a:text, pattern, targets.quotes, targets.literal_quotes, idx)
         if idx < 0 || idx >= end
           call s:add_buffer_text(buffer, 'item', a:text, head, idx)
           break
@@ -664,8 +664,8 @@ function! s:parse_charwise(text, rule) abort  "{{{
           break
         endif
       elseif kind ==# 'literal_quotes'
-        " an solid quote (non-escaped quote) is found
-        let idx = s:shift_to_solidquote_end(a:text, pattern, idx)
+        " an literal quote (non-escaped quote) is found
+        let idx = s:shift_to_literal_quote_end(a:text, pattern, idx)
         if idx < 0 || idx >= end
           call s:add_buffer_text(buffer, 'item', a:text, head, idx)
           break
@@ -745,7 +745,7 @@ function! s:shift_to_delimiter_end(text, delimiter, idx, current_match) abort  "
   return s:matchend(a:text, [0, a:delimiter, 0], a:idx, a:current_match)[0]
 endfunction
 "}}}
-function! s:shift_to_braket_end(text, pair, quotes, idx) abort  "{{{
+function! s:shift_to_braket_end(text, pair, quotes, literal_quotes, idx) abort  "{{{
   let end = strlen(a:text)
   let idx = s:stridxend(a:text, a:pair[0], a:idx)
 
@@ -776,7 +776,14 @@ function! s:shift_to_braket_end(text, pair, quotes, idx) abort  "{{{
         let quote = [-1]
       endif
 
-      let list_idx = filter([ket, bra, quote[0]], 'v:val > -1')
+      call filter(a:literal_quotes, 'v:val[0] > -1')
+      if a:literal_quotes != []
+        let literal_quote = s:shift_to_something_start(a:text, a:literal_quotes, idx)
+      else
+        let literal_quote = [-1]
+      endif
+
+      let list_idx = filter([ket, bra, quote[0], literal_quote[0]], 'v:val > -1')
       if list_idx == []
         let idx = -1
       else
@@ -785,8 +792,13 @@ function! s:shift_to_braket_end(text, pair, quotes, idx) abort  "{{{
           let depth -= 1
         elseif idx == bra
           let depth += 1
-        else
+        elseif idx == quote[0]
           let idx = s:shift_to_quote_end(a:text, quote[1], quote[0])
+          if idx > end
+            let idx = -1
+          endif
+        else
+          let idx = s:shift_to_literal_quote_end(a:text, literal_quote[1], literal_quote[0])
           if idx > end
             let idx = -1
           endif
@@ -830,7 +842,7 @@ function! s:shift_to_quote_end(text, pair, idx) abort  "{{{
   return idx
 endfunction
 "}}}
-function! s:shift_to_solidquote_end(text, pair, idx) abort  "{{{
+function! s:shift_to_literal_quote_end(text, pair, idx) abort  "{{{
   let idx = s:stridxend(a:text, a:pair[0], a:idx)
   let literal_quote = s:stridxend(a:text, a:pair[1], idx)
   if literal_quote == idx

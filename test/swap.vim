@@ -70,34 +70,41 @@ endfunction
 "}}}
 function! s:suite.shift_to_braket_end() abort  "{{{
   let rule = {'surrounds': ['(', ')', 1], 'delimiter': [',\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']}
-  let quotes = map(copy(get(rule, 'quotes', [])), '[-1, v:val, 0, "quotes"]')
+  let quotes = map(copy(get(rule, 'quotes', [])), '[0, v:val, 0, "quotes"]')
+  let literal_quotes = map(copy(get(rule, 'literal_quotes', [])), '[0, v:val, 0, "literal_quotes"]')
 
-  let idx = s:swap.shift_to_braket_end('(foo)', ['(', ')'], deepcopy(quotes), 0)
+  let idx = s:swap.shift_to_braket_end('(foo)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
   call g:assert.equals(idx, 5)
 
-  let idx = s:swap.shift_to_braket_end('foo(bar)baz', ['(', ')'], deepcopy(quotes), 3)
+  let idx = s:swap.shift_to_braket_end('foo(bar)baz', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 3)
   call g:assert.equals(idx, 8)
 
-  let idx = s:swap.shift_to_braket_end('(foo)bar(baz)', ['(', ')'], deepcopy(quotes), 0)
+  let idx = s:swap.shift_to_braket_end('(foo)bar(baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
   call g:assert.equals(idx, 5)
 
-  let idx = s:swap.shift_to_braket_end('(foo)bar(baz)', ['(', ')'], deepcopy(quotes), 8)
+  let idx = s:swap.shift_to_braket_end('(foo)bar(baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 8)
   call g:assert.equals(idx, 13)
 
-  let idx = s:swap.shift_to_braket_end('(foo(bar)baz)', ['(', ')'], deepcopy(quotes), 0)
+  let idx = s:swap.shift_to_braket_end('(foo(bar)baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
   call g:assert.equals(idx, 13)
 
-  let idx = s:swap.shift_to_braket_end('(foo(bar)baz)', ['(', ')'], deepcopy(quotes), 4)
+  let idx = s:swap.shift_to_braket_end('(foo(bar)baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 4)
   call g:assert.equals(idx, 9)
 
-  let idx = s:swap.shift_to_braket_end('()', ['(', ')'], deepcopy(quotes), 0)
+  let idx = s:swap.shift_to_braket_end('()', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
   call g:assert.equals(idx, 2)
 
-  let idx = s:swap.shift_to_braket_end('(foo(bar)', ['(', ')'], deepcopy(quotes), 0)
+  let idx = s:swap.shift_to_braket_end('(foo(bar)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
   call g:assert.equals(idx, 9)
 
-  let idx = s:swap.shift_to_braket_end(' ()', ['(', ')'], deepcopy(quotes), 0)
+  let idx = s:swap.shift_to_braket_end(' ()', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
   call g:assert.equals(idx, 3)
+
+  let idx = s:swap.shift_to_braket_end('(foo")"bar)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+  call g:assert.equals(idx, 11)
+
+  let idx = s:swap.shift_to_braket_end("(foo')'bar)", ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+  call g:assert.equals(idx, 11)
 endfunction
 "}}}
 function! s:suite.shift_to_quote_end() abort "{{{
@@ -144,47 +151,47 @@ function! s:suite.shift_to_quote_end() abort "{{{
   call g:assert.equals(idx, -1)
 endfunction
 "}}}
-function! s:suite.shift_to_solidquote_end() abort "{{{
-  let idx = s:swap.shift_to_solidquote_end("'foo'", ["'", "'"], 0)
+function! s:suite.shift_to_literal_quote_end() abort "{{{
+  let idx = s:swap.shift_to_literal_quote_end("'foo'", ["'", "'"], 0)
   call g:assert.equals(idx, 5, 'failed at #1')
 
-  let idx = s:swap.shift_to_solidquote_end("foo'bar'baz", ["'", "'"], 3)
+  let idx = s:swap.shift_to_literal_quote_end("foo'bar'baz", ["'", "'"], 3)
   call g:assert.equals(idx, 8, 'failed at #2')
 
-  let idx = s:swap.shift_to_solidquote_end("'foo'bar'baz'", ["'", "'"], 0)
+  let idx = s:swap.shift_to_literal_quote_end("'foo'bar'baz'", ["'", "'"], 0)
   call g:assert.equals(idx, 5, 'failed at #3')
 
-  let idx = s:swap.shift_to_solidquote_end("'foo'bar'baz'", ["'", "'"], 8)
+  let idx = s:swap.shift_to_literal_quote_end("'foo'bar'baz'", ["'", "'"], 8)
   call g:assert.equals(idx, 13, 'failed at #4')
 
-  let idx = s:swap.shift_to_solidquote_end('''foo\''bar''', ["'", "'"], 0)
+  let idx = s:swap.shift_to_literal_quote_end('''foo\''bar''', ["'", "'"], 0)
   call g:assert.equals(idx, 6, 'failed at #5')
 
-  let idx = s:swap.shift_to_solidquote_end('''foo\\''bar''', ["'", "'"], 0)
+  let idx = s:swap.shift_to_literal_quote_end('''foo\\''bar''', ["'", "'"], 0)
   call g:assert.equals(idx, 7, 'failed at #6')
 
-  let idx = s:swap.shift_to_solidquote_end('''foo\\\''bar''', ["'", "'"], 0)
+  let idx = s:swap.shift_to_literal_quote_end('''foo\\\''bar''', ["'", "'"], 0)
   call g:assert.equals(idx, 8, 'failed at #7')
 
-  let idx = s:swap.shift_to_solidquote_end('foobar', ["'", "'"], 0)
+  let idx = s:swap.shift_to_literal_quote_end('foobar', ["'", "'"], 0)
   call g:assert.equals(idx, -1, 'failed at #8')
 
-  let idx = s:swap.shift_to_solidquote_end("'foobar", ["'", "'"], 0)
+  let idx = s:swap.shift_to_literal_quote_end("'foobar", ["'", "'"], 0)
   call g:assert.equals(idx, -1, 'failed at #9')
 
-  let idx = s:swap.shift_to_solidquote_end('''foo\''bar', ["'", "'"], 0)
+  let idx = s:swap.shift_to_literal_quote_end('''foo\''bar', ["'", "'"], 0)
   call g:assert.equals(idx, 6, 'failed at #10')
 
-  let idx = s:swap.shift_to_solidquote_end('''\''foobar', ["'", "'"], 0)
+  let idx = s:swap.shift_to_literal_quote_end('''\''foobar', ["'", "'"], 0)
   call g:assert.equals(idx, 3, 'failed at #11')
 
-  let idx = s:swap.shift_to_solidquote_end('''foobar\''', ["'", "'"], 0)
+  let idx = s:swap.shift_to_literal_quote_end('''foobar\''', ["'", "'"], 0)
   call g:assert.equals(idx, 9, 'failed at #12')
 
-  let idx = s:swap.shift_to_solidquote_end("''", ["'", "'"], 0)
+  let idx = s:swap.shift_to_literal_quote_end("''", ["'", "'"], 0)
   call g:assert.equals(idx, 2, 'failed at #13')
 
-  let idx = s:swap.shift_to_solidquote_end('''\''', ["'", "'"], 0)
+  let idx = s:swap.shift_to_literal_quote_end('''\''', ["'", "'"], 0)
   call g:assert.equals(idx, 3, 'failed at #14')
 endfunction
 "}}}
