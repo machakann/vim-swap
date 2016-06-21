@@ -1854,7 +1854,7 @@ function! s:swap_search(timeout) dict abort "{{{
     if self.region == s:null_region
       let pos = copy(self.curpos)
       let self.region = s:search_body(self.rule.body, pos, a:timeout)
-      if self.region != s:null_region
+      if self.region != s:null_region && s:is_in_between(self.curpos, self.region.head, self.region.tail)
         let self.region.len = s:get_buf_length(self.region)
       endif
     else
@@ -1869,7 +1869,10 @@ function! s:swap_search(timeout) dict abort "{{{
     endif
     let self.region = s:search_surrounds(self.rule.surrounds, pos, nest, a:timeout)
     if self.region != s:null_region
-      let self.region.len = s:get_buf_length(self.region)
+      let [head, tail] = s:get_outer_pos(self.rule.surrounds, self.region)
+      if s:is_in_between(self.curpos, head, tail)
+        let self.region.len = s:get_buf_length(self.region)
+      endif
     endif
   endif
 endfunction
