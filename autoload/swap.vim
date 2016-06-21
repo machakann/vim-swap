@@ -281,18 +281,15 @@ function! s:get_priority_group(objects) abort "{{{
 endfunction
 "}}}
 function! s:get_outer_pos(surrounds, region) abort  "{{{
-  let n_line = count(split(a:surrounds[0]), "\n")
-  let stopline = max([line('.') - n_line, 1])
+  let timeout = g:swap#stimeoutlen
   call setpos('.', a:region.head)
-  let head = s:c2p(searchpos(a:surrounds[0], 'b', stopline))
+  let head = s:c2p(searchpos(a:surrounds[0], 'b', 0, timeout))
   if head != s:null_pos
     let head = s:get_left_pos(head)
   endif
 
-  let n_line = count(split(a:surrounds[1]), "\n")
-  let stopline = min([line('.') + n_line, line('$')])
   call setpos('.', a:region.tail)
-  let tail = s:c2p(searchpos(a:surrounds[1], 'e', stopline))
+  let tail = s:c2p(searchpos(a:surrounds[1], 'e', 0, timeout))
   if tail != s:null_pos
     let tail = s:get_right_pos(tail)
   endif
