@@ -283,13 +283,13 @@ endfunction
 function! s:get_outer_pos(surrounds, region) abort  "{{{
   let timeout = g:swap#stimeoutlen
   call setpos('.', a:region.head)
-  let head = s:c2p(searchpos(a:surrounds[0], 'b', 0, timeout))
+  let head = s:c2p(searchpos(a:surrounds[0], 'bW', 0, timeout))
   if head != s:null_pos
     let head = s:get_left_pos(head)
   endif
 
   call setpos('.', a:region.tail)
-  let tail = s:c2p(searchpos(a:surrounds[1], 'e', 0, timeout))
+  let tail = s:c2p(searchpos(a:surrounds[1], 'eW', 0, timeout))
   if tail != s:null_pos
     let tail = s:get_right_pos(tail)
   endif
@@ -298,10 +298,10 @@ endfunction
 "}}}
 function! s:search_body(body, pos, timeout) abort "{{{
   call setpos('.', a:pos)
-  let tail = searchpos(a:body, 'ce', 0, a:timeout)
+  let tail = searchpos(a:body, 'ceW', 0, a:timeout)
   if tail == s:null_coord | return deepcopy(s:null_region) | endif
   let tail = s:c2p(tail)
-  let head = searchpos(a:body, 'b',  0, a:timeout)
+  let head = searchpos(a:body, 'bW',  0, a:timeout)
   if head == s:null_coord | return deepcopy(s:null_region) | endif
   let head = s:c2p(head)
   return s:is_ahead(tail, head) && s:is_in_between(a:pos, head, tail)
@@ -364,10 +364,10 @@ function! s:check_body(body, region, timeout) abort "{{{
   let is_matched = 1
   let cur_pos = getpos('.')
   call setpos('.', a:region.head)
-  if getpos('.')[1:2] != searchpos(a:body, 'cn', 0, a:timeout)
+  if getpos('.')[1:2] != searchpos(a:body, 'cnW', 0, a:timeout)
     let is_matched = 0
   endif
-  if searchpos(a:body, 'en', 0, a:timeout) != a:region.tail[1:2]
+  if searchpos(a:body, 'enW', 0, a:timeout) != a:region.tail[1:2]
     let is_matched = 0
   endif
   call setpos('.', cur_pos)
@@ -379,10 +379,10 @@ function! s:check_surrounds(surrounds, region, timeout) abort "{{{
   "       Maybe it is reasonable considering use cases.
   let is_matched = 1
   let cur_pos = getpos('.')
-  if s:get_left_pos(a:region.head)[1:2] != searchpos(a:surrounds[0], 'cen', 0, a:timeout)
+  if s:get_left_pos(a:region.head)[1:2] != searchpos(a:surrounds[0], 'cenW', 0, a:timeout)
     let is_matched = 0
   endif
-  if is_matched && s:get_right_pos(a:region.tail)[1:2] != searchpos(a:surrounds[1], 'bcn', 0, a:timeout)
+  if is_matched && s:get_right_pos(a:region.tail)[1:2] != searchpos(a:surrounds[1], 'bcnW', 0, a:timeout)
     let is_matched = 0
   endif
   call setpos('.', cur_pos)
