@@ -1,5 +1,5 @@
 *swap.txt*	Reorder delimited items.
-						Last change:16-Apr-2016.
+						Last change:14-Aug-2016.
 
 Author  : machakann <mckn{at}outlook.jp>
 License : NYSL license
@@ -415,6 +415,14 @@ SwapCurrentItem				*hl-SwapCurrentItem*
 	default.
 >
 	highlight link SwapCurrentItem IncSearch
+<
+
+SwapSelectedItem			*hl-SwapSelectedItem*
+	The highlight group is to define the highlight for an item which will
+	be swapped, the `nth` item fixed by <CR> in swap mode. It is linked to
+	a default highlight group Visual |hl-Visual| in default.
+>
+	highlight link SwapSelectedItem Visual
 <
 
 SwapItem				*hl-SwapItem*

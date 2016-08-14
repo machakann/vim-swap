@@ -1,5 +1,5 @@
 *swap.txt*	いれかえたりする。
-						Last change:16-Apr-2016.
+						Last change:14-Aug-2016.
 
 書いた人   : machakann <mckn{at}outlook.jp>
 ライセンス : NYSL ライセンス
@@ -415,6 +415,14 @@ SwapCurrentItem				*hl-SwapCurrentItem*
 	です。デフォルトでは IncSearch |hl-IncSearch| にリンクされています。
 >
 	highlight link SwapCurrentItem IncSearch
+<
+
+SwapSelectedItem			*hl-SwapSelectedItem*
+	入れ替えられるべく <CR> キーで選択された要素のハイライトを定義するため
+	のハイライトグループです。デフォルトでは Visual |hl-Visual| にリンクさ
+	れています。
+>
+	highlight link SwapSelectedItem Visual
 <
 
 SwapItem				*hl-SwapItem*
