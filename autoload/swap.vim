@@ -80,7 +80,7 @@ function! swap#textobject() abort "{{{
   let [virtualedit, whichwrap, selection] = s:displace_options()
   let errormsg = ''
   try
-    let swap_obj = s:get_swap_obj(objects, mode)
+    let swap_obj = s:choose_swap_obj(mode, objects)
   catch
     let errormsg = printf('vim-swap: Unanticipated error. [%s] %s', v:throwpoint, v:exception)
   finally
@@ -120,7 +120,7 @@ function! swap#operator(motionwise) abort "{{{
     let mode = s:swap.mode
     let rules = s:get_rules(mode)
     let objects  = map(rules, 's:swap_objectize(v:val)')
-    let swap_obj = s:get_swap_obj(objects, mode)
+    let swap_obj = s:choose_swap_obj(mode, objects)
     if swap_obj != s:swap_obj_prototype
       let s:swap = swap_obj
     else
@@ -225,7 +225,7 @@ function! s:get_rules(mode) abort "{{{
   return rules
 endfunction
 "}}}
-function! s:get_swap_obj(objects, mode, ...) abort  "{{{
+function! s:choose_swap_obj(mode, objects, ...) abort  "{{{
   let timeout = g:swap#stimeoutlen
   if a:mode ==# 'n'
     while a:objects != []
