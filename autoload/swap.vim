@@ -99,6 +99,64 @@ function! s:keymap(noremap, lhs, rhs) abort  "{{{
 endfunction
 "}}}
 
+" key layout in swap mode
+" key layout - discreet "{{{
+let g:swap#key_layout_discreet = [
+      \   {'input': '0', 'output': "\<Plug>(swap-mode-0)"},
+      \   {'input': '1', 'output': "\<Plug>(swap-mode-1)"},
+      \   {'input': '2', 'output': "\<Plug>(swap-mode-2)"},
+      \   {'input': '3', 'output': "\<Plug>(swap-mode-3)"},
+      \   {'input': '4', 'output': "\<Plug>(swap-mode-4)"},
+      \   {'input': '5', 'output': "\<Plug>(swap-mode-5)"},
+      \   {'input': '6', 'output': "\<Plug>(swap-mode-6)"},
+      \   {'input': '7', 'output': "\<Plug>(swap-mode-7)"},
+      \   {'input': '8', 'output': "\<Plug>(swap-mode-8)"},
+      \   {'input': '9', 'output': "\<Plug>(swap-mode-9)"},
+      \   {'input': "\<CR>",  'output': "\<Plug>(swap-mode-CR)"},
+      \   {'input': "\<BS>",  'output': "\<Plug>(swap-mode-BS)"},
+      \   {'input': "\<C-h>", 'output': "\<Plug>(swap-mode-BS)"},
+      \   {'input': 'u',      'output': "\<Plug>(swap-mode-undo)"},
+      \   {'input': "\<C-r>", 'output': "\<Plug>(swap-mode-redo)"},
+      \   {'input': 'h', 'output': "\<Plug>(swap-mode-swap-prev)"},
+      \   {'input': 'l', 'output': "\<Plug>(swap-mode-swap-next)"},
+      \   {'input': 'k', 'output': "\<Plug>(swap-mode-move-prev)"},
+      \   {'input': 'j', 'output': "\<Plug>(swap-mode-move-next)"},
+      \   {'input': "\<Left>",  'output': "\<Plug>(swap-mode-swap-prev)"},
+      \   {'input': "\<Right>", 'output': "\<Plug>(swap-mode-swap-next)"},
+      \   {'input': "\<Up>",    'output': "\<Plug>(swap-mode-move-prev)"},
+      \   {'input': "\<Down>",  'output': "\<Plug>(swap-mode-move-next)"},
+      \   {'input': "\<Esc>", 'output': "\<Plug>(swap-mode-Esc)"},
+      \ ]
+"}}}
+" key layout - impatient  "{{{
+let g:swap#key_layout_impatient = [
+      \   {'input': '1', 'output': "\<Plug>(swap-mode-1)\<Plug>(swap-mode-fix-nr)"},
+      \   {'input': '2', 'output': "\<Plug>(swap-mode-2)\<Plug>(swap-mode-fix-nr)"},
+      \   {'input': '3', 'output': "\<Plug>(swap-mode-3)\<Plug>(swap-mode-fix-nr)"},
+      \   {'input': '4', 'output': "\<Plug>(swap-mode-4)\<Plug>(swap-mode-fix-nr)"},
+      \   {'input': '5', 'output': "\<Plug>(swap-mode-5)\<Plug>(swap-mode-fix-nr)"},
+      \   {'input': '6', 'output': "\<Plug>(swap-mode-6)\<Plug>(swap-mode-fix-nr)"},
+      \   {'input': '7', 'output': "\<Plug>(swap-mode-7)\<Plug>(swap-mode-fix-nr)"},
+      \   {'input': '8', 'output': "\<Plug>(swap-mode-8)\<Plug>(swap-mode-fix-nr)"},
+      \   {'input': '9', 'output': "\<Plug>(swap-mode-9)\<Plug>(swap-mode-fix-nr)"},
+      \   {'input': "\<CR>",  'output': "\<Plug>(swap-mode-CR)"},
+      \   {'input': "\<BS>",  'output': "\<Plug>(swap-mode-BS)"},
+      \   {'input': "\<C-h>", 'output': "\<Plug>(swap-mode-BS)"},
+      \   {'input': 'u',      'output': "\<Plug>(swap-mode-undo)"},
+      \   {'input': "\<C-r>", 'output': "\<Plug>(swap-mode-redo)"},
+      \   {'input': 'h', 'output': "\<Plug>(swap-mode-swap-prev)"},
+      \   {'input': 'l', 'output': "\<Plug>(swap-mode-swap-next)"},
+      \   {'input': 'k', 'output': "\<Plug>(swap-mode-move-prev)"},
+      \   {'input': 'j', 'output': "\<Plug>(swap-mode-move-next)"},
+      \   {'input': "\<Left>",  'output': "\<Plug>(swap-mode-swap-prev)"},
+      \   {'input': "\<Right>", 'output': "\<Plug>(swap-mode-swap-next)"},
+      \   {'input': "\<Up>",    'output': "\<Plug>(swap-mode-move-prev)"},
+      \   {'input': "\<Down>",  'output': "\<Plug>(swap-mode-move-next)"},
+      \   {'input': "\<Esc>", 'output': "\<Plug>(swap-mode-Esc)"},
+      \ ]
+"}}}
+let g:swap#default_keymappings = g:swap#key_layout_impatient
+
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:
 " vim:set ts=2 sts=2 sw=2:
