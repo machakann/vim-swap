@@ -1,7 +1,8 @@
 let s:suite = themis#suite('swap: ')
 
 let s:scope = themis#helper('scope')
-let s:swap = s:scope.funcs('autoload/swap.vim')
+let s:parser = s:scope.funcs('autoload/swap/parser.vim')
+let s:lib = s:scope.funcs('autoload/swap/lib.vim')
 
 function! s:suite.before_each() abort "{{{
   %delete
@@ -25,43 +26,43 @@ function! s:suite.shift_to_something_start() abort  "{{{
   let targets += map(copy(get(rule, 'quotes', [])), '[-1, v:val, 0, "quotes"]')
   let targets += map(copy(get(rule, 'literal_quotes', [])), '[-1, v:val, 0, "literal_quotes"]')
 
-  let [idx, pattern, occurence, kind] = s:swap.shift_to_something_start('foo"bar"', deepcopy(targets), 0)
+  let [idx, pattern, occurence, kind] = s:parser.shift_to_something_start('foo"bar"', deepcopy(targets), 0)
   call g:assert.equals(idx, 3)
   call g:assert.equals(kind, 'quotes')
   call g:assert.equals(pattern, ['"', '"'])
   unlet! pattern
 
-  let [idx, pattern, occurence, kind] = s:swap.shift_to_something_start('foo(bar)', deepcopy(targets), 0)
+  let [idx, pattern, occurence, kind] = s:parser.shift_to_something_start('foo(bar)', deepcopy(targets), 0)
   call g:assert.equals(idx, 3)
   call g:assert.equals(kind, 'braket')
   call g:assert.equals(pattern, ['(', ')'])
   unlet! pattern
 
-  let [idx, pattern, occurence, kind] = s:swap.shift_to_something_start('foo, bar', deepcopy(targets), 0)
+  let [idx, pattern, occurence, kind] = s:parser.shift_to_something_start('foo, bar', deepcopy(targets), 0)
   call g:assert.equals(idx, 3)
   call g:assert.equals(kind, 'delimiter')
   call g:assert.equals(pattern, ',\s*')
   unlet! pattern
 
-  let [idx, pattern, occurence, kind] = s:swap.shift_to_something_start('"foo"', deepcopy(targets), 0)
+  let [idx, pattern, occurence, kind] = s:parser.shift_to_something_start('"foo"', deepcopy(targets), 0)
   call g:assert.equals(idx, 0)
   call g:assert.equals(kind, 'quotes')
   call g:assert.equals(pattern, ['"', '"'])
   unlet! pattern
 
-  let [idx, pattern, occurence, kind] = s:swap.shift_to_something_start('(foo)', deepcopy(targets), 0)
+  let [idx, pattern, occurence, kind] = s:parser.shift_to_something_start('(foo)', deepcopy(targets), 0)
   call g:assert.equals(idx, 0)
   call g:assert.equals(kind, 'braket')
   call g:assert.equals(pattern, ['(', ')'])
   unlet! pattern
 
-  let [idx, pattern, occurence, kind] = s:swap.shift_to_something_start(',foo', deepcopy(targets), 0)
+  let [idx, pattern, occurence, kind] = s:parser.shift_to_something_start(',foo', deepcopy(targets), 0)
   call g:assert.equals(idx, 0)
   call g:assert.equals(kind, 'delimiter')
   call g:assert.equals(pattern, ',\s*')
   unlet! pattern
 
-  let [idx, pattern, occurence, kind] = s:swap.shift_to_something_start('foobar', deepcopy(targets), 0)
+  let [idx, pattern, occurence, kind] = s:parser.shift_to_something_start('foobar', deepcopy(targets), 0)
   call g:assert.equals(idx, -1)
   call g:assert.equals(kind, '')
   call g:assert.equals(pattern, '')
@@ -73,133 +74,210 @@ function! s:suite.shift_to_braket_end() abort  "{{{
   let quotes = map(copy(get(rule, 'quotes', [])), '[0, v:val, 0, "quotes"]')
   let literal_quotes = map(copy(get(rule, 'literal_quotes', [])), '[0, v:val, 0, "literal_quotes"]')
 
-  let idx = s:swap.shift_to_braket_end('(foo)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+  let idx = s:parser.shift_to_braket_end('(foo)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
   call g:assert.equals(idx, 5)
 
-  let idx = s:swap.shift_to_braket_end('foo(bar)baz', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 3)
+  let idx = s:parser.shift_to_braket_end('foo(bar)baz', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 3)
   call g:assert.equals(idx, 8)
 
-  let idx = s:swap.shift_to_braket_end('(foo)bar(baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+  let idx = s:parser.shift_to_braket_end('(foo)bar(baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
   call g:assert.equals(idx, 5)
 
-  let idx = s:swap.shift_to_braket_end('(foo)bar(baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 8)
+  let idx = s:parser.shift_to_braket_end('(foo)bar(baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 8)
   call g:assert.equals(idx, 13)
 
-  let idx = s:swap.shift_to_braket_end('(foo(bar)baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+  let idx = s:parser.shift_to_braket_end('(foo(bar)baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
   call g:assert.equals(idx, 13)
 
-  let idx = s:swap.shift_to_braket_end('(foo(bar)baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 4)
+  let idx = s:parser.shift_to_braket_end('(foo(bar)baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 4)
   call g:assert.equals(idx, 9)
 
-  let idx = s:swap.shift_to_braket_end('()', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+  let idx = s:parser.shift_to_braket_end('()', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
   call g:assert.equals(idx, 2)
 
-  let idx = s:swap.shift_to_braket_end('(foo(bar)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+  let idx = s:parser.shift_to_braket_end('(foo(bar)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
   call g:assert.equals(idx, 9)
 
-  let idx = s:swap.shift_to_braket_end(' ()', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+  let idx = s:parser.shift_to_braket_end(' ()', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
   call g:assert.equals(idx, 3)
 
-  let idx = s:swap.shift_to_braket_end('(foo")"bar)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+  let idx = s:parser.shift_to_braket_end('(foo")"bar)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
   call g:assert.equals(idx, 11)
 
-  let idx = s:swap.shift_to_braket_end("(foo')'bar)", ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+  let idx = s:parser.shift_to_braket_end("(foo')'bar)", ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
   call g:assert.equals(idx, 11)
 endfunction
 "}}}
 function! s:suite.shift_to_quote_end() abort "{{{
-  let idx = s:swap.shift_to_quote_end('"foo"', ['"', '"'], 0)
+  let idx = s:parser.shift_to_quote_end('"foo"', ['"', '"'], 0)
   call g:assert.equals(idx, 5)
 
-  let idx = s:swap.shift_to_quote_end('foo"bar"baz', ['"', '"'], 3)
+  let idx = s:parser.shift_to_quote_end('foo"bar"baz', ['"', '"'], 3)
   call g:assert.equals(idx, 8)
 
-  let idx = s:swap.shift_to_quote_end('"foo"bar"baz"', ['"', '"'], 0)
+  let idx = s:parser.shift_to_quote_end('"foo"bar"baz"', ['"', '"'], 0)
   call g:assert.equals(idx, 5)
 
-  let idx = s:swap.shift_to_quote_end('"foo"bar"baz"', ['"', '"'], 8)
+  let idx = s:parser.shift_to_quote_end('"foo"bar"baz"', ['"', '"'], 8)
   call g:assert.equals(idx, 13)
 
-  let idx = s:swap.shift_to_quote_end('"foo\"bar"', ['"', '"'], 0)
+  let idx = s:parser.shift_to_quote_end('"foo\"bar"', ['"', '"'], 0)
   call g:assert.equals(idx, 10)
 
-  let idx = s:swap.shift_to_quote_end('"foo\\"bar"', ['"', '"'], 0)
+  let idx = s:parser.shift_to_quote_end('"foo\\"bar"', ['"', '"'], 0)
   call g:assert.equals(idx, 7)
 
-  let idx = s:swap.shift_to_quote_end('"foo\\\"bar"', ['"', '"'], 0)
+  let idx = s:parser.shift_to_quote_end('"foo\\\"bar"', ['"', '"'], 0)
   call g:assert.equals(idx, 12)
 
-  let idx = s:swap.shift_to_quote_end('foobar', ['"', '"'], 0)
+  let idx = s:parser.shift_to_quote_end('foobar', ['"', '"'], 0)
   call g:assert.equals(idx, -1)
 
-  let idx = s:swap.shift_to_quote_end('"foobar', ['"', '"'], 0)
+  let idx = s:parser.shift_to_quote_end('"foobar', ['"', '"'], 0)
   call g:assert.equals(idx, -1)
 
-  let idx = s:swap.shift_to_quote_end('"foo\"bar', ['"', '"'], 0)
+  let idx = s:parser.shift_to_quote_end('"foo\"bar', ['"', '"'], 0)
   call g:assert.equals(idx, -1)
 
-  let idx = s:swap.shift_to_quote_end('"\"foobar', ['"', '"'], 0)
+  let idx = s:parser.shift_to_quote_end('"\"foobar', ['"', '"'], 0)
   call g:assert.equals(idx, -1)
 
-  let idx = s:swap.shift_to_quote_end('"foobar\"', ['"', '"'], 0)
+  let idx = s:parser.shift_to_quote_end('"foobar\"', ['"', '"'], 0)
   call g:assert.equals(idx, -1)
 
-  let idx = s:swap.shift_to_quote_end('""', ['"', '"'], 0)
+  let idx = s:parser.shift_to_quote_end('""', ['"', '"'], 0)
   call g:assert.equals(idx, 2)
 
-  let idx = s:swap.shift_to_quote_end('"\"', ['"', '"'], 0)
+  let idx = s:parser.shift_to_quote_end('"\"', ['"', '"'], 0)
   call g:assert.equals(idx, -1)
 endfunction
 "}}}
 function! s:suite.shift_to_literal_quote_end() abort "{{{
-  let idx = s:swap.shift_to_literal_quote_end("'foo'", ["'", "'"], 0)
+  let idx = s:parser.shift_to_literal_quote_end("'foo'", ["'", "'"], 0)
   call g:assert.equals(idx, 5, 'failed at #1')
 
-  let idx = s:swap.shift_to_literal_quote_end("foo'bar'baz", ["'", "'"], 3)
+  let idx = s:parser.shift_to_literal_quote_end("foo'bar'baz", ["'", "'"], 3)
   call g:assert.equals(idx, 8, 'failed at #2')
 
-  let idx = s:swap.shift_to_literal_quote_end("'foo'bar'baz'", ["'", "'"], 0)
+  let idx = s:parser.shift_to_literal_quote_end("'foo'bar'baz'", ["'", "'"], 0)
   call g:assert.equals(idx, 5, 'failed at #3')
 
-  let idx = s:swap.shift_to_literal_quote_end("'foo'bar'baz'", ["'", "'"], 8)
+  let idx = s:parser.shift_to_literal_quote_end("'foo'bar'baz'", ["'", "'"], 8)
   call g:assert.equals(idx, 13, 'failed at #4')
 
-  let idx = s:swap.shift_to_literal_quote_end('''foo\''bar''', ["'", "'"], 0)
+  let idx = s:parser.shift_to_literal_quote_end('''foo\''bar''', ["'", "'"], 0)
   call g:assert.equals(idx, 6, 'failed at #5')
 
-  let idx = s:swap.shift_to_literal_quote_end('''foo\\''bar''', ["'", "'"], 0)
+  let idx = s:parser.shift_to_literal_quote_end('''foo\\''bar''', ["'", "'"], 0)
   call g:assert.equals(idx, 7, 'failed at #6')
 
-  let idx = s:swap.shift_to_literal_quote_end('''foo\\\''bar''', ["'", "'"], 0)
+  let idx = s:parser.shift_to_literal_quote_end('''foo\\\''bar''', ["'", "'"], 0)
   call g:assert.equals(idx, 8, 'failed at #7')
 
-  let idx = s:swap.shift_to_literal_quote_end('foobar', ["'", "'"], 0)
+  let idx = s:parser.shift_to_literal_quote_end('foobar', ["'", "'"], 0)
   call g:assert.equals(idx, -1, 'failed at #8')
 
-  let idx = s:swap.shift_to_literal_quote_end("'foobar", ["'", "'"], 0)
+  let idx = s:parser.shift_to_literal_quote_end("'foobar", ["'", "'"], 0)
   call g:assert.equals(idx, -1, 'failed at #9')
 
-  let idx = s:swap.shift_to_literal_quote_end('''foo\''bar', ["'", "'"], 0)
+  let idx = s:parser.shift_to_literal_quote_end('''foo\''bar', ["'", "'"], 0)
   call g:assert.equals(idx, 6, 'failed at #10')
 
-  let idx = s:swap.shift_to_literal_quote_end('''\''foobar', ["'", "'"], 0)
+  let idx = s:parser.shift_to_literal_quote_end('''\''foobar', ["'", "'"], 0)
   call g:assert.equals(idx, 3, 'failed at #11')
 
-  let idx = s:swap.shift_to_literal_quote_end('''foobar\''', ["'", "'"], 0)
+  let idx = s:parser.shift_to_literal_quote_end('''foobar\''', ["'", "'"], 0)
   call g:assert.equals(idx, 9, 'failed at #12')
 
-  let idx = s:swap.shift_to_literal_quote_end("''", ["'", "'"], 0)
+  let idx = s:parser.shift_to_literal_quote_end("''", ["'", "'"], 0)
   call g:assert.equals(idx, 2, 'failed at #13')
 
-  let idx = s:swap.shift_to_literal_quote_end('''\''', ["'", "'"], 0)
+  let idx = s:parser.shift_to_literal_quote_end('''\''', ["'", "'"], 0)
   call g:assert.equals(idx, 3, 'failed at #14')
 endfunction
 "}}}
-function! s:suite.parse_charwise() abort  "{{{
+function! s:suite.buf_byte_len() abort "{{{
+  call append(0, ['abc'])
+  normal! 1G
+  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  call g:assert.equals(l, 0)
+
+  call append(0, ['abc'])
+  normal! 1Gl
+  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  call g:assert.equals(l, 1)
+
+  call append(0, ['abc'])
+  normal! 1G2l
+  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  call g:assert.equals(l, 2)
+
+  call append(0, ['abc', 'def'])
+  normal! 2G
+  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  call g:assert.equals(l, 4)
+
+  call append(0, ['abc', 'def'])
+  normal! 2Gl
+  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  call g:assert.equals(l, 5)
+
+  call append(0, ['abc', 'def'])
+  normal! 2G2l
+  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  call g:assert.equals(l, 6)
+
+  call append(0, ['abc', 'def', 'ghi'])
+  normal! 3G
+  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  call g:assert.equals(l, 8)
+
+  call append(0, ['abc', 'def', 'ghi'])
+  normal! 3Gl
+  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  call g:assert.equals(l, 9)
+
+  call append(0, ['abc', 'def', 'ghi'])
+  normal! 3G2l
+  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  call g:assert.equals(l, 10)
+
+  call append(0, ['', 'def', 'ghi'])
+  normal! 1G
+  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  call g:assert.equals(l, 0)
+
+  call append(0, ['', 'def', 'ghi'])
+  normal! 2G
+  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  call g:assert.equals(l, 1)
+
+  call append(0, ['', 'def', 'ghi'])
+  normal! 3G
+  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  call g:assert.equals(l, 5)
+
+  call append(0, ['abc', '', 'ghi'])
+  normal! 2G
+  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  call g:assert.equals(l, 4)
+
+  call append(0, ['abc', '', 'ghi'])
+  normal! 3G
+  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  call g:assert.equals(l, 5)
+
+  call append(0, ['abc', 'def', ''])
+  normal! 3G
+  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  call g:assert.equals(l, 8)
+endfunction
+"}}}
+function! s:suite.parse_charwise() dict abort  "{{{
   let rule = {'surrounds': ['(', ')', 1], 'delimiter': [',\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']}
 
   " #1
-  let stuffs = s:swap.parse_charwise('foo, bar', rule)
+  let stuffs = s:parser.parse_charwise('foo, bar', rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': 'foo'},
         \   {'attr': 'delimiter', 'string': ', '},
@@ -207,7 +285,7 @@ function! s:suite.parse_charwise() abort  "{{{
         \ ], 'failed at #1')
 
   " #2
-  let stuffs = s:swap.parse_charwise('foo, bar, baz', rule)
+  let stuffs = s:parser.parse_charwise('foo, bar, baz', rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': 'foo'},
         \   {'attr': 'delimiter', 'string': ', '},
@@ -217,7 +295,7 @@ function! s:suite.parse_charwise() abort  "{{{
         \ ], 'failed at #2')
 
   " #3
-  let stuffs = s:swap.parse_charwise('foo, (bar, baz)', rule)
+  let stuffs = s:parser.parse_charwise('foo, (bar, baz)', rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': 'foo'},
         \   {'attr': 'delimiter', 'string': ', '},
@@ -225,7 +303,7 @@ function! s:suite.parse_charwise() abort  "{{{
         \ ], 'failed at #3')
 
   " #4
-  let stuffs = s:swap.parse_charwise('foo, [bar, baz]', rule)
+  let stuffs = s:parser.parse_charwise('foo, [bar, baz]', rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': 'foo'},
         \   {'attr': 'delimiter', 'string': ', '},
@@ -233,7 +311,7 @@ function! s:suite.parse_charwise() abort  "{{{
         \ ], 'failed at #4')
 
   " #5
-  let stuffs = s:swap.parse_charwise('foo, {bar, baz}', rule)
+  let stuffs = s:parser.parse_charwise('foo, {bar, baz}', rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': 'foo'},
         \   {'attr': 'delimiter', 'string': ', '},
@@ -241,7 +319,7 @@ function! s:suite.parse_charwise() abort  "{{{
         \ ], 'failed at #5')
 
   " #6
-  let stuffs = s:swap.parse_charwise('foo, "bar, baz"', rule)
+  let stuffs = s:parser.parse_charwise('foo, "bar, baz"', rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': 'foo'},
         \   {'attr': 'delimiter', 'string': ', '},
@@ -249,7 +327,7 @@ function! s:suite.parse_charwise() abort  "{{{
         \ ], 'failed at #6')
 
   " #7
-  let stuffs = s:swap.parse_charwise("foo, 'bar, baz'", rule)
+  let stuffs = s:parser.parse_charwise("foo, 'bar, baz'", rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': 'foo'},
         \   {'attr': 'delimiter', 'string': ', '},
@@ -257,7 +335,7 @@ function! s:suite.parse_charwise() abort  "{{{
         \ ], 'failed at #7')
 
   " #8
-  let stuffs = s:swap.parse_charwise('(foo, bar), baz, qux', rule)
+  let stuffs = s:parser.parse_charwise('(foo, bar), baz, qux', rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': '(foo, bar)'},
         \   {'attr': 'delimiter', 'string': ', '},
@@ -267,7 +345,7 @@ function! s:suite.parse_charwise() abort  "{{{
         \ ], 'failed at #8')
 
   " #9
-  let stuffs = s:swap.parse_charwise('foo, (bar, baz), qux', rule)
+  let stuffs = s:parser.parse_charwise('foo, (bar, baz), qux', rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': 'foo'},
         \   {'attr': 'delimiter', 'string': ', '},
@@ -277,7 +355,7 @@ function! s:suite.parse_charwise() abort  "{{{
         \ ], 'failed at #9')
 
   " #10
-  let stuffs = s:swap.parse_charwise('foo, bar, (baz, qux)', rule)
+  let stuffs = s:parser.parse_charwise('foo, bar, (baz, qux)', rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': 'foo'},
         \   {'attr': 'delimiter', 'string': ', '},
@@ -287,7 +365,7 @@ function! s:suite.parse_charwise() abort  "{{{
         \ ], 'failed at #10')
 
   " #10
-  let stuffs = s:swap.parse_charwise('"foo, bar", (baz, qux)', rule)
+  let stuffs = s:parser.parse_charwise('"foo, bar", (baz, qux)', rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': '"foo, bar"'},
         \   {'attr': 'delimiter', 'string': ', '},
@@ -295,7 +373,7 @@ function! s:suite.parse_charwise() abort  "{{{
         \ ], 'failed at #10')
 
   " #11
-  let stuffs = s:swap.parse_charwise('"foo, (bar, baz)", qux', rule)
+  let stuffs = s:parser.parse_charwise('"foo, (bar, baz)", qux', rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': '"foo, (bar, baz)"'},
         \   {'attr': 'delimiter', 'string': ', '},
@@ -303,7 +381,7 @@ function! s:suite.parse_charwise() abort  "{{{
         \ ], 'failed at #11')
 
   " #12
-  let stuffs = s:swap.parse_charwise('(foo, "bar, baz"), qux', rule)
+  let stuffs = s:parser.parse_charwise('(foo, "bar, baz"), qux', rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': '(foo, "bar, baz")'},
         \   {'attr': 'delimiter', 'string': ', '},
@@ -311,7 +389,7 @@ function! s:suite.parse_charwise() abort  "{{{
         \ ], 'failed at #12')
 
   " #13
-  let stuffs = s:swap.parse_charwise("foo, bar,\n baz, qux", rule)
+  let stuffs = s:parser.parse_charwise("foo, bar,\n baz, qux", rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': 'foo'},
         \   {'attr': 'delimiter', 'string': ', '},
@@ -324,7 +402,7 @@ function! s:suite.parse_charwise() abort  "{{{
         \ ], 'failed at #13')
 
   " #14
-  let stuffs = s:swap.parse_charwise("foo, bar\n    , baz, qux", rule)
+  let stuffs = s:parser.parse_charwise("foo, bar\n    , baz, qux", rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': 'foo'},
         \   {'attr': 'delimiter', 'string': ', '},
@@ -337,7 +415,7 @@ function! s:suite.parse_charwise() abort  "{{{
         \ ], 'failed at #14')
 
   " #15
-  let stuffs = s:swap.parse_charwise("foo, bar, , baz", rule)
+  let stuffs = s:parser.parse_charwise("foo, bar, , baz", rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': 'foo'},
         \   {'attr': 'delimiter', 'string': ', '},
@@ -349,7 +427,7 @@ function! s:suite.parse_charwise() abort  "{{{
         \ ], 'failed at #15')
 
   " #16
-  let stuffs = s:swap.parse_charwise("foo, bar,", rule)
+  let stuffs = s:parser.parse_charwise("foo, bar,", rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': 'foo'},
         \   {'attr': 'delimiter', 'string': ', '},
@@ -361,7 +439,7 @@ function! s:suite.parse_charwise() abort  "{{{
   " #17
   " zero-width delimiter
   let rule = {'body': '\a\+', 'delimiter': ['\C\ze[A-Z]'],}
-  let stuffs = s:swap.parse_charwise('FooBarBaz', rule)
+  let stuffs = s:parser.parse_charwise('FooBarBaz', rule)
   call g:assert.equals(stuffs, [
         \   {'attr': 'item',      'string': ''},
         \   {'attr': 'delimiter', 'string': ''},
@@ -373,230 +451,8 @@ function! s:suite.parse_charwise() abort  "{{{
         \ ], 'failed at #17')
 endfunction
 "}}}
-function! s:suite.buf_byte_len() abort "{{{
-  call append(0, ['abc'])
-  normal! 1G
-  let l = s:swap.buf_byte_len([0, 1, 1, 0], getpos('.'))
-  call g:assert.equals(l, 0)
-
-  call append(0, ['abc'])
-  normal! 1Gl
-  let l = s:swap.buf_byte_len([0, 1, 1, 0], getpos('.'))
-  call g:assert.equals(l, 1)
-
-  call append(0, ['abc'])
-  normal! 1G2l
-  let l = s:swap.buf_byte_len([0, 1, 1, 0], getpos('.'))
-  call g:assert.equals(l, 2)
-
-  call append(0, ['abc', 'def'])
-  normal! 2G
-  let l = s:swap.buf_byte_len([0, 1, 1, 0], getpos('.'))
-  call g:assert.equals(l, 4)
-
-  call append(0, ['abc', 'def'])
-  normal! 2Gl
-  let l = s:swap.buf_byte_len([0, 1, 1, 0], getpos('.'))
-  call g:assert.equals(l, 5)
-
-  call append(0, ['abc', 'def'])
-  normal! 2G2l
-  let l = s:swap.buf_byte_len([0, 1, 1, 0], getpos('.'))
-  call g:assert.equals(l, 6)
-
-  call append(0, ['abc', 'def', 'ghi'])
-  normal! 3G
-  let l = s:swap.buf_byte_len([0, 1, 1, 0], getpos('.'))
-  call g:assert.equals(l, 8)
-
-  call append(0, ['abc', 'def', 'ghi'])
-  normal! 3Gl
-  let l = s:swap.buf_byte_len([0, 1, 1, 0], getpos('.'))
-  call g:assert.equals(l, 9)
-
-  call append(0, ['abc', 'def', 'ghi'])
-  normal! 3G2l
-  let l = s:swap.buf_byte_len([0, 1, 1, 0], getpos('.'))
-  call g:assert.equals(l, 10)
-
-  call append(0, ['', 'def', 'ghi'])
-  normal! 1G
-  let l = s:swap.buf_byte_len([0, 1, 1, 0], getpos('.'))
-  call g:assert.equals(l, 0)
-
-  call append(0, ['', 'def', 'ghi'])
-  normal! 2G
-  let l = s:swap.buf_byte_len([0, 1, 1, 0], getpos('.'))
-  call g:assert.equals(l, 1)
-
-  call append(0, ['', 'def', 'ghi'])
-  normal! 3G
-  let l = s:swap.buf_byte_len([0, 1, 1, 0], getpos('.'))
-  call g:assert.equals(l, 5)
-
-  call append(0, ['abc', '', 'ghi'])
-  normal! 2G
-  let l = s:swap.buf_byte_len([0, 1, 1, 0], getpos('.'))
-  call g:assert.equals(l, 4)
-
-  call append(0, ['abc', '', 'ghi'])
-  normal! 3G
-  let l = s:swap.buf_byte_len([0, 1, 1, 0], getpos('.'))
-  call g:assert.equals(l, 5)
-
-  call append(0, ['abc', 'def', ''])
-  normal! 3G
-  let l = s:swap.buf_byte_len([0, 1, 1, 0], getpos('.'))
-  call g:assert.equals(l, 8)
-endfunction
-"}}}
 
 " integration test
-function! s:suite.textobj() abort "{{{
-  let g:swap#rules = [
-        \   {'mode': 'n', 'body': '\%(\h\w*,\s*\)\+\%(\h\w*\)\?', 'delimiter': ['\s*,\s*'], 'priority': -10},
-        \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\s*,\s*'], 'immutable': ['\n\s\+']},
-        \   {'mode': 'n', 'surrounds': ['\[', '\]', 1], 'delimiter': ['\s*,\s*'], 'immutable': ['\n\s\+']},
-        \   {'mode': 'n', 'surrounds': ['(', ')', 1],   'delimiter': ['\s*,\s*'], 'immutable': ['\n\s\+']},
-        \ ]
-
-  " #1
-  call setline(1, '(foo, bar, baz)')
-  normal! gg
-  call swap#prerequisite('n')
-  let region = swap#textobject()
-  call g:assert.equals(region.head, [0, 1,  2, 0], 'failed at #1')
-  call g:assert.equals(region.tail, [0, 1, 14, 0], 'failed at #1')
-  call g:assert.equals(region.len, 13, 'failed at #1')
-
-  " #2
-  call setline(1, '[foo, bar, baz]')
-  normal! gg
-  call swap#prerequisite('n')
-  let region = swap#textobject()
-  call g:assert.equals(region.head, [0, 1,  2, 0], 'failed at #2')
-  call g:assert.equals(region.tail, [0, 1, 14, 0], 'failed at #2')
-  call g:assert.equals(region.len, 13, 'failed at #2')
-
-  " #3
-  call setline(1, '{foo, bar, baz}')
-  normal! gg
-  call swap#prerequisite('n')
-  let region = swap#textobject()
-  call g:assert.equals(region.head, [0, 1,  2, 0], 'failed at #3')
-  call g:assert.equals(region.tail, [0, 1, 14, 0], 'failed at #3')
-  call g:assert.equals(region.len, 13, 'failed at #3')
-
-  " #4
-  call setline(1, 'foo, bar, baz')
-  normal! gg
-  call swap#prerequisite('n')
-  let region = swap#textobject()
-  call g:assert.equals(region.head, [0, 1,  1, 0], 'failed at #4')
-  call g:assert.equals(region.tail, [0, 1, 13, 0], 'failed at #4')
-  call g:assert.equals(region.len, 13, 'failed at #4')
-
-  " #5
-  call setline(1, '[(foo, bar, baz)]')
-  normal! ggff
-  call swap#prerequisite('n')
-  let region = swap#textobject()
-  call g:assert.equals(region.head, [0, 1,  3, 0], 'failed at #5')
-  call g:assert.equals(region.tail, [0, 1, 15, 0], 'failed at #5')
-  call g:assert.equals(region.len, 13, 'failed at #5')
-
-  " NOTE: The latter rule is prior.
-  " #6
-  call setline(1, '([foo, bar, baz])')
-  normal! ggff
-  call swap#prerequisite('n')
-  let region = swap#textobject()
-  call g:assert.equals(region.head, [0, 1,  3, 0], 'failed at #6')
-  call g:assert.equals(region.tail, [0, 1, 15, 0], 'failed at #6')
-  call g:assert.equals(region.len, 13, 'failed at #6')
-
-  " #7
-  call setline(1, '{(foo, bar, baz)}')
-  normal! ggff
-  call swap#prerequisite('n')
-  let region = swap#textobject()
-  call g:assert.equals(region.head, [0, 1,  3, 0], 'failed at #7')
-  call g:assert.equals(region.tail, [0, 1, 15, 0], 'failed at #7')
-  call g:assert.equals(region.len, 13, 'failed at #7')
-
-  " #8
-  call setline(1, '({foo, bar, baz})')
-  normal! ggff
-  call swap#prerequisite('n')
-  let region = swap#textobject()
-  call g:assert.equals(region.head, [0, 1,  3, 0], 'failed at #8')
-  call g:assert.equals(region.tail, [0, 1, 15, 0], 'failed at #8')
-  call g:assert.equals(region.len, 13, 'failed at #8')
-
-  " #9
-  call setline(1, '{[foo, bar, baz]}')
-  normal! ggff
-  call swap#prerequisite('n')
-  let region = swap#textobject()
-  call g:assert.equals(region.head, [0, 1,  3, 0], 'failed at #9')
-  call g:assert.equals(region.tail, [0, 1, 15, 0], 'failed at #9')
-  call g:assert.equals(region.len, 13, 'failed at #9')
-
-  " #10
-  call setline(1, '[{foo, bar, baz}]')
-  normal! ggff
-  call swap#prerequisite('n')
-  let region = swap#textobject()
-  call g:assert.equals(region.head, [0, 1,  3, 0], 'failed at #10')
-  call g:assert.equals(region.tail, [0, 1, 15, 0], 'failed at #10')
-  call g:assert.equals(region.len, 13, 'failed at #10')
-
-  " #11
-  call setline(1, '[(foo, bar, baz])')
-  normal! ggff
-  call swap#prerequisite('n')
-  let region = swap#textobject()
-  call g:assert.equals(region.head, [0, 1,  3, 0], 'failed at #11')
-  call g:assert.equals(region.tail, [0, 1, 16, 0], 'failed at #11')
-  call g:assert.equals(region.len, 14, 'failed at #11')
-
-  " #12
-  call setline(1, '[{foo, bar, baz]}')
-  normal! ggff
-  call swap#prerequisite('n')
-  let region = swap#textobject()
-  call g:assert.equals(region.head, [0, 1,  2, 0], 'failed at #12')
-  call g:assert.equals(region.tail, [0, 1, 15, 0], 'failed at #12')
-  call g:assert.equals(region.len, 14, 'failed at #12')
-
-  " #13
-  call setline(1, '({foo, bar, baz)}')
-  normal! ggff
-  call swap#prerequisite('n')
-  let region = swap#textobject()
-  call g:assert.equals(region.head, [0, 1,  2, 0], 'failed at #13')
-  call g:assert.equals(region.tail, [0, 1, 15, 0], 'failed at #13')
-  call g:assert.equals(region.len, 14, 'failed at #13')
-
-  " #14
-  call setline(1, '((foo), bar, baz)')
-  normal! ggff
-  call swap#prerequisite('n')
-  let region = swap#textobject()
-  call g:assert.equals(region.head, [0, 1,  2, 0], 'failed at #14')
-  call g:assert.equals(region.tail, [0, 1, 16, 0], 'failed at #14')
-  call g:assert.equals(region.len, 15, 'failed at #14')
-
-  " #15
-  call setline(1, '(((foo)), bar, baz)')
-  normal! ggff
-  call swap#prerequisite('n')
-  let region = swap#textobject()
-  call g:assert.equals(region.head, [0, 1,  2, 0], 'failed at #15')
-  call g:assert.equals(region.tail, [0, 1, 18, 0], 'failed at #15')
-  call g:assert.equals(region.len, 17, 'failed at #15')
-endfunction
-"}}}
 function! s:suite.integration_normal() abort  "{{{
   " #1
   call setline(1, '(foo, bar, baz)')
