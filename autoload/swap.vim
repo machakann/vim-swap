@@ -38,14 +38,14 @@ function! swap#swap(motionwise) abort "{{{
   let view = winsaveview()
   let dotrepeat = g:swap.dotrepeat
   let err = g:swap.error
-  let [whichwrap, virtualedit, selection, cursor, cursorline] = s:displace_options()
+  let options = s:displace_options()
   try
     call g:swap.execute(a:motionwise)
   catch /^SwapModeErr/
   catch
     call err.catch(printf('vim-swap: Unanticipated error. [%s] %s', v:throwpoint, v:exception))
   finally
-    call s:restore_options(virtualedit, whichwrap, selection, cursor, cursorline)
+    call s:restore_options(options)
 
     if err.catched
       if !dotrepeat
@@ -67,29 +67,34 @@ endfunction
 "}}}
 
 function! s:displace_options() abort  "{{{
-  let [ virtualedit,  whichwrap,  selection] = [&virtualedit, &whichwrap, &selection]
+  let options = {}
+  let options.virtualedit = &virtualedit
+  let options.whichwrap = &whichwrap
+  let options.selection = &selection
   let [&virtualedit, &whichwrap, &selection] = ['onemore', 'h,l', 'inclusive']
   if s:has_gui_running
-    let cursor = &guicursor
+    let options.cursor = &guicursor
     set guicursor+=n-o:block-NONE
   else
-    let cursor = &t_ve
+    let options.cursor = &t_ve
     set t_ve=
   endif
-  let cursorline = &l:cursorline
+  let options.cursorline = &l:cursorline
   setlocal nocursorline
-  return [virtualedit, whichwrap, selection, cursor, cursorline]
+  return options
 endfunction
 "}}}
-function! s:restore_options(virtualedit, whichwrap, selection, cursor, cursorline) abort "{{{
-  let [&virtualedit, &whichwrap, &selection] = [a:virtualedit, a:whichwrap, a:selection]
+function! s:restore_options(options) abort "{{{
+  let &virtualedit = a:options.virtualedit
+  let &whichwrap = a:options.whichwrap
+  let &selection = a:options.selection
   if s:has_gui_running
     set guicursor&
-    let &guicursor = a:cursor
+    let &guicursor = a:options.cursor
   else
-    let &t_ve = a:cursor
+    let &t_ve = a:options.cursor
   endif
-  let &l:cursorline = a:cursorline
+  let &l:cursorline = a:options.cursorline
 endfunction
 "}}}
 function! s:keymap(noremap, lhs, rhs) abort  "{{{
