@@ -38,8 +38,10 @@ function! s:swap_prototype._normal(motionwise) dict abort  "{{{
   else
     let rules = self._get_rules()
     let [buffer, rule] = s:scan(rules, a:motionwise)
-    let self.rules = [rule.initialize()]
-    let self.order_list = self._swap(buffer)
+    if has_key(rule, 'initialize')
+      let self.rules = [rule.initialize()]
+      let self.order_list = self._swap(buffer)
+    endif
   endif
 endfunction
 "}}}
