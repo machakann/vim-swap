@@ -79,6 +79,10 @@ function! s:swap_prototype._swap(buffer) dict abort "{{{
 endfunction
 "}}}
 function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
+  if a:buffer == {}
+    return []
+  endif
+
   let self.undojoin = 0
   let interface = swap#interface#new()
   try
