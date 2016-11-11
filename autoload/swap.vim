@@ -8,7 +8,9 @@ let g:swap#hl_itemnr   = get(g:, 'swap#hl_itemnr', 'Special')
 let g:swap#hl_arrow    = get(g:, 'swap#hl_arrow', 'NONE')
 let g:swap#arrow       = get(g:, 'swap#arrow', ' <=> ')
 let g:swap#default_rules = [
+      \   {'mode': 'x', 'delimiter': ['\s\+'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*'], 'priority': -50},
       \   {'mode': 'x', 'delimiter': ['\s*,\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']},
+      \   {'mode': 'n', 'body': '\%(\h\w*\s*\)\+\%(\h\w*\)\?', 'delimiter': ['\s\+'], 'priority': -50},
       \   {'mode': 'n', 'body': '\%(\h\w*,\s*\)\+\%(\h\w*\)\?', 'delimiter': ['\s*,\s*'], 'priority': -10},
       \   {'mode': 'n', 'surrounds': ['\[', '\]', 1], 'delimiter': ['\s*,\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s\+']},
       \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\s*,\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s\+']},

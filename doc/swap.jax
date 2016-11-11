@@ -1,5 +1,5 @@
 *swap.txt*	いれかえたりする。
-						Last change:14-Aug-2016.
+						Last change:11-Nov-2016.
 
 書いた人   : machakann <mckn{at}outlook.jp>
 ライセンス : NYSL ライセンス
@@ -67,6 +67,7 @@ INTRODUCTION				*swap-introduction*
 	[foo, bar, baz]
 	{foo, bar, baz}
 	foo, bar, baz
+	foo bar baz
 <
 最初の三つについては、内部に括弧やクオーテーションによるグループ化がある場合こ
 れを考慮します。つまり、次のような例では要素は、"foo", "'bar, baz'", "qux" の

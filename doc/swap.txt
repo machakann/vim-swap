@@ -1,5 +1,5 @@
 *swap.txt*	Reorder delimited items.
-						Last change:14-Aug-2016.
+						Last change:11-Nov-2016.
 
 Author  : machakann <mckn{at}outlook.jp>
 License : NYSL license
@@ -69,6 +69,7 @@ This plugin treats the regions like:
 	[foo, bar, baz]
 	{foo, bar, baz}
 	foo, bar, baz
+	foo bar baz
 <
 As for the first three patterns, groupings by parenthesis and quotes are taken
 into account. That is, the items in the line
