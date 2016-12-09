@@ -345,7 +345,7 @@ function! s:reflect(buffer, undojoin, cursor_idx) abort "{{{
   let reg = ['"', getreg('"'), getregtype('"')]
   call setreg('"', join(map(copy(a:buffer.all), 'v:val.string'), ''), visualkey)
   call setpos('.', region.head)
-  execute printf('%snormal! "_d%s:call setpos(".", %s)%s""P:', undojoin_cmd, visualkey, string(region.tail), "\<CR>")
+  execute printf('%snoautocmd normal! "_d%s:call setpos(".", %s)%s""P:', undojoin_cmd, visualkey, string(region.tail), "\<CR>")
   let region.head = getpos("'[")
   let region.tail = getpos("']")
   call call('setreg', reg)

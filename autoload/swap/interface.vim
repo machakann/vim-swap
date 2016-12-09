@@ -135,9 +135,9 @@ endfunction
 "}}}
 function! s:interface_prototype.normal(key) dict abort "{{{
   if has_key(a:key, 'noremap') && a:key.noremap
-    execute 'normal! ' . a:key.output
+    execute 'noautocmd normal! ' . a:key.output
   else
-    execute 'normal ' . a:key.output
+    execute 'noautocmd normal ' . a:key.output
   endif
 endfunction
 "}}}

@@ -149,7 +149,7 @@ function! s:get_buf_text(region) abort  "{{{
     call setpos('.', a:region.head)
     execute 'normal! ' . a:region.visualkey
     call setpos('.', a:region.tail)
-    silent normal! ""y
+    silent noautocmd normal! ""y
     let text = @@
   finally
     call call('setreg', reg)
