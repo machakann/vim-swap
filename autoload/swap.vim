@@ -19,9 +19,9 @@ let g:swap#default_rules = [
       \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\s*,\s*'], 'filetype': ['vim'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s*\\\s*']},
       \   {'mode': 'n', 'surrounds': ['(', ')', 1],   'delimiter': ['\s*,\s*'], 'filetype': ['vim'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s*\\\s*']},
       \   {'mode': 'n', 'surrounds': ['(', ')', 1],   'delimiter': ['\s*,\s*'], 'filetype': ['fortran'], 'braket': [['(', ')'], ['[', ']']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\s*&\s*\%(!.\{-}\)\?\n\s*\%(&\s*\)\?']},
-      \   {'mode': 'n', 'surrounds': ['\[', '\]', 1], 'delimiter': ['\s*[,;[:space:]]\s*'], 'filetype': ['matlab'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'literal_quotes': [["'", "'"]], 'immutable': ['\s*\.\{3}\s*\n\s*']},
-      \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\s*[,;[:space:]]\s*'], 'filetype': ['matlab'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'literal_quotes': [["'", "'"]], 'immutable': ['\s*\.\{3}\s*\n\s*']},
-      \   {'mode': 'n', 'surrounds': ['(', ')', 1],   'delimiter': ['\s*,\s*'],             'filetype': ['matlab'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'literal_quotes': [["'", "'"]], 'immutable': ['\s*\.\{3}\s*\n\s*']},
+      \   {'mode': 'n', 'surrounds': ['\[', '\]', 1], 'delimiter': ['\s*[,;[:space:]]\s*'], 'filetype': ['matlab'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'immutable': ['\s*\.\{3}\s*\n\s*']},
+      \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\s*[,;[:space:]]\s*'], 'filetype': ['matlab'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'immutable': ['\s*\.\{3}\s*\n\s*']},
+      \   {'mode': 'n', 'surrounds': ['(', ')', 1],   'delimiter': ['\s*,\s*'],             'filetype': ['matlab'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'immutable': ['\s*\.\{3}\s*\n\s*']},
       \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\n'], 'filetype': ['c'], 'braket': [['(', ')'], ['[', ']'], ['{', '}'], ['/*', '*/']], 'quotes': [['"', '"'], ["'", "'"]], 'immutable': ['^\n', '\n\zs\s\+']},
       \ ]
 
