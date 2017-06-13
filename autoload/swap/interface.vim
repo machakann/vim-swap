@@ -67,6 +67,9 @@ function! s:interface_prototype.query(buffer) dict abort "{{{
     endif
   endwhile
   call self.clear_highlight()
+
+  " clear messages
+  echo ''
   return self.order
 endfunction
 "}}}
