@@ -159,15 +159,14 @@ endfunction
 function! s:filter_filetype(rule) abort  "{{{
   if !has_key(a:rule, 'filetype')
     return 1
-  else
-    let filetypes = split(&filetype, '\.')
-    if filetypes == []
-      let filter = 'v:val ==# ""'
-    else
-      let filter = 'v:val !=# "" && count(filetypes, v:val) > 0'
-    endif
-    return filter(copy(a:rule['filetype']), filter) != []
   endif
+  let filetypes = split(&filetype, '\.')
+  if filetypes == []
+    let filter = 'v:val ==# ""'
+  else
+    let filter = 'v:val !=# "" && count(filetypes, v:val) > 0'
+  endif
+  return filter(copy(a:rule['filetype']), filter) != []
 endfunction
 "}}}
 function! s:filter_mode(rule, mode) abort  "{{{
