@@ -164,7 +164,7 @@ function! s:filter_filetype(rule) abort  "{{{
     if filetypes == []
       let filter = 'v:val ==# ""'
     else
-      let filter = 'v:val !=# "" && match(filetypes, v:val) > -1'
+      let filter = 'v:val !=# "" && count(filetypes, v:val) > 0'
     endif
     return filter(copy(a:rule['filetype']), filter) != []
   endif
