@@ -39,7 +39,11 @@ function! s:rule_prototype.search(curpos, motionwise) dict abort  "{{{
         let self.region.len = s:get_buf_length(self.region)
         let self.region.visualkey = s:motionwise2visualkey(a:motionwise)
         let self.region.type = a:motionwise
+      else
+        let self.region = deepcopy(s:null_region)
       endif
+    else
+      let self.region = deepcopy(s:null_region)
     endif
   endif
   return self.region
