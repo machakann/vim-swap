@@ -21,9 +21,8 @@ function! s:rule_prototype.search(curpos, motionwise) dict abort  "{{{
         let self.region.len = s:get_buf_length(self.region)
         let self.region.visualkey = s:motionwise2visualkey(a:motionwise)
         let self.region.type = a:motionwise
+        return self.region
       endif
-    else
-      let self.region = deepcopy(s:null_region)
     endif
   elseif has_key(self, 'surrounds')
     let nest = get(self.surrounds, -1, 0)
@@ -39,9 +38,11 @@ function! s:rule_prototype.search(curpos, motionwise) dict abort  "{{{
         let self.region.len = s:get_buf_length(self.region)
         let self.region.visualkey = s:motionwise2visualkey(a:motionwise)
         let self.region.type = a:motionwise
+        return self.region
       endif
     endif
   endif
+  let self.region = deepcopy(s:null_region)
   return self.region
 endfunction
 "}}}
