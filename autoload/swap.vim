@@ -8,21 +8,160 @@ let g:swap#hl_itemnr   = get(g:, 'swap#hl_itemnr', 'Special')
 let g:swap#hl_arrow    = get(g:, 'swap#hl_arrow', 'NONE')
 let g:swap#arrow       = get(g:, 'swap#arrow', ' <=> ')
 let g:swap#default_rules = [
-      \   {'mode': 'x', 'delimiter': ['\s\+'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*', '\s\+$'], 'priority': -50},
-      \   {'mode': 'x', 'delimiter': ['\s*,\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*', '\s\+$']},
-      \   {'mode': 'n', 'body': '\%(\h\w*\s*\)\+\%(\h\w*\)\?', 'delimiter': ['\s\+'], 'priority': -50},
-      \   {'mode': 'n', 'body': '\%(\h\w*,\s*\)\+\%(\h\w*\)\?', 'delimiter': ['\s*,\s*'], 'priority': -10},
-      \   {'mode': 'n', 'surrounds': ['\[', '\]', 1], 'delimiter': ['\s*,\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s\+', '\s\+$']},
-      \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\s*,\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s\+', '\s\+$']},
-      \   {'mode': 'n', 'surrounds': ['(', ')', 1],   'delimiter': ['\s*,\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s\+', '\s\+$']},
-      \   {'mode': 'n', 'surrounds': ['\[', '\]', 1], 'delimiter': ['\s*,\s*'], 'filetype': ['vim'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s*\\\s*', '\s\+$']},
-      \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\s*,\s*'], 'filetype': ['vim'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s*\\\s*', '\s\+$']},
-      \   {'mode': 'n', 'surrounds': ['(', ')', 1],   'delimiter': ['\s*,\s*'], 'filetype': ['vim'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\|\n\)\s*\\\s*', '\s\+$']},
-      \   {'mode': 'n', 'surrounds': ['(', ')', 1],   'delimiter': ['\s*,\s*'], 'filetype': ['fortran'], 'braket': [['(', ')'], ['[', ']']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\s*&\s*\%(!.\{-}\)\?\n\s*\%(&\s*\)\?', '\s\+$']},
-      \   {'mode': 'n', 'surrounds': ['\[', '\]', 1], 'delimiter': ['\s*[,;[:space:]]\s*'], 'filetype': ['matlab'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'immutable': ['\s*\.\{3}\s*\n\s*', '\s\+$']},
-      \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\s*[,;[:space:]]\s*'], 'filetype': ['matlab'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'immutable': ['\s*\.\{3}\s*\n\s*', '\s\+$']},
-      \   {'mode': 'n', 'surrounds': ['(', ')', 1],   'delimiter': ['\s*,\s*'],             'filetype': ['matlab'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'immutable': ['\s*\.\{3}\s*\n\s*', '\s\+$']},
-      \   {'mode': 'n', 'surrounds': ['{', '}', 1],   'delimiter': ['\n'], 'filetype': ['c'], 'braket': [['(', ')'], ['[', ']'], ['{', '}'], ['/*', '*/']], 'quotes': [['"', '"'], ["'", "'"]], 'immutable': ['^\n', '\n\zs\s\+', '\s\+$']},
+      \   {
+      \     'descripsion': 'Reorder the selected space-delimited word in visual mode.',
+      \     'mode': 'x',
+      \     'delimiter': ['\s\+'],
+      \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+      \     'quotes': [['"', '"'], ["'", "'"]],
+      \     'immutable': ['\%(^\s\|\n\)\s*', '\s\+$'],
+      \     'priority': -50
+      \   },
+      \
+      \   {
+      \     'description': 'Reorder the selected comma-delimited word in visual mode.',
+      \     'mode': 'x',
+      \     'delimiter': ['\s*,\s*'],
+      \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+      \     'quotes': [['"', '"'], ["'", "'"]],
+      \     'immutable': ['\%(^\s\|\n\)\s*', '\s\+$'],
+      \   },
+      \
+      \   {
+      \     'descripsion': 'Reorder the space-delimited word under the cursor in normal mode.',
+      \     'mode': 'n',
+      \     'body': '\%(\h\w*\s*\)\+\%(\h\w*\)\?',
+      \     'delimiter': ['\s\+'],
+      \     'priority': -50
+      \   },
+      \
+      \   {
+      \     'description': 'Reorder the comma-delimited word under the cursor in normal mode.',
+      \     'mode': 'n',
+      \     'body': '\%(\h\w*,\s*\)\+\%(\h\w*\)\?',
+      \     'delimiter': ['\s*,\s*'],
+      \     'priority': -10
+      \   },
+      \
+      \   {
+      \     'description': 'Reorder the comma-separated items in [].',
+      \     'mode': 'n',
+      \     'surrounds': ['\[', '\]', 1],
+      \     'delimiter': ['\s*,\s*'],
+      \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+      \     'quotes': [['"', '"'], ["'", "'"]],
+      \     'immutable': ['\%(^\|\n\)\s\+', '\s\+$']
+      \   },
+      \
+      \   {
+      \     'description': 'Reorder the comma-separated items in {}.',
+      \     'mode': 'n',
+      \     'surrounds': ['{', '}', 1],
+      \     'delimiter': ['\s*,\s*'],
+      \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+      \     'quotes': [['"', '"'], ["'", "'"]],
+      \     'immutable': ['\%(^\|\n\)\s\+', '\s\+$']
+      \   },
+      \
+      \   {
+      \     'description': 'Reorder the comma-separated items in ().',
+      \     'mode': 'n',
+      \     'surrounds': ['(', ')', 1],
+      \     'delimiter': ['\s*,\s*'],
+      \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+      \     'quotes': [['"', '"'], ["'", "'"]],
+      \     'immutable': ['\%(^\|\n\)\s\+', '\s\+$']
+      \   },
+      \
+      \   {
+      \     'description': 'Reorder the comma-separated items in [] for Vim script, with taking into account line continuations by backslashes.',
+      \     'filetype': ['vim'],
+      \     'mode': 'n',
+      \     'surrounds': ['\[', '\]', 1],
+      \     'delimiter': ['\s*,\s*'],
+      \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+      \     'quotes': [['"', '"']],
+      \     'literal_quotes': [["'", "'"]],
+      \     'immutable': ['\%(^\|\n\)\s*\\\s*', '\s\+$']
+      \   },
+      \
+      \   {
+      \     'description': 'Reorder the comma-separated items in {} for Vim script, with taking into account line continuations by backslashes.',
+      \     'filetype': ['vim'],
+      \     'mode': 'n',
+      \     'surrounds': ['{', '}', 1],
+      \     'delimiter': ['\s*,\s*'],
+      \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+      \     'quotes': [['"', '"']],
+      \     'literal_quotes': [["'", "'"]],
+      \     'immutable': ['\%(^\|\n\)\s*\\\s*', '\s\+$']
+      \   },
+      \
+      \   {
+      \     'description': 'Reorder the comma-separated items in () for Vim script, with taking into account line continuations by backslash.',
+      \     'filetype': ['vim'],
+      \     'mode': 'n',
+      \     'surrounds': ['(', ')', 1],
+      \     'delimiter': ['\s*,\s*'],
+      \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+      \     'quotes': [['"', '"']],
+      \     'literal_quotes': [["'", "'"]],
+      \     'immutable': ['\%(^\|\n\)\s*\\\s*', '\s\+$']
+      \   },
+      \
+      \   {
+      \     'description': 'Reorder the comma-separated items in () for fortran, with taking into account line continuations by ampersand.',
+      \     'filetype': ['fortran'],
+      \     'mode': 'n',
+      \     'surrounds': ['(', ')', 1],
+      \     'delimiter': ['\s*,\s*'],
+      \     'braket': [['(', ')'], ['[', ']']],
+      \     'quotes': [['"', '"']],
+      \     'literal_quotes': [["'", "'"]],
+      \     'immutable': ['\s*&\s*\%(!.\{-}\)\?\n\s*\%(&\s*\)\?', '\s\+$']
+      \   },
+      \
+      \   {
+      \     'description': 'Reorder the comma-separated items in [] for matlab, with taking into account line continuations by dots.',
+      \     'filetype': ['matlab'],
+      \     'mode': 'n',
+      \     'surrounds': ['\[', '\]', 1],
+      \     'delimiter': ['\s*[,;[:space:]]\s*'],
+      \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+      \     'immutable': ['\s*\.\{3}\s*\n\s*',
+      \     '\s\+$']
+      \   },
+      \
+      \   {
+      \     'description': 'Reorder the comma-separated items in {} for matlab, with taking into account line continuations by dots.',
+      \     'filetype': ['matlab'],
+      \     'mode': 'n',
+      \     'surrounds': ['{', '}', 1],
+      \     'delimiter': ['\s*[,;[:space:]]\s*'],
+      \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+      \     'immutable': ['\s*\.\{3}\s*\n\s*', '\s\+$']
+      \   },
+      \
+      \   {
+      \     'description': 'Reorder the comma-separated items in () for matlab, with taking into account line continuations by dots.',
+      \     'filetype': ['matlab'],
+      \     'mode': 'n',
+      \     'surrounds': ['(', ')', 1],
+      \     'delimiter': ['\s*,\s*'],
+      \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+      \     'immutable': ['\s*\.\{3}\s*\n\s*', '\s\+$']
+      \   },
+      \
+      \   {
+      \     'description': 'Reorder the line items in {} for c language.',
+      \     'filetype': ['c'],
+      \     'mode': 'n',
+      \     'surrounds': ['{', '}', 1],
+      \     'delimiter': ['\n'],
+      \     'braket': [['(', ')'], ['[', ']'], ['{', '}'], ['/*', '*/']],
+      \     'quotes': [['"', '"'], ["'", "'"]],
+      \     'immutable': ['^\n', '\n\zs\s\+', '\s\+$']
+      \   },
       \ ]
 
 " features
