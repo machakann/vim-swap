@@ -89,102 +89,50 @@ function! s:search_body(body, pos, timeout) abort "{{{
         \ : deepcopy(s:null_region)
 endfunction
 "}}}
-function! s:search_surrounds(surrounds, pos, nest, timeout, ...) abort "{{{
+function! s:search_surrounds(surrounds, pos, nest, timeout) abort "{{{
   if a:pos[0] == s:null_pos || a:pos[1] == s:null_pos
     return deepcopy(s:null_region)
   endif
 
-  let is_skip = get(a:000, 0, 0)
-  let skip_expr = is_skip ? 's:skip(1)' : 's:skip(0)'
-
   call setpos('.', a:pos[1])
-  let tail = s:searchpos(a:nest, a:surrounds, 0, skip_expr, a:timeout)
+  let tail = s:searchpos(a:nest, a:surrounds, 0, a:timeout)
   if tail == s:null_coord | return deepcopy(s:null_region) | endif
-  let is_tail_skipping_syntax = is_skip ? 0 : s:is_skipping_syntax(tail)
 
   if !a:nest
     call setpos('.', a:pos[0])
   endif
 
-  let head = s:searchpos(a:nest, a:surrounds, 1, skip_expr, a:timeout)
+  let head = s:searchpos(a:nest, a:surrounds, 1, a:timeout)
   if head == s:null_coord | return deepcopy(s:null_region) | endif
-  let is_head_skipping_syntax = is_skip ? 0 : s:is_skipping_syntax(head)
-
-  if is_head_skipping_syntax && is_tail_skipping_syntax && !s:is_successive_syntax(head, tail)
-    " If the syntax region is not successive, search again with skipping specific sytaxes.
-    return s:search_surrounds(a:surrounds, a:pos, a:nest, a:timeout, 1)
-  elseif is_head_skipping_syntax && !is_tail_skipping_syntax
-    " search head which is not in specific syntaxes
-    let head = s:searchpos(a:nest, a:surrounds, 1, 's:skip(1)', a:timeout)
-    if head == s:null_coord | return deepcopy(s:null_region) | endif
-  elseif !is_head_skipping_syntax && is_tail_skipping_syntax
-    " search tail which is not in specific syntaxes
-    let tail = s:searchpos(a:nest, a:surrounds, 0, 's:skip(1)', a:timeout)
-    if tail == s:null_coord | return deepcopy(s:null_region) | endif
-  endif
 
   let tail = s:get_left_pos(s:c2p(tail))
   let head = s:get_right_pos(s:c2p(head))
   return extend(deepcopy(s:null_region), {'head': head, 'tail': tail}, 'force')
 endfunction
 "}}}
-function! s:searchpos(nest, pattern, is_head, skip_expr, timeout) abort  "{{{
+function! s:searchpos(nest, pattern, is_head, timeout) abort  "{{{
   if a:nest
-    if !a:is_head && searchpos(a:pattern[0], 'cn', line('.')) == getpos('.')[1:2]
-      normal! l
+    if a:is_head
+      let flag = 'bW'
+    else
+      let flag = 'cW'
+      if searchpos(a:pattern[0], 'cn', line('.')) == getpos('.')[1:2]
+        normal! l
+      endif
     endif
-    let flag = a:is_head ? 'bW' : 'cW'
-    let coord = searchpairpos(a:pattern[0], '', a:pattern[1], flag, a:skip_expr, 0, a:timeout)
+    let coord = searchpairpos(a:pattern[0], '', a:pattern[1], flag, '', 0, a:timeout)
     if coord != s:null_coord && a:is_head
       let coord = searchpos(a:pattern[0], 'ceW', 0, a:timeout)
     endif
   else
     let coord = copy(s:null_coord)
-    let flag = a:is_head ? 'beW' : 'cW'
-    let pattern = a:is_head ? a:pattern[0] : a:pattern[1]
-    let coord = searchpos(pattern, flag, 0, a:timeout)
-    let flag = a:is_head ? 'beW' : 'W'
-    while coord != s:null_coord && eval(a:skip_expr)
-      let coord = searchpos(pattern, flag, 0, a:timeout)
-    endwhile
+    if a:is_head
+      let coord = searchpos(a:pattern[0], 'beW', 0, a:timeout)
+    else
+      let coord = searchpos(a:pattern[1], 'cW', 0, a:timeout)
+    endif
   endif
   return coord
-endfunction
-"}}}
-function! s:skip(is_skip) abort "{{{
-  return a:is_skip ? s:is_skipping_syntax(getpos('.')[1:2]) : 0
-endfunction
-"}}}
-function! s:is_skipping_syntax(coord) abort "{{{
-  let syntax = s:get_displaysyntax(a:coord)
-  return syntax ==# 'Constant' || syntax ==# 'String' || syntax ==# 'Comment'
-endfunction
-"}}}
-function! s:is_successive_syntax(head, tail) abort  "{{{
-  call cursor(a:head)
-  let tail = s:c2p(a:tail)
-  let syntax = s:get_displaysyntax(a:head)
-  let is_successive = 1
-  let [&virtualedit, &whichwrap] = ['', 'h,l']
-  while 1
-    normal! l
-    let pos = getpos('.')
-
-    if s:is_ahead(pos, tail)
-      break
-    endif
-
-    if s:get_displaysyntax(pos[1:2]) !=# syntax
-      let is_successive = 0
-      break
-    endif
-  endwhile
-  let [&virtualedit, &whichwrap] = ['onemore', 'h,l']
-  return is_successive
-endfunction
-"}}}
-function! s:get_displaysyntax(coord) abort  "{{{
-  return synIDattr(synIDtrans(synID(a:coord[0], a:coord[1], 1)), 'name')
 endfunction
 "}}}
 function! s:check_body(body, region, timeout) abort "{{{
