@@ -1,5 +1,5 @@
 *swap.txt*	いれかえたりする。
-						Last change:11-Nov-2016.
+						Last change:26-Sep-2017.
 
 書いた人   : machakann <mckn{at}outlook.jp>
 ライセンス : NYSL ライセンス
@@ -268,58 +268,326 @@ NOTE: もし swap mode 内でバッファが変更された場合、必ずしも
 CUSTOMIZATION				*swap-customization*
 
 					*g:swap#rules*
-ユーザーは任意の設定を追加することができます。設定は "rule" と呼ばれ、その実体
-は下記の条件を満たす |Dictionary| 変数です。新しいルールの定義は簡単ではないか
-もしれません、その場合は気軽に <https://github.com/machakann/vim-swap/issues>
+ソースコードの中の対象文字列を厳密に認識し解釈するためには、プラグインが言語ご
+との実装を持つ必要があります。しかし、当然多くの言語依存の実装を書くのは困難な
+ため、 |swap.vim| は多くの言語に共通する特徴を利用して動作します。言語や対象に
+したい文字列によっては足がかりとする特徴に違いがあり、その組み合わせがひとつの
+"rule" を作ります。 |swap.vim| はこの一般化・単純化された "rule" に基づいて文
+字列要素の入れ替えを行い、また、誰もがこの "rule" を追加することによって機能を
+拡張することができます。
+
+ここでいう "rule" は Vim script における |Dictionary| であり、以下の条件を満た
+します。まず、最低限 "delimiter" キーをもち、区切り文字にマッチするパターンを
+値として持たなければいけません。また、 |Normal| モードで有効な "rule" であるた
+めには "body" キーか "surrounds" キーによって対象文字列をバッファから検索する
+方法を持たなければなりません。 |Visual| モードにおいては選択文字列を対象とする
+のでそれらは必須ではありません。
+
+例えば、もし次の文字列中の丸括弧 () 内の文字列を入れ替えるとします。
+>
+	(foo,bar,baz)
+<
+この場合、 "delimiter" キーの値は `,` にマッチする正規表現になります。 "body"
+あるいは "surrounds" はバッファから対象文字列 `foo,bar,baz` を抽出するのに使わ
+れます。
+
+新しいルールの定義は簡単ではないかもしれません、その場合は気軽に
+<https://github.com/machakann/vim-swap/issues>
 にてご相談ください。
 
+					*g:swap#default_rules*
 新しいルールは g:swap#rules に追加されることで効力を発揮します。必要ならまずデ
 フォルトの設定をコピーし、さらに追加していくとよいでしょう。
 >
 	let g:swap#rules = deepcopy(g:swap#default_rules)
 <
 
-まず rule をノーマルモード |Normal| で使用したい場合は "body" キーか
-"surrounds" キーを持っている必要があります。これらのキーは作用する対象の区切ら
-れたテキストを検索するのにつかわれます。 "body" キーは対象テキストにマッチする
-正規表現パターンを値に持ちます。例えば単純なスペースで区切られた単語であれば、
-'\%(\h\w*\s\+\)\+\h\w*' といった具合です。 "surround" キーは二要素あるいは三要
-素のリストを値に持ちます。リストの第一、第二要素は対象文字列を囲む文字列にマッ
-チするパターンです。第三引数は省略可能ですが、真偽値を与えることで囲みがネスト
-を作るかどうかを指定することができます。省略された場合ネストを考慮しません。
-例えば、丸かっこに囲まれたテキストを対象としたい場合 ['(', ')', 1] となりま
+
+delimiter~
+"delimiter" キーはすべての "rule" に必須です。その値は対象内の区切り文字にマッ
+チする正規表現パターンです。
+
+
+
+body~
+この "body" キーか次の "surrounds" キーのどちらかが |Normal| モードで動作する
+"rule" に必要です。 "mode" キーの項も参照してください。 "body" キーにの値は
+区切り文字を含む対象文字列全体にマッチする正規表現パターンです。
+
+スネークケースの変数名などはアンダーバー _ によってつながれた単語とみなされま
+す。この単語をアンダーバー区切りで入れ替えたい場合、 "delimiter" に '_' を、
+"body" にはアンダーバーを含む全体にマッチする正規表現を指定します。
+
+  * Example 1: snake case strings, like `foo_bar_baz` >
+	let g:swap#rules += [{
+	  \   "delimiter": ['_'],
+	  \   "body": '\h\w*\(_\h\w*\)\+',
+	  \ }]
+<
+
+
+surrounds~
+この "surrounds" キーか上記の "body" キーのどちらかが |Normal| モードで動作す
+る "rule" に必要です。 "mode" キーの項も参照してください。 "surrounds" キーの
+値は二つか三つの要素を持つリスト |list| です。最初の二つの要素は必須で、対象文
+字列を囲む文字列にマッチする正規表現です。三つ目の要素は省略可能で、最初の二つ
+の要素がネスト構造をつくるか (1) 否か (0) です。ネスト構造をつくる場合は真値、
+すなわち 1 を、つくらない場合は 0 を指定してください。三つ目の要素が省略された
+場合、ネストを作らないものとして考えます。
+
+例えば、次のようなコンマによって区切られた文字列の入れ替えについて考えます。
+>
+	(foo,bar,baz)
+<
+入れ替え対象文字列 `foo,bar,baz` は丸括弧 () に囲まれています。さらに、もう少
+し複雑な場合も考えられます。
+>
+	(foo,bar,(baz,qux),quux)
+<
+この場合、対象文字列として予期するのは `foo,bar,(baz,qux` ではなく、
+`foo,bar,(baz,qux),quux` でしょう。なぜなら、一般的に丸括弧はネストをつくるこ
+とを期待するためです。このようなテキストのための "rule" の例は次のようになりま
 す。
 
-次にすべての rule は "delimiter" キーを持たなければいけません。このキーは最低
-でも一つは要素をもつリストを値に持ち、各要素はテキストを区切る文字列にマッチす
-る正規表現パターンです。この区切り文字以外の部分が入れ替え対象の文字列として認
-識されます。パターン '^' は対象文字列の先頭のみにしかマッチしません。改行を含
-む文字列の場合、行頭にマッチするパターンを使う必要がある場合は '\n' |/\n|(改行
-を含めたくなければ '\n\zs' |/\zs|) に続けてパターンを記述してください。
-例えば、行区切りとしたい場合は "delimiter" は '\n'です。
+  * Example 2: comma-delimited items wrapped by (), like `(foo,bar,baz)` >
+	let g:swap#rules += [{
+	  \   "delimiter": [','],
+	  \   "surrounds": ['(', ')', 1],
+	  \ }]
+<
+丸括弧ではなくクオーテーションであればどうでしょう。
+>
+	'foo,bar',baz,qux,'quux'
+<
+クオーテーションは一般的にネストはつくらないことを期待します。対象文字列は
+`foo,bar',baz,qux,'quux` ではなく `foo,bar` でしょう。
 
-最低限必要なキーは以上の二つですが、モードやファイルタイプに固有な rule を作り
-たい場合は "mode" キー、あるいは "filetype" キーが使えます。 "mode" キーは文字
-列 |string| を値に持ち、これに "n" が含まれれば |Normal| モードで有効に、 "x"
-が含まれれば |Visual| モードで有効になります。 rule が "mode" キーを持たない場
-合は両方のモードで有効になります。 "filetype" キーはファイルタイプ名を要素とし
-て持つリストを値に持ちます。このリストに挙げられたファイルタイプでのみ有効にな
-ります。
+  * Example 3: comma-delimited items wrapped by quotes, like `foo,bar` >
+	let g:swap#rules += [{
+	  \   "delimiter": [','],
+	  \   "surrounds": ["'", "'", 0],
+	  \ }]
+<
+三つ目の要素を省略した場合、 0 を指定した場合と同じになります。
 
-さらにいくつかの補助的なキーがあります。
-"braket" キー、 "quotes" キー及び "literal_quotes" は括弧やクオーテーションによ
-るグループ化を考慮するために使います。括弧やクオーテーションの指定は正規表現で
-はありません(!)。文字列として検索されます。違いとしては "braket" はネスト構造
-を作りますが、他二つはネストを考慮しません。また、 "quotes" には 'quoteescape'
-が適用されますが、 "literal_quotes" には適用されません。下の例を参考にしてくださ
-い。
+NOTE: コンマ ',' を区切り文字にする場合、隣接するスペースを含めた方が便利かも
+      しれません。
 
+  * Example 2': comma-delimited items wrapped by (), like `(foo, bar, baz)` >
+	let g:swap#rules += [{
+	  \   "delimiter": ['\s*,\s*'],
+	  \   "surrounds": ['(', ')', 1],
+	  \ }]
+<
+
+
+mode~
+"mode" キーは特定のモードで有効な "rule" を定義する場合に使います。 "mode"
+キーの値は 'n' あるいは 'x'、 もしくは両方を含む文字列です。 'n' を含む場合、
+その "rule" は |Normal| モードで有効となり、 'x' を含む場合、 |Visual| モード
+で有効となります。 "mode" キーを持たない "rule" は両方のモードで有効です。
+
+以下のの場合は、 "mode" キーは省略できます。
+
+  * Example 2'': comma-delimited items wrapped by (), like `(foo, bar, baz)` >
+	let g:swap#rules += [{
+	  \   "mode": 'nx',
+	  \   "delimiter": ['\s*,\s*'],
+	  \   "surrounds": ['(', ')', 1],
+	  \ }]
+<
+また、次の場合は |Visual| モードでのみ有効になります。
+
+  * Example 4: a selected comma-including string in visual mode >
+	let g:swap#rules += [{
+	  \   "mode": 'x',
+	  \   "delimiter": ['\s*,\s*'],
+	  \ }]
+<
+
+
+filetype~
+"mode" キーと同様に "filetype" キーがファイルタイプ特有の "rule" の定義に使え
+ます。 "filetype" キーの値はファイルタイプ名のリスト |list| です。
+
+  * Example 5: a sharp-including word in vim script >
+	let g:swap#rules += [{
+	  \   "filetype": ['vim'],
+	  \   "delimiter": ['#'],
+	  \   "body": '\<\h\w*\(#\h\w*\)\+\>',
+	  \ }]
+<
+
+
+braket~
+"braket" キーはまとまった要素を認識するために使われます。
+>
+	(foo, (bar, baz), qux)
+<
+例えば上のテキストの `foo` にカーソルがあるとき、上記の例2の "rule" を使うと四
+つの文字列を入れ替えることになります、すなわち、 `foo`, `(bar`, `baz)`, `qux`
+です。なぜなら、このプラグイン自体は言語に関する知識はなく、何も指定がなければ
+単純に区切り文字 `,` ごとに文字列を分解するためです。しかし、実際には、私たち
+が望むのは次の三つの文字列へ分解することでしょう、すなわち、 `foo`,
+`(bar, baz)`, `qux` ですね。このように、括弧によってまとめられた要素を考慮する
+ために "braket" キーを使います。
+
+  * Example 6: comma-delimited items, like `(foo, (bar, baz), qux)` >
+	let g:swap#rules += [{
+	  \   "delimiter": ['\s*,\s*'],
+	  \   "surrounds": ['(', ')', 1],
+	  \   "braket": [['(', ')']],
+	  \ }]
+<
+
+NOTE: "braket" キーの値はリストのリストです。ひとつのリストは、括弧のペアとな
+      る二つの文字列を格納しています。 "body" キーや "surrounds" キーと違い、
+      これらの文字列は正規表現ではありません。
+
+NOTE: ほとんどの場合、ただ単純に三種の括弧を指定しておけばよいでしょう。
+
+  * Example 6': comma-delimited items, like `(foo, (bar, baz), qux)`
+                                            `(foo, [bar, baz], qux)`
+                                            `(foo, {bar, baz}, qux)` >
+	let g:swap#rules += [{
+	  \   "delimiter": ['\s*,\s*'],
+	  \   "surrounds": ['(', ')', 1],
+	  \   "braket": [['(', ')'], ['[', ']'], ['{', '}']],
+	  \ }]
+<
+
+
+quotes~
+文字列のような要素が区切り文字を含む可能性がある場合 "quotes" キーを使うとよい
+でしょう。例えば、次のように文字列が区切り文字 `,` を含む場合を考えます。
+>
+	(foo, "bar, baz", qux)
+<
+カーソルが `foo` にあるとき、上記の例3の "rule" を使うと、括弧内の文字列は次の
+四つへ分解されます、すなわち、 `foo`, `"bar`, `baz"` and `qux` です。特に何も
+指定しない限り引用符による文字列の開始を考慮しないため、区切り文字 `,` によっ
+て文字列を分解したためです。しかし、実際に私たちが望む動作は次の三つの文字列へ
+の分解でしょう、すなわち、 `foo`, `"bar, baz"`, `qux` です。 このように 文字列
+`"bar, baz"` はひとつの要素として扱われるのが望ましいでしょう。 "quotes" キー
+はこれを可能にします。
+
+  * Example 7: comma-delimited items, like `(foo, "bar, baz", qux)` >
+	let g:swap#rules += [{
+	  \   "delimiter": ['\s*,\s*'],
+	  \   "surrounds": ['(', ')', 1],
+	  \   "quotes": [['"', '"']],
+	  \ }]
+<
+機能は "braket" キーに似ていますが、 "quotes" キーはネストがないことを期待しま
+す。これは複数のペアが対象文字列に現れる場合に違いを生みます。
+>
+	(foo, (bar, (baz, qux), quux))
+	(foo, "bar", baz, qux," quux")
+<
+カーソルが `foo` にある場合、上の文字列は二つに分解されることを期待します、す
+なわち、 `foo` と `(bar, (baz, qux), quux)` です。これに対し下の文字列では五つ
+の文字列へ分解されることを期待します、すなわち、 `foo`, `"bar"`, `baz`, `qux`,
+`" quux"` です。この違いは通常、括弧がネスト構造をつくるのに対し、引用符はつく
+らないことに起因しています。
+
+NOTE: "quotes" キーの値はリストのリストです。ひとつのリストは、括弧のペアとな
+      る二つの文字列を格納しています。 "body" キーや "surrounds" キーと違い、
+      これらの文字列は正規表現ではありません。
+
+NOTE: ほとんどの場合、ただ単純に二種の引用符を指定しておけばよいでしょう。
+
+  * Example 7': comma-delimited items, like `(foo, 'bar, baz', qux)`
+                                            `(foo, "bar, baz", qux)` >
+	let g:swap#rules += [{
+	  \   "delimiter": ['\s*,\s*'],
+	  \   "surrounds": ['(', ')', 1],
+	  \   "quotes": [["'", "'"], ['"', '"']],
+	  \ }]
+<
+
+
+literal_quotes~
+"literal_quotes" キーは上の "quotes" キーとほとんど同じ機能を持ちます、このた
+めまず "quotes" キーの説明を先に読んでください。 "quotes" キーとの唯一の違いは
+エスケープ文字の扱いです。 "quotes" キーは Vim の組み込みオプション
+'quoteescape' に指定された文字をエスケープ文字として考えますが、
+"literal_quotes" はこれを考慮しません。
+
+例えばバックスラッシュ '\' が 'quoteescape' に指定されている場合、 "quotes" と
+"literal_quotes" は以下のような文字列で異なる動作をします。
+>
+	(foo, "bar\", baz)
+<
+"quotes" を使っている例7の rule はこの文字列を正しく解釈できません。なぜなら、
+エスケープ文字 '\' のために bar から始まる文字列が閉じられていないためです。
+対して、"literal_quotes" は'quoteescape' オプションを無視します。
+
+  * Example 7'': comma-delimited items, like `(foo, "bar\", baz)` >
+	let g:swap#rules += [{
+	  \   "delimiter": ['\s*,\s*'],
+	  \   "surrounds": ['(', ')', 1],
+	  \   "literal_quotes": [['"', '"']],
+	  \ }]
+<
+"literal_quotes" オプションを使うことにより、上の文字列を `foo`, `"bar\"`,
+`baz` に分解できます。
+
+多くの場合は "quotes" オプションを使えば問題ないでしょう。エスケープ文字回りで
+何か意図しない挙動をしたときに "literal_quotes" の使用を検討してください。
+
+
+
+priority~
+"priority" キーは各 rule の優先度を制御するために使います。 "priority" キーの
+値は整数値で、大きな値を持つ rule が優先されます。優先度の高い rule から検索を
+始めて見つかれば検索を打ち切り、見つからなければ次に大きな rule の検索に移りま
+す。 "priority" キーを持たない rule の優先度は 0 になります。
+
+もし優先度の等しい複数のルールにマッチした場合、最も内側、すなわち短い文字列に
+マッチしたものが優先されます。さらに、マッチした文字列の長さも同じ場合は
+|g:swap#rules| の中で後方に位置するルールが優先されます。
+
+  * Example 8: use of priority >
+	let g:swap#rules += [{
+	  \   "surrounds": ['\\(', '\\)', 1],
+	  \   "delimiter": [','],
+	  \   "priority": 10,
+	  \ },
+	  \ {
+	  \   "surrounds": ['(', ')', 1],
+	  \   "delimiter": [','],
+	  \   "priority": 0,
+	  \ }]
+<
+この場合、 `\(` と `\)` のペアを先に探し、見つからなければ `(` と `)` のペアを
+探します。優先度の設定がなければ、マッチする文字列の長さの関係で `\(` と `\)`
+のペアにマッチすることはないでしょう。
+
+
+
+immutable~
 "immutable" キーは入れ替え文字列でも区切り文字列でもない文字列の指定に使いま
-す。これは "delimiter" に似ていますが、 連続する "delimiter" の間に入れ替えに
-より文字列が配置されることがあるのに対し、"delimiter" と"immutable" が隣接する
-場合また "immutable" が連続する場合にその境界へ入れ替え文字列が配置されること
-はありません。値は正規表現のリストになります。例えば、非明示的な行継続を含む場
-合にインデントを無視することなどに使えます。
+す。値は正規表現のリストになります。これは "delimiter" に似ており、今のところ
+必ずしも必要とはなりません。一点だけ "delimiter" と違うのは連続する
+"delimiter" の間に入れ替えにより文字列が配置されることがあるのに対し、
+"delimiter" と "immutable" が隣接する場合また "immutable" が連続する場合にその
+境界へ入れ替え文字列が配置されることはありません。例えば、 ',' を "delimiter"
+に ';' を "immutable" に設定したとします。
+
+  * Example 9: use of immutable >
+	let g:swap#rules += [{
+	  \   "surrounds": ['(', ')', 1],
+	  \   "delimiter": [','],
+	  \   "immutable": [';'],
+	  \ }]
+<
+次のような文字列の `foo` にカーソルがある場合、
+>
+	(foo,,;bar)
+<
+これは、 `(,text1,;text2)` とはなりますが、 `(,,text1;text2)` とはなりません。
+
+非明示的な行継続を含む場合にインデントを無視することなどにも使えます。
 >
 	call func(foo, bar,
 	          baz, qux)
@@ -329,77 +597,14 @@ CUSTOMIZATION				*swap-customization*
 ントを"immutable" としたい場合は、 '\n\s+' のような正規表現を使ってください。
 "delimiter" と同じように '^' は対象文字列の先頭のみにしかマッチしません。
 
-"priority" キーは rule の優先度を設定するために使います。編集対象文字列は優先
-度の高いものから探され、見つからなかった場合により低い優先度のものから選ばれま
-す。省略された場合の rule の優先度は 0 です。もし優先度が同じ場合、最も短い対
-象テキストをもつ rule が使われます。対象テキストの長さも同じ場合は (あまり頻繁
-にはおこらないでしょうけど) |g:swap#rules| 内の後方に位置する rule ほど優先さ
-れます。
-
-Example 1~
-スペース ('\s\+') で区切られた単語 ('\h\w*') 。
-  -> foo bar baz
->
-	let g:swap#rules += [
-	  \ {
-	  \   'body': '\%(\h\w*\s\+\)\+\h\w*',
-	  \   'delimiter': ['\s\+'],
+  * Example 10: ignoring indentations in a multi-line expression >
+	let g:swap#rules += [{
+	  \   "surrounds": ['(', ')', 1],
+	  \   "delimiter": [','],
+	  \   "immutable": ['\n\s\+'],
 	  \ }]
 <
 
-Example 2~
-[] で囲まれ、 : および ; で区切られた文字列。グループ化を考慮する。
-  -> [foo:'bar:baz';qux]
->
-	let g:swap#rules += [
-	  \ {
-	  \   'surrounds' : ['\[', '\]', 1],
-	  \   'delimiter' : [':', ';'],
-	  \   'braket'    : [['(', ')'], ['[', ']']],
-	  \   'quotes'    : [['"', '"']],
-	  \   'literal_quotes': [["'", "'"]],
-	  \ }]
-<
-
-Example 3~
-|Visual| モードに固有のルール。 "body" や "surrounds" キーを持たなくてもよい。
->
-	let g:swap#rules += [
-	  \ {
-	  \   'mode'      : 'x',
-	  \   'delimiter' : ['\s*,\s*'],
-	  \   'braket'    : [['(', ')'], ['[', ']'], ['{', '}']],
-	  \   'quotes'    : [['"', '"']],
-	  \   'immutable' : ['\%(^\s\|\n\)\s*'],
-	  \   'literal_quotes': [["'", "'"]],
-	  \ }]
-<
-なお、この rule はデフォルトルールに含まれています。
-
-Example 4~
-角かっこ [] に囲まれた文字列。行継続 \ を無視する。 Vim script の編集に固有。
-  -> [
-   \   foo,
-   \   bar,
-   \   baz
-   \ ]
->
-	let g:swap#rules += [
-	  \ {
-	  \   'mode'      : 'n',
-	  \   'surrounds' : ['\[', '\]', 1],
-	  \   'delimiter' : ['\s*,\s*'],
-	  \   'braket'    : [['(', ')'], ['[', ']'], ['{', '}']],
-	  \   'quotes'    : [['"', '"']],
-	  \   'immutable' : ['\%(^\|\n\)\s*\\\s*']
-	  \   'filetype'  : ['vim']
-	  \   'literal_quotes': [["'", "'"]],
-	  \ }]
-<
-なお、この rule はデフォルトルールに含まれています。
-
-					*g:swap#default_rules*
-デフォルトの rule は g:swap#default_rules に格納されています。
 
 ==============================================================================
 HIGHLIGHT GROUPS			*swap-highlight-groups*
