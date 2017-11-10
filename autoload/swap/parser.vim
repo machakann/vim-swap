@@ -1,7 +1,7 @@
 " parser - Parse a text to give a buffer object.
 
 let s:null_pos    = [0, 0, 0, 0]
-let s:null_region = {'head': copy(s:null_pos), 'tail': copy(s:null_pos), 'len': -1, 'type': ''}
+let s:null_region = {'head': copy(s:null_pos), 'tail': copy(s:null_pos), 'len': -1, 'type': '', 'visualkey': ''}
 
 function! swap#parser#parse(region, rule, curpos) abort "{{{
   " s:parse_{type}wise() functions return a list of dictionaries which have two keys at least, attr and string.
@@ -20,7 +20,7 @@ function! swap#parser#parse(region, rule, curpos) abort "{{{
   let buffer.items = filter(copy(buffer.all), 'v:val.attr ==# "item"')
   let buffer.delimiters = filter(copy(buffer.all), 'v:val.attr ==# "delimiter"')
   call map(buffer.all, 'swap#item#get(v:val)')
-  call buffer.address()
+  call s:address_{a:region.type}wise(buffer.all, a:region)
   call buffer.update_sharp(a:curpos)
   call buffer.update_hat()
   call buffer.update_dollar()
@@ -62,15 +62,33 @@ function! s:buffer_prototype.swappable() dict abort  "{{{
   return cond1 && cond2 && cond3 ? 1 : 0
 endfunction
 "}}}
-function! s:buffer_prototype.swap(i1, i2) dict abort  "{{{
-  let item1 = s:extractall(self.items[a:i1])
-  let item2 = s:extractall(self.items[a:i2])
-  call extend(self.items[a:i1], item2, 'force')
-  call extend(self.items[a:i2], item1, 'force')
-endfunction
-"}}}
-function! s:buffer_prototype.address() dict abort "{{{
-  return s:address_{self.region.type}wise(self.all, self.region)
+function! s:buffer_prototype.swap(order, undojoin) dict abort  "{{{
+  let idx1 = a:order[0] - 1
+  let idx2 = a:order[1] - 1
+  if idx1 < 0 || idx1 >= len(self.items) || idx2 < 0 || idx2 >= len(self.items)
+    return
+  endif
+  let item1 = s:extractall(self.items[idx1])
+  let item2 = s:extractall(self.items[idx2])
+  call extend(self.items[idx1], item2, 'force')
+  call extend(self.items[idx2], item1, 'force')
+  call s:address_{self.region.type}wise(self.all, self.region)
+
+  " reflect to the buffer
+  let view = winsaveview()
+  let undojoin_cmd = a:undojoin ? 'undojoin | ' : ''
+  let reg = ['"', getreg('"'), getregtype('"')]
+  call setreg('"', join(map(copy(self.all), 'v:val.string'), ''), self.region.visualkey)
+  call setpos('.', self.region.head)
+  execute printf('%snoautocmd normal! "_d%s:call setpos(".", %s)%s""P:', undojoin_cmd, self.region.visualkey, string(self.region.tail), "\<CR>")
+  let self.region.head = getpos("'[")
+  let self.region.tail = getpos("']")
+  call call('setreg', reg)
+  call winrestview(view)
+
+  " move cursor
+  call self.items[idx2].cursor()
+  let self.symbols['#'] = a:order[1]
 endfunction
 "}}}
 function! s:buffer_prototype.update_sharp(curpos) dict abort "{{{

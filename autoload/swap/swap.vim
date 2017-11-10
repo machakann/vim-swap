@@ -125,19 +125,15 @@ function! s:swap_prototype._swap_once(buffer, order) dict abort "{{{
   " evaluate after substituting symbols
   call map(order, 'type(v:val) == s:type_str ? eval(v:val) : v:val')
 
-  let n = len(a:buffer.items) - 1
-  let idx = map(copy(order), 'type(v:val) == s:type_num ? v:val - 1 : -1')
-  if idx[0] < 0 || idx[0] > n || idx[1] < 0 || idx[1] > n
+  let n = len(a:buffer.items)
+  if type(order[0]) != s:type_num || type(order[1]) != s:type_num
+        \ || order[0] < 1 || order[0] > n || order[1] < 1 || order[1] > n
     " the index is out of range
     return
   endif
 
   " swap items in buffer
-  call a:buffer.swap(idx[0], idx[1])
-  call a:buffer.address()
-
-  " reflect to the buffer
-  call s:reflect(a:buffer, self.undojoin, idx[1])
+  call a:buffer.swap(order, self.undojoin)
   let self.undojoin = 1
 endfunction
 "}}}
@@ -337,27 +333,6 @@ endfunction
 function! s:substitute_symbol(order, symbol, symbol_idx) abort "{{{
   let symbol = s:escape(a:symbol)
   return map(a:order, 'type(v:val) == s:type_str ? substitute(v:val, symbol, a:symbol_idx, "") : v:val')
-endfunction
-"}}}
-function! s:reflect(buffer, undojoin, cursor_idx) abort "{{{
-  let view = winsaveview()
-  let region = a:buffer.region
-  let visualkey = region.visualkey
-
-  " reflect to the buffer
-  let undojoin_cmd = a:undojoin ? 'undojoin | ' : ''
-  let reg = ['"', getreg('"'), getregtype('"')]
-  call setreg('"', join(map(copy(a:buffer.all), 'v:val.string'), ''), visualkey)
-  call setpos('.', region.head)
-  execute printf('%snoautocmd normal! "_d%s:call setpos(".", %s)%s""P:', undojoin_cmd, visualkey, string(region.tail), "\<CR>")
-  let region.head = getpos("'[")
-  let region.tail = getpos("']")
-  call call('setreg', reg)
-
-  " move cursor
-  call winrestview(view)
-  call a:buffer.items[a:cursor_idx].cursor()
-  let a:buffer.symbols['#'] = a:cursor_idx + 1
 endfunction
 "}}}
 
