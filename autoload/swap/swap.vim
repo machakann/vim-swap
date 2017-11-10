@@ -5,8 +5,12 @@ let s:type_num    = type(0)
 let s:null_pos    = [0, 0, 0, 0]
 let s:null_region = {'head': copy(s:null_pos), 'tail': copy(s:null_pos), 'len': -1, 'type': ''}
 
-function! swap#swap#new() abort "{{{
-  return deepcopy(s:swap_prototype)
+function! swap#swap#new(mode, order_list) abort "{{{
+  let swap = deepcopy(s:swap_prototype)
+  let swap.mode = a:mode
+  let swap.order_list = a:order_list
+  let swap.rules = s:get_rules(a:mode)
+  return swap
 endfunction
 "}}}
 
@@ -30,14 +34,16 @@ function! s:swap_prototype.execute(motionwise) dict abort "{{{
   let self.dotrepeat = 1
 endfunction
 "}}}
+function! s:swap_prototype.scan(motionwise) abort "{{{
+  let rules = deepcopy(self.rules)
+  return s:scan(rules, a:motionwise)
+endfunction "}}}
 function! s:swap_prototype._normal(motionwise) dict abort  "{{{
   if self.dotrepeat
-    let rules = deepcopy(self.rules)
-    let [buffer, _] = s:scan(rules, a:motionwise)
+    let [buffer, _] = self.scan(a:motionwise)
     call self._swap_sequential(buffer)
   else
-    let rules = self._get_rules()
-    let [buffer, rule] = s:scan(rules, a:motionwise)
+    let [buffer, rule] = self.scan(a:motionwise)
     if has_key(rule, 'initialize')
       let self.rules = [rule.initialize()]
       let self.order_list = self._swap(buffer)
@@ -47,27 +53,15 @@ endfunction
 "}}}
 function! s:swap_prototype._visual(motionwise) dict abort  "{{{
   let region = s:get_assigned_region(a:motionwise)
+  let rules = deepcopy(self.rules)
   if self.dotrepeat
-    let rules = deepcopy(self.rules)
     let [buffer, _] = s:check(region, rules)
     call self._swap_sequential(buffer)
   else
-    let rules = self._get_rules()
     let [buffer, rule] = s:check(region, rules)
     let self.rules = [rule]
     let self.order_list = self._swap(buffer)
   endif
-endfunction
-"}}}
-function! s:swap_prototype._get_rules() dict abort  "{{{
-  let rules = deepcopy(get(g:, 'swap#rules', g:swap#default_rules))
-  call map(rules, 'extend(v:val, {"priority": 0}, "keep")')
-  call s:sort(reverse(rules), function('s:compare_priority'))
-  call filter(rules, 's:filter_filetype(v:val) && s:filter_mode(v:val, self.mode)')
-  if self.mode !=# 'x'
-    call s:remove_duplicate_rules(rules)
-  endif
-  return map(rules, 'swap#rule#get(v:val)')
 endfunction
 "}}}
 function! s:swap_prototype._swap(buffer) dict abort "{{{
@@ -156,6 +150,17 @@ function! s:swap_prototype.error.catch(msg, ...) dict abort  "{{{
 endfunction
 "}}}
 
+function! s:get_rules(mode) abort  "{{{
+  let rules = deepcopy(get(g:, 'swap#rules', g:swap#default_rules))
+  call map(rules, 'extend(v:val, {"priority": 0}, "keep")')
+  call s:sort(reverse(rules), function('s:compare_priority'))
+  call filter(rules, 's:filter_filetype(v:val) && s:filter_mode(v:val, a:mode)')
+  if a:mode !=# 'x'
+    call s:remove_duplicate_rules(rules)
+  endif
+  return map(rules, 'swap#rule#get(v:val)')
+endfunction
+"}}}
 function! s:filter_filetype(rule) abort  "{{{
   if !has_key(a:rule, 'filetype')
     return 1

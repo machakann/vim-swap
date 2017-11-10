@@ -168,10 +168,7 @@ let g:swap#default_rules = [
 let s:has_gui_running = has('gui_running')
 
 function! swap#prerequisite(mode, ...) abort "{{{
-  let g:swap = swap#swap#new()
-  let g:swap.dotrepeat = 0
-  let g:swap.mode = a:mode
-  let g:swap.order_list = get(a:000, 0, [])
+  let g:swap = swap#swap#new(a:mode, get(a:000, 0, []))
   set operatorfunc=swap#swap
 endfunction
 "}}}
