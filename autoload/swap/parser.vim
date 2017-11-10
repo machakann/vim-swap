@@ -1,5 +1,8 @@
 " parser - Parse a text to give a buffer object.
 
+let s:null_pos    = [0, 0, 0, 0]
+let s:null_region = {'head': copy(s:null_pos), 'tail': copy(s:null_pos), 'len': -1, 'type': ''}
+
 function! swap#parser#parse(region, rule, curpos) abort "{{{
   " s:parse_{type}wise() functions return a list of dictionaries which have two keys at least, attr and string.
   "   attr   : 'item' or 'delimiter' or 'immutable'.
@@ -11,18 +14,100 @@ function! swap#parser#parse(region, rule, curpos) abort "{{{
   "   'foo,bar' is parsed to [{'attr': 'item', 'string': 'foo'}, {'attr': 'delimiter', 'string': ','}, {'attr': 'item': 'string': 'bar'}]
   " In case that motionwise ==# 'V' or "\<C-v>", delimiter string should be "\n".
   let text = s:get_buf_text(a:region)
-  let buffer = swap#buffer#new()
+  let buffer = deepcopy(s:buffer_prototype)
   let buffer.region = a:region
   let buffer.all = s:parse_{a:region.type}wise(text, a:rule)
   let buffer.items = filter(copy(buffer.all), 'v:val.attr ==# "item"')
   let buffer.delimiters = filter(copy(buffer.all), 'v:val.attr ==# "delimiter"')
-  call buffer.functionalize()
+  call map(buffer.all, 'swap#item#get(v:val)')
   call buffer.address()
-  call buffer.set_sharp(a:curpos)
-  call buffer.set_hat()
-  call buffer.set_dollar()
+  let buffer.symbols['#'] = buffer.get_sharp(a:curpos)
+  let buffer.symbols['^'] = buffer.get_hat()
+  let buffer.symbols['$'] = buffer.get_dollar()
   return buffer
 endfunction
+"}}}
+
+" buffer object {{{
+let s:buffer_prototype = {
+      \   'region': deepcopy(s:null_region),
+      \   'all': [],
+      \   'items': [],
+      \   'delimiters': [],
+      \   'symbols': {'#': 0, '^': 0, '$': 0},
+      \ }
+function! s:buffer_prototype.clear_highlight(...) dict abort  "{{{
+  " NOTE: This function itself does not redraw.
+  if !g:swap#highlight
+    return
+  endif
+
+  let section = get(a:000, 0, 'all')
+  for text in self[section]
+    if text.highlightid != []
+      call text.clear_highlight()
+    endif
+  endfor
+endfunction
+"}}}
+function! s:buffer_prototype.swappable() dict abort  "{{{
+  " Check whether the region matches with the conditions to treat as the target.
+  " NOTE: The conditions are the following three.
+  "       1. Include two items at least.
+  "       2. Not less than one of the item is not empty.
+  "       3. Include one delimiter at least.
+  let cond1 = len(self.items) >= 2
+  let cond2 = filter(copy(self.items), 'v:val.string !=# ""') != []
+  let cond3 = filter(copy(self.all), 'v:val.attr ==# "delimiter"') != []
+  return cond1 && cond2 && cond3 ? 1 : 0
+endfunction
+"}}}
+function! s:buffer_prototype.swap(i1, i2) dict abort  "{{{
+  let item1 = s:extractall(self.items[a:i1])
+  let item2 = s:extractall(self.items[a:i2])
+  call extend(self.items[a:i1], item2, 'force')
+  call extend(self.items[a:i2], item1, 'force')
+endfunction
+"}}}
+function! s:buffer_prototype.address() dict abort "{{{
+  return s:address_{self.region.type}wise(self.all, self.region)
+endfunction
+"}}}
+function! s:buffer_prototype.get_sharp(curpos) dict abort "{{{
+  let sharp = 0
+  if self.all != []
+    if s:is_ahead(self.all[0].region.head, a:curpos)
+      let sharp = 1
+    else
+      for text in self.items
+        let sharp += 1
+        if s:is_ahead(text.region.tail, a:curpos)
+          break
+        endif
+      endfor
+      if sharp > len(self.items)
+        let sharp = len(self.items)
+      endif
+    endif
+  endif
+  return sharp
+endfunction
+"}}}
+function! s:buffer_prototype.get_hat() dict abort "{{{
+  let hat = 0
+  for text in self.items
+    let hat += 1
+    if text.string !=# ''
+      break
+    endif
+  endfor
+  return hat
+endfunction
+"}}}
+function! s:buffer_prototype.get_dollar() dict abort "{{{
+  return len(self.items)
+endfunction
+"}}}
 "}}}
 
 function! s:parse_charwise(text, rule) abort  "{{{
@@ -134,6 +219,75 @@ function! s:parse_blockwise(text, rule) abort  "{{{
   endfor
   call remove(buffer, -1)
   return buffer
+endfunction
+"}}}
+function! s:address_charwise(buffer, region) abort  "{{{
+  let pos = copy(a:region.head)
+  for item in a:buffer
+    if stridx(item.string, "\n") < 0
+      let len = strlen(item.string)
+      let item.region.len  = len
+      let item.region.head = copy(pos)
+      let pos[2] += len
+      let item.region.tail = copy(pos)
+    else
+      let lines = split(item.string, '\n\zs', 1)
+      let item.region.len  = strlen(item.string)
+      let item.region.head = copy(pos)
+      let pos[1] += len(lines) - 1
+      let pos[2] = strlen(lines[-1]) + 1
+      let item.region.tail = copy(pos)
+    endif
+  endfor
+  return a:buffer
+endfunction
+"}}}
+function! s:address_linewise(buffer, region) abort  "{{{
+  let lnum = a:region.head[1]
+  for item in a:buffer
+    if item.attr ==# 'item'
+      let len = strlen(item.string)
+      let item.region.len  = len
+      let item.region.head = [0, lnum, 1, 0]
+      let item.region.tail = [0, lnum, len+1, 0]
+    elseif item.attr ==# 'delimiter'
+      let item.region.len = 1
+      let item.region.head = [0, lnum, col([lnum, '$']), 0]
+      let item.region.tail = [0, lnum+1, 1, 0]
+      let lnum += 1
+    endif
+  endfor
+  return a:buffer
+endfunction
+"}}}
+function! s:address_blockwise(buffer, region) abort  "{{{
+  let view = winsaveview()
+  let lnum = a:region.head[1]
+  let virtcol = a:region.head[2]
+  for item in a:buffer
+    if item.attr ==# 'item'
+      let col = s:virtcol2col(lnum, virtcol)
+      let len = strlen(item.string)
+      let item.region.len  = len
+      let item.region.head = [0, lnum, col, 0]
+      let item.region.tail = [0, lnum, col+len, 0]
+    elseif item.attr ==# 'delimiter'
+      let item.region.len = 0
+      let item.region.head = [0, lnum, col+len, 0]
+      let item.region.tail = [0, lnum, col+len, 0]
+      let lnum += 1
+    endif
+  endfor
+  call winrestview(view)
+  return a:buffer
+endfunction
+"}}}
+function! s:extractall(dict) abort "{{{
+  " remove all keys and values of dictionary
+  " return the copy of original dict
+  let copy_dict = copy(a:dict)
+  call filter(a:dict, 1)
+  return copy_dict
 endfunction
 "}}}
 function! s:get_buf_text(region) abort  "{{{
@@ -448,7 +602,7 @@ function! s:compare_idx(i1, i2) abort "{{{
 endfunction
 "}}}
 
-let [s:sort, s:escape] = swap#lib#funcref(['sort', 'escape'])
+let [s:sort, s:escape, s:is_ahead, s:virtcol2col] = swap#lib#funcref(['sort', 'escape', 'is_ahead', 'virtcol2col'])
 
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:
