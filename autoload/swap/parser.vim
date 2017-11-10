@@ -21,9 +21,9 @@ function! swap#parser#parse(region, rule, curpos) abort "{{{
   let buffer.delimiters = filter(copy(buffer.all), 'v:val.attr ==# "delimiter"')
   call map(buffer.all, 'swap#item#get(v:val)')
   call buffer.address()
-  let buffer.symbols['#'] = buffer.get_sharp(a:curpos)
-  let buffer.symbols['^'] = buffer.get_hat()
-  let buffer.symbols['$'] = buffer.get_dollar()
+  call buffer.update_sharp(a:curpos)
+  call buffer.update_hat()
+  call buffer.update_dollar()
   return buffer
 endfunction
 "}}}
@@ -73,7 +73,7 @@ function! s:buffer_prototype.address() dict abort "{{{
   return s:address_{self.region.type}wise(self.all, self.region)
 endfunction
 "}}}
-function! s:buffer_prototype.get_sharp(curpos) dict abort "{{{
+function! s:buffer_prototype.update_sharp(curpos) dict abort "{{{
   let sharp = 0
   if self.all != []
     if s:is_ahead(self.all[0].region.head, a:curpos)
@@ -90,10 +90,11 @@ function! s:buffer_prototype.get_sharp(curpos) dict abort "{{{
       endif
     endif
   endif
+  let self.symbols['#'] = sharp
   return sharp
 endfunction
 "}}}
-function! s:buffer_prototype.get_hat() dict abort "{{{
+function! s:buffer_prototype.update_hat() dict abort "{{{
   let hat = 0
   for text in self.items
     let hat += 1
@@ -101,11 +102,14 @@ function! s:buffer_prototype.get_hat() dict abort "{{{
       break
     endif
   endfor
+  let self.symbols['^'] = hat
   return hat
 endfunction
 "}}}
-function! s:buffer_prototype.get_dollar() dict abort "{{{
-  return len(self.items)
+function! s:buffer_prototype.update_dollar() dict abort "{{{
+  let dollar = len(self.items)
+  let self.symbols['$'] = dollar
+  return dollar
 endfunction
 "}}}
 "}}}

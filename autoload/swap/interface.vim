@@ -162,7 +162,8 @@ function! s:interface_prototype.revise_cursor_pos() dict abort  "{{{
   elseif curpos == tail || s:is_ahead(curpos, tail)
     let self.idx.current = self.idx.end + 1
   else
-    let self.idx.current = self.buffer.get_sharp(curpos) - 1
+    let sharp = self.buffer.update_sharp(curpos)
+    let self.idx.current = sharp - 1
   endif
   call self.update_highlight()
 endfunction
