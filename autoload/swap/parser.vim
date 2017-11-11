@@ -3,40 +3,88 @@
 let s:null_pos    = [0, 0, 0, 0]
 let s:null_region = {'head': copy(s:null_pos), 'tail': copy(s:null_pos), 'len': -1, 'type': '', 'visualkey': ''}
 
+" patches
+if v:version > 704 || (v:version == 704 && has('patch237'))
+  let s:has_patch_7_4_362 = has('patch-7.4.362')
+else
+  let s:has_patch_7_4_362 = v:version == 704 && has('patch362')
+endif
+
 function! swap#parser#parse(region, rule, curpos) abort "{{{
-  " s:parse_{type}wise() functions return a list of dictionaries which have two keys at least, attr and string.
-  "   attr   : 'item' or 'delimiter' or 'immutable'.
-  "            'item' means that the string is an item reordered.
-  "            'delimiter' means that the string is an item for separation. It would not be regarded as an item reordered.
-  "            'immutable' is not an 'item' and not a 'delimiter'. It is a string which should not be changed.
-  "   string : The value is the string as 'item' or 'delimiter' or 'immutable'.
-  " For instance,
-  "   'foo,bar' is parsed to [{'attr': 'item', 'string': 'foo'}, {'attr': 'delimiter', 'string': ','}, {'attr': 'item': 'string': 'bar'}]
-  " In case that motionwise ==# 'V' or "\<C-v>", delimiter string should be "\n".
-  let text = s:get_buf_text(a:region)
-  let buffer = deepcopy(s:buffer_prototype)
-  let buffer.region = a:region
-  let buffer.all = s:parse_{a:region.type}wise(text, a:rule)
-  let buffer.items = filter(copy(buffer.all), 'v:val.attr ==# "item"')
-  let buffer.delimiters = filter(copy(buffer.all), 'v:val.attr ==# "delimiter"')
-  call map(buffer.all, 'swap#item#get(v:val)')
-  call s:address_{a:region.type}wise(buffer.all, a:region)
-  call buffer.update_sharp(a:curpos)
-  call buffer.update_hat()
-  call buffer.update_dollar()
-  return buffer
+  return s:Buffer(a:region, a:rule, a:curpos)
 endfunction
 "}}}
 
-" buffer object {{{
-let s:buffer_prototype = {
+" Item object {{{
+let s:Item_prototype = {
+      \   'attr': '',
+      \   'string': '',
+      \   'highlightid': [],
+      \   'region': deepcopy(s:null_region),
+      \ }
+function! s:Item_prototype.cursor(...) dict abort "{{{
+  let to_tail = get(a:000, 0, 0)
+  if to_tail
+    call setpos('.', self.region.tail)
+  else
+    call setpos('.', self.region.head)
+  endif
+endfunction
+"}}}
+function! s:Item_prototype.highlight(group) dict abort "{{{
+  if self.region.len > 0
+    let n = 0
+    let order = []
+    let order_list = []
+    let lines = split(self.string, '\n\zs')
+    let n_lines = len(lines)
+    if n_lines == 1
+      let order = [self.region.head[1:2] + [self.region.len]]
+      let order_list = [order]
+    else
+      for i in range(n_lines)
+        if i == 0
+          let order += [self.region.head[1:2] + [strlen(lines[0])]]
+        elseif i == n_lines-1
+          let order += [[self.region.head[1] + i, 1, strlen(lines[i])]]
+        else
+          let order += [[self.region.head[1] + i]]
+        endif
+
+        if n == 7
+          let order_list += [copy(order)]
+          let order = []
+          let n = 0
+        else
+          let n += 1
+        endif
+      endfor
+      let order_list += [copy(order)]
+    endif
+
+    for order in order_list
+      let self.highlightid += s:matchaddpos(a:group, order)
+    endfor
+  endif
+endfunction
+"}}}
+function! s:Item_prototype.clear_highlight() dict abort  "{{{
+  call filter(map(self.highlightid, 's:matchdelete(v:val)'), 'v:val > 0')
+endfunction
+"}}}
+function! s:Item(item) abort "{{{
+  return extend(a:item, deepcopy(s:Item_prototype), 'keep')
+endfunction "}}}
+"}}}
+" Buffer object {{{
+let s:Buffer_prototype = {
       \   'region': deepcopy(s:null_region),
       \   'all': [],
       \   'items': [],
       \   'delimiters': [],
       \   'symbols': {'#': 0, '^': 0, '$': 0},
       \ }
-function! s:buffer_prototype.clear_highlight(...) dict abort  "{{{
+function! s:Buffer_prototype.clear_highlight(...) dict abort  "{{{
   " NOTE: This function itself does not redraw.
   if !g:swap#highlight
     return
@@ -50,7 +98,7 @@ function! s:buffer_prototype.clear_highlight(...) dict abort  "{{{
   endfor
 endfunction
 "}}}
-function! s:buffer_prototype.swappable() dict abort  "{{{
+function! s:Buffer_prototype.swappable() dict abort  "{{{
   " Check whether the region matches with the conditions to treat as the target.
   " NOTE: The conditions are the following three.
   "       1. Include two items at least.
@@ -62,7 +110,7 @@ function! s:buffer_prototype.swappable() dict abort  "{{{
   return cond1 && cond2 && cond3 ? 1 : 0
 endfunction
 "}}}
-function! s:buffer_prototype.swap(order, undojoin) dict abort  "{{{
+function! s:Buffer_prototype.swap(order, undojoin) dict abort  "{{{
   let idx1 = a:order[0] - 1
   let idx2 = a:order[1] - 1
   if idx1 < 0 || idx1 >= len(self.items) || idx2 < 0 || idx2 >= len(self.items)
@@ -91,7 +139,7 @@ function! s:buffer_prototype.swap(order, undojoin) dict abort  "{{{
   let self.symbols['#'] = a:order[1]
 endfunction
 "}}}
-function! s:buffer_prototype.update_sharp(curpos) dict abort "{{{
+function! s:Buffer_prototype.update_sharp(curpos) dict abort "{{{
   let sharp = 0
   if self.all != []
     if s:is_ahead(self.all[0].region.head, a:curpos)
@@ -112,7 +160,7 @@ function! s:buffer_prototype.update_sharp(curpos) dict abort "{{{
   return sharp
 endfunction
 "}}}
-function! s:buffer_prototype.update_hat() dict abort "{{{
+function! s:Buffer_prototype.update_hat() dict abort "{{{
   let hat = 0
   for text in self.items
     let hat += 1
@@ -124,12 +172,35 @@ function! s:buffer_prototype.update_hat() dict abort "{{{
   return hat
 endfunction
 "}}}
-function! s:buffer_prototype.update_dollar() dict abort "{{{
+function! s:Buffer_prototype.update_dollar() dict abort "{{{
   let dollar = len(self.items)
   let self.symbols['$'] = dollar
   return dollar
 endfunction
 "}}}
+function! s:Buffer(region, rule, curpos) abort "{{{
+  " s:parse_{type}wise() functions return a list of dictionaries which have two keys at least, attr and string.
+  "   attr   : 'item' or 'delimiter' or 'immutable'.
+  "            'item' means that the string is an item reordered.
+  "            'delimiter' means that the string is an item for separation. It would not be regarded as an item reordered.
+  "            'immutable' is not an 'item' and not a 'delimiter'. It is a string which should not be changed.
+  "   string : The value is the string as 'item' or 'delimiter' or 'immutable'.
+  " For instance,
+  "   'foo,bar' is parsed to [{'attr': 'item', 'string': 'foo'}, {'attr': 'delimiter', 'string': ','}, {'attr': 'item': 'string': 'bar'}]
+  " In case that motionwise ==# 'V' or "\<C-v>", delimiter string should be "\n".
+  let text = s:get_buf_text(a:region)
+  let buffer = deepcopy(s:Buffer_prototype)
+  let buffer.region = a:region
+  let buffer.all = s:parse_{a:region.type}wise(text, a:rule)
+  let buffer.items = filter(copy(buffer.all), 'v:val.attr ==# "item"')
+  let buffer.delimiters = filter(copy(buffer.all), 'v:val.attr ==# "delimiter"')
+  call map(buffer.all, 's:Item(v:val)')
+  call s:address_{a:region.type}wise(buffer.all, a:region)
+  call buffer.update_sharp(a:curpos)
+  call buffer.update_hat()
+  call buffer.update_dollar()
+  return buffer
+endfunction "}}}
 "}}}
 
 function! s:parse_charwise(text, rule) abort  "{{{
@@ -621,6 +692,32 @@ endfunction
 "}}}
 function! s:compare_idx(i1, i2) abort "{{{
   return a:i1[0] - a:i2[0]
+endfunction
+"}}}
+" function! s:matchaddpos(group, pos) abort "{{{
+if s:has_patch_7_4_362
+  function! s:matchaddpos(group, pos) abort
+    return [matchaddpos(a:group, a:pos)]
+  endfunction
+else
+  function! s:matchaddpos(group, pos) abort
+    let id_list = []
+    for pos in a:pos
+      if len(pos) == 1
+        let id_list += [matchadd(a:group, printf('\%%%dl', pos[0]))]
+      else
+        let id_list += [matchadd(a:group, printf('\%%%dl\%%>%dc.*\%%<%dc', pos[0], pos[1]-1, pos[1]+pos[2]))]
+      endif
+    endfor
+    return id_list
+  endfunction
+endif
+"}}}
+function! s:matchdelete(id) abort "{{{
+  if matchdelete(a:id) == -1
+    return a:id
+  endif
+  return 0
 endfunction
 "}}}
 
