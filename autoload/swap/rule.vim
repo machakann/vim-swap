@@ -78,12 +78,12 @@ endfunction
 
 function! s:search_body(body, pos, timeout) abort "{{{
   call setpos('.', a:pos)
-  let tail = searchpos(a:body, 'ceW', 0, a:timeout)
-  if tail == s:null_coord | return deepcopy(s:null_region) | endif
-  let tail = s:c2p(tail)
-  let head = searchpos(a:body, 'bW',  0, a:timeout)
+  let head = searchpos(a:body, 'cbW',  0, a:timeout)
   if head == s:null_coord | return deepcopy(s:null_region) | endif
   let head = s:c2p(head)
+  let tail = searchpos(a:body, 'eW', 0, a:timeout)
+  if tail == s:null_coord | return deepcopy(s:null_region) | endif
+  let tail = s:c2p(tail)
   return s:is_ahead(tail, head) && s:is_in_between(a:pos, head, tail)
         \ ? extend(deepcopy(s:null_region), {'head': head, 'tail': tail}, 'force')
         \ : deepcopy(s:null_region)
