@@ -75,6 +75,33 @@ endfunction
 function! s:Item(item) abort "{{{
   return extend(a:item, deepcopy(s:Item_prototype), 'keep')
 endfunction "}}}
+
+" function! s:matchaddpos(group, pos) abort "{{{
+if s:has_patch_7_4_362
+  function! s:matchaddpos(group, pos) abort
+    return [matchaddpos(a:group, a:pos)]
+  endfunction
+else
+  function! s:matchaddpos(group, pos) abort
+    let id_list = []
+    for pos in a:pos
+      if len(pos) == 1
+        let id_list += [matchadd(a:group, printf('\%%%dl', pos[0]))]
+      else
+        let id_list += [matchadd(a:group, printf('\%%%dl\%%>%dc.*\%%<%dc', pos[0], pos[1]-1, pos[1]+pos[2]))]
+      endif
+    endfor
+    return id_list
+  endfunction
+endif
+"}}}
+function! s:matchdelete(id) abort "{{{
+  if matchdelete(a:id) == -1
+    return a:id
+  endif
+  return 0
+endfunction
+"}}}
 "}}}
 " Buffer object {{{
 let s:Buffer_prototype = {
@@ -715,32 +742,6 @@ endfunction
 "}}}
 function! s:compare_idx(i1, i2) abort "{{{
   return a:i1[0] - a:i2[0]
-endfunction
-"}}}
-" function! s:matchaddpos(group, pos) abort "{{{
-if s:has_patch_7_4_362
-  function! s:matchaddpos(group, pos) abort
-    return [matchaddpos(a:group, a:pos)]
-  endfunction
-else
-  function! s:matchaddpos(group, pos) abort
-    let id_list = []
-    for pos in a:pos
-      if len(pos) == 1
-        let id_list += [matchadd(a:group, printf('\%%%dl', pos[0]))]
-      else
-        let id_list += [matchadd(a:group, printf('\%%%dl\%%>%dc.*\%%<%dc', pos[0], pos[1]-1, pos[1]+pos[2]))]
-      endif
-    endfor
-    return id_list
-  endfunction
-endif
-"}}}
-function! s:matchdelete(id) abort "{{{
-  if matchdelete(a:id) == -1
-    return a:id
-  endif
-  return 0
 endfunction
 "}}}
 

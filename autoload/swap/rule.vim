@@ -84,9 +84,12 @@ function! s:search_body(body, pos, timeout) abort "{{{
   let tail = searchpos(a:body, 'eW', 0, a:timeout)
   if tail == s:null_coord | return deepcopy(s:null_region) | endif
   let tail = s:c2p(tail)
-  return s:is_ahead(tail, head) && s:is_in_between(a:pos, head, tail)
-        \ ? extend(deepcopy(s:null_region), {'head': head, 'tail': tail}, 'force')
-        \ : deepcopy(s:null_region)
+  if s:is_ahead(tail, head) && s:is_in_between(a:pos, head, tail)
+    let target = extend(deepcopy(s:null_region), {'head': head, 'tail': tail}, 'force')
+  else
+    let target = deepcopy(s:null_region)
+  endif
+  return [target, target]
 endfunction
 "}}}
 function! s:search_surrounds(surrounds, pos, nest, timeout) abort "{{{
@@ -95,14 +98,19 @@ function! s:search_surrounds(surrounds, pos, nest, timeout) abort "{{{
   endif
 
   call setpos('.', a:pos[1])
-  let tail = s:searchpos(a:nest, a:surrounds, 0, a:timeout)
+  if a:nest
+    let tail = s:searchpos_nested_tail(a:surrounds, a:timeout)
+  else
+    let tail = s:searchpos_nonest_tail(a:surrounds, a:timeout)
+  endif
   if tail == s:null_coord | return deepcopy(s:null_region) | endif
 
-  if !a:nest
+  if a:nest
+    let head = s:searchpos_nested_head(a:surrounds, a:timeout)
+  else
     call setpos('.', a:pos[0])
+    let head = s:searchpos_nonest_head(a:surrounds, a:timeout)
   endif
-
-  let head = s:searchpos(a:nest, a:surrounds, 1, a:timeout)
   if head == s:null_coord | return deepcopy(s:null_region) | endif
 
   let tail = s:get_left_pos(s:c2p(tail))
@@ -110,29 +118,27 @@ function! s:search_surrounds(surrounds, pos, nest, timeout) abort "{{{
   return extend(deepcopy(s:null_region), {'head': head, 'tail': tail}, 'force')
 endfunction
 "}}}
-function! s:searchpos(nest, pattern, is_head, timeout) abort  "{{{
-  if a:nest
-    if a:is_head
-      let flag = 'bW'
-    else
-      let flag = 'cW'
-      if searchpos(a:pattern[0], 'cn', line('.')) == getpos('.')[1:2]
-        normal! l
-      endif
-    endif
-    let coord = searchpairpos(a:pattern[0], '', a:pattern[1], flag, '', 0, a:timeout)
-    if coord != s:null_coord && a:is_head
-      let coord = searchpos(a:pattern[0], 'ceW', 0, a:timeout)
-    endif
-  else
-    let coord = copy(s:null_coord)
-    if a:is_head
-      let coord = searchpos(a:pattern[0], 'beW', 0, a:timeout)
-    else
-      let coord = searchpos(a:pattern[1], 'cW', 0, a:timeout)
-    endif
+function! s:searchpos_nested_head(pattern, timeout) abort  "{{{
+  let coord = searchpairpos(a:pattern[0], '', a:pattern[1], 'bW', '', 0, a:timeout)
+  if coord != s:null_coord
+    let coord = searchpos(a:pattern[0], 'ceW', 0, a:timeout)
   endif
   return coord
+endfunction
+"}}}
+function! s:searchpos_nested_tail(pattern, timeout) abort  "{{{
+  if searchpos(a:pattern[0], 'cn', line('.')) == getpos('.')[1:2]
+    normal! l
+  endif
+  return searchpairpos(a:pattern[0], '', a:pattern[1], 'cW', '', 0, a:timeout)
+endfunction
+"}}}
+function! s:searchpos_nonest_head(pattern, timeout) abort  "{{{
+  return searchpos(a:pattern[0], 'beW', 0, a:timeout)
+endfunction
+"}}}
+function! s:searchpos_nonest_tail(pattern, timeout) abort  "{{{
+  return searchpos(a:pattern[1], 'cW', 0, a:timeout)
 endfunction
 "}}}
 function! s:check_body(body, region, timeout) abort "{{{
