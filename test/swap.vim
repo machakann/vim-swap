@@ -437,18 +437,26 @@ function! s:suite.parse_charwise() dict abort  "{{{
         \ ], 'failed at #16')
 
   " #17
+  let stuffs = s:parser.parse_charwise(", foo, bar", rule)
+  call g:assert.equals(stuffs, [
+        \   {'attr': 'item',      'string': ''},
+        \   {'attr': 'delimiter', 'string': ', '},
+        \   {'attr': 'item',      'string': 'foo'},
+        \   {'attr': 'delimiter', 'string': ', '},
+        \   {'attr': 'item',      'string': 'bar'},
+        \ ], 'failed at #17')
+
+  " #18
   " zero-width delimiter
   let rule = {'body': '\a\+', 'delimiter': ['\C\ze[A-Z]'],}
   let stuffs = s:parser.parse_charwise('FooBarBaz', rule)
   call g:assert.equals(stuffs, [
-        \   {'attr': 'item',      'string': ''},
-        \   {'attr': 'delimiter', 'string': ''},
         \   {'attr': 'item',      'string': 'Foo'},
         \   {'attr': 'delimiter', 'string': ''},
         \   {'attr': 'item',      'string': 'Bar'},
         \   {'attr': 'delimiter', 'string': ''},
         \   {'attr': 'item',      'string': 'Baz'},
-        \ ], 'failed at #17')
+        \ ], 'failed at #18')
 endfunction
 "}}}
 

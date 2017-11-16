@@ -288,8 +288,31 @@ function! s:parse_charwise(text, rule) abort  "{{{
     endif
   endwhile
 
-  if buffer != [] && buffer[-1]['attr'] ==# 'delimiter'
-    " If the last item is a delimiter, put empty item at the end.
+  if empty(buffer)
+    return []
+  endif
+
+  " If the first delimiter is zero-width, remove until it.
+  let start = 0
+  let idx = 0
+  while idx < len(buffer)
+    if !empty(buffer[idx]['string'])
+      break
+    endif
+    if buffer[idx]['attr'] ==# 'delimiter'
+      call remove(buffer, start, idx)
+      let start = 0
+      let idx = 0
+    else
+      let idx += 1
+    endif
+  endwhile
+  " If the first item is a delimiter, put an empty item at the first place.
+  if buffer[0]['attr'] ==# 'delimiter'
+    call s:add_buffer_text(buffer, 'item', a:text, 0, 0)
+  endif
+  " If the last item is a delimiter, put an empty item at the end.
+  if buffer[-1]['attr'] ==# 'delimiter'
     call s:add_buffer_text(buffer, 'item', a:text, idx, idx)
   endif
   return buffer
