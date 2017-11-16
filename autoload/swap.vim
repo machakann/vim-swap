@@ -170,8 +170,7 @@ let s:has_gui_running = has('gui_running')
 function! swap#prerequisite(mode, ...) abort "{{{
   let g:swap = swap#swap#new(a:mode, get(a:000, 0, []))
   set operatorfunc=swap#swap
-endfunction
-"}}}
+endfunction "}}}
 function! swap#swap(motionwise) abort "{{{
   let view = winsaveview()
   let dotrepeat = g:swap.dotrepeat
@@ -193,16 +192,13 @@ function! swap#swap(motionwise) abort "{{{
       echoerr err.message
     endif
   endtry
-endfunction
-"}}}
+endfunction "}}}
 function! swap#map(lhs, rhs) abort "{{{
   call s:keymap(0, a:lhs, a:rhs)
-endfunction
-"}}}
+endfunction "}}}
 function! swap#noremap(lhs, rhs) abort "{{{
   call s:keymap(1, a:lhs, a:rhs)
-endfunction
-"}}}
+endfunction "}}}
 
 function! s:displace_options() abort  "{{{
   let options = {}
@@ -220,8 +216,7 @@ function! s:displace_options() abort  "{{{
   let options.cursorline = &l:cursorline
   setlocal nocursorline
   return options
-endfunction
-"}}}
+endfunction "}}}
 function! s:restore_options(options) abort "{{{
   let &virtualedit = a:options.virtualedit
   let &whichwrap = a:options.whichwrap
@@ -233,14 +228,12 @@ function! s:restore_options(options) abort "{{{
     let &t_ve = a:options.cursor
   endif
   let &l:cursorline = a:options.cursorline
-endfunction
-"}}}
+endfunction "}}}
 function! s:keymap(noremap, lhs, rhs) abort  "{{{
   let g:swap#keymappings = get(g:, 'swap#keymappings', g:swap#default_keymappings)
   let keymap = {'noremap': a:noremap, 'input': a:lhs, 'output': a:rhs}
   let g:swap#keymappings += [keymap]
-endfunction
-"}}}
+endfunction "}}}
 
 " key layout in swap mode
 " key layout - discreet "{{{

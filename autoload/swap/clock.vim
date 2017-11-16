@@ -5,8 +5,7 @@ let s:has_reltime_and_float = has('reltime') && has('float')
 
 function! swap#clock#new() abort  "{{{
   return deepcopy(s:clock_prototype)
-endfunction
-"}}}
+endfunction "}}}
 
 let s:clock_prototype = {
       \   'started' : 0,
@@ -27,13 +26,11 @@ function! s:clock_prototype.start() dict abort  "{{{
       let self.started  = 1
     endif
   endif
-endfunction
-"}}}
+endfunction "}}}
 function! s:clock_prototype.pause() dict abort "{{{
   let self.pause_at = reltime()
   let self.paused   = 1
-endfunction
-"}}}
+endfunction "}}}
 function! s:clock_prototype.elapsed() dict abort "{{{
   if self.started
     let total = str2float(reltimestr(reltime(self.zerotime)))
@@ -41,14 +38,12 @@ function! s:clock_prototype.elapsed() dict abort "{{{
   else
     return 0
   endif
-endfunction
-"}}}
+endfunction "}}}
 function! s:clock_prototype.stop() dict abort  "{{{
   let self.started  = 0
   let self.paused   = 0
   let self.losstime = 0
-endfunction
-"}}}
+endfunction "}}}
 
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:

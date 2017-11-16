@@ -9,12 +9,10 @@ function! s:suite.before_each() abort "{{{
   set selection&
   unlet! rule
   unlet! g:swap#rules
-endfunction
-"}}}
+endfunction "}}}
 function! s:suite.after() abort "{{{
   call s:suite.before_each()
-endfunction
-"}}}
+endfunction "}}}
 
 " unit tests
 function! s:suite.shift_to_something_start() abort  "{{{
@@ -67,8 +65,7 @@ function! s:suite.shift_to_something_start() abort  "{{{
   call g:assert.equals(kind, '')
   call g:assert.equals(pattern, '')
   unlet! pattern
-endfunction
-"}}}
+endfunction "}}}
 function! s:suite.shift_to_braket_end() abort  "{{{
   let rule = {'surrounds': ['(', ')', 1], 'delimiter': [',\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']}
   let quotes = map(copy(get(rule, 'quotes', [])), '[0, v:val, 0, "quotes"]')
@@ -106,8 +103,7 @@ function! s:suite.shift_to_braket_end() abort  "{{{
 
   let idx = s:parser.shift_to_braket_end("(foo')'bar)", ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
   call g:assert.equals(idx, 11)
-endfunction
-"}}}
+endfunction "}}}
 function! s:suite.shift_to_quote_end() abort "{{{
   let idx = s:parser.shift_to_quote_end('"foo"', ['"', '"'], 0)
   call g:assert.equals(idx, 5)
@@ -150,8 +146,7 @@ function! s:suite.shift_to_quote_end() abort "{{{
 
   let idx = s:parser.shift_to_quote_end('"\"', ['"', '"'], 0)
   call g:assert.equals(idx, -1)
-endfunction
-"}}}
+endfunction "}}}
 function! s:suite.shift_to_literal_quote_end() abort "{{{
   let idx = s:parser.shift_to_literal_quote_end("'foo'", ["'", "'"], 0)
   call g:assert.equals(idx, 5, 'failed at #1')
@@ -194,8 +189,7 @@ function! s:suite.shift_to_literal_quote_end() abort "{{{
 
   let idx = s:parser.shift_to_literal_quote_end('''\''', ["'", "'"], 0)
   call g:assert.equals(idx, 3, 'failed at #14')
-endfunction
-"}}}
+endfunction "}}}
 function! s:suite.buf_byte_len() abort "{{{
   call append(0, ['abc'])
   normal! 1G
@@ -271,8 +265,7 @@ function! s:suite.buf_byte_len() abort "{{{
   normal! 3G
   let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 8)
-endfunction
-"}}}
+endfunction "}}}
 function! s:suite.parse_charwise() dict abort  "{{{
   let rule = {'surrounds': ['(', ')', 1], 'delimiter': [',\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']}
 
@@ -457,8 +450,7 @@ function! s:suite.parse_charwise() dict abort  "{{{
         \   {'attr': 'delimiter', 'string': ''},
         \   {'attr': 'item',      'string': 'Baz'},
         \ ], 'failed at #18')
-endfunction
-"}}}
+endfunction "}}}
 
 " integration test
 function! s:suite.integration_normal() abort  "{{{
@@ -606,8 +598,7 @@ function! s:suite.integration_normal() abort  "{{{
   call g:assert.equals(getline(3), 'f,',   'failed at #27')
   call g:assert.equals(getline(4), 'baz)', 'failed at #27')
   %delete
-endfunction
-"}}}
+endfunction "}}}
 function! s:suite.integration_normal_selection_option() abort  "{{{
   " #1
   set selection=exclusive
@@ -644,8 +635,7 @@ function! s:suite.integration_normal_selection_option() abort  "{{{
   call setline(1, '(foo, bar, baz)')
   execute "normal gglgsl\<Esc>"
   call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #6')
-endfunction
-"}}}
+endfunction "}}}
 function! s:suite.integration_visual() abort  "{{{
   " #1
   call setline(1, 'foo, bar, baz')
@@ -667,8 +657,7 @@ function! s:suite.integration_visual() abort  "{{{
   call g:assert.equals(getline(2), 'for', 'failed at #3')
   call g:assert.equals(getline(3), 'baz', 'failed at #3')
   %delete
-endfunction
-"}}}
+endfunction "}}}
 
 
 

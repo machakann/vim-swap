@@ -6,8 +6,7 @@ let s:null_region = {'head': copy(s:null_pos), 'tail': copy(s:null_pos), 'len': 
 
 function! swap#rule#get(rule) abort "{{{
   return extend(a:rule, deepcopy(s:rule_prototype), 'force')
-endfunction
-"}}}
+endfunction "}}}
 
 let s:rule_prototype = {
       \   'region': deepcopy(s:null_region)
@@ -44,8 +43,7 @@ function! s:rule_prototype.search(curpos, motionwise) dict abort  "{{{
   endif
   let self.region = deepcopy(s:null_region)
   return self.region
-endfunction
-"}}}
+endfunction "}}}
 function! s:rule_prototype.check(region) dict abort  "{{{
   let timeout = g:swap#stimeoutlen
 
@@ -68,13 +66,11 @@ function! s:rule_prototype.check(region) dict abort  "{{{
   endif
 
   return 1
-endfunction
-"}}}
+endfunction "}}}
 function! s:rule_prototype.initialize() dict abort  "{{{
   let self.region = deepcopy(s:null_region)
   return self
-endfunction
-"}}}
+endfunction "}}}
 
 function! s:search_body(body, pos, timeout) abort "{{{
   call setpos('.', a:pos)
@@ -90,8 +86,7 @@ function! s:search_body(body, pos, timeout) abort "{{{
     let target = deepcopy(s:null_region)
   endif
   return [target, target]
-endfunction
-"}}}
+endfunction "}}}
 function! s:search_surrounds(surrounds, pos, nest, timeout) abort "{{{
   if a:pos[0] == s:null_pos || a:pos[1] == s:null_pos
     return deepcopy(s:null_region)
@@ -116,31 +111,26 @@ function! s:search_surrounds(surrounds, pos, nest, timeout) abort "{{{
   let tail = s:get_left_pos(s:c2p(tail))
   let head = s:get_right_pos(s:c2p(head))
   return extend(deepcopy(s:null_region), {'head': head, 'tail': tail}, 'force')
-endfunction
-"}}}
+endfunction "}}}
 function! s:searchpos_nested_head(pattern, timeout) abort  "{{{
   let coord = searchpairpos(a:pattern[0], '', a:pattern[1], 'bW', '', 0, a:timeout)
   if coord != s:null_coord
     let coord = searchpos(a:pattern[0], 'ceW', 0, a:timeout)
   endif
   return coord
-endfunction
-"}}}
+endfunction "}}}
 function! s:searchpos_nested_tail(pattern, timeout) abort  "{{{
   if searchpos(a:pattern[0], 'cn', line('.')) == getpos('.')[1:2]
     normal! l
   endif
   return searchpairpos(a:pattern[0], '', a:pattern[1], 'cW', '', 0, a:timeout)
-endfunction
-"}}}
+endfunction "}}}
 function! s:searchpos_nonest_head(pattern, timeout) abort  "{{{
   return searchpos(a:pattern[0], 'beW', 0, a:timeout)
-endfunction
-"}}}
+endfunction "}}}
 function! s:searchpos_nonest_tail(pattern, timeout) abort  "{{{
   return searchpos(a:pattern[1], 'cW', 0, a:timeout)
-endfunction
-"}}}
+endfunction "}}}
 function! s:check_body(body, region, timeout) abort "{{{
   let is_matched = 1
   let cur_pos = getpos('.')
@@ -153,8 +143,7 @@ function! s:check_body(body, region, timeout) abort "{{{
   endif
   call setpos('.', cur_pos)
   return is_matched
-endfunction
-"}}}
+endfunction "}}}
 function! s:check_surrounds(surrounds, region, timeout) abort "{{{
   " NOTE: s:match_surrounds does not check nesting.
   "       Maybe it is reasonable considering use cases.
@@ -168,8 +157,7 @@ function! s:check_surrounds(surrounds, region, timeout) abort "{{{
   endif
   call setpos('.', cur_pos)
   return is_matched
-endfunction
-"}}}
+endfunction "}}}
 function! s:get_outer_pos(surrounds, region) abort  "{{{
   let timeout = g:swap#stimeoutlen
   call setpos('.', a:region.head)
@@ -184,20 +172,17 @@ function! s:get_outer_pos(surrounds, region) abort  "{{{
     let tail = s:get_right_pos(tail)
   endif
   return [head, tail]
-endfunction
-"}}}
+endfunction "}}}
 function! s:get_left_pos(pos, ...) abort  "{{{
   call setpos('.', a:pos)
   execute printf('normal! %dh', get(a:000, 0, 1))
   return getpos('.')
-endfunction
-"}}}
+endfunction "}}}
 function! s:get_right_pos(pos, ...) abort  "{{{
   call setpos('.', a:pos)
   execute printf('normal! %dl', get(a:000, 0, 1))
   return getpos('.')
-endfunction
-"}}}
+endfunction "}}}
 
 let [s:get_buf_length, s:c2p, s:is_ahead, s:is_in_between, s:motionwise2visualkey]
       \ = swap#lib#funcref(['get_buf_length', 'c2p', 'is_ahead', 'is_in_between', 'motionwise2visualkey'])

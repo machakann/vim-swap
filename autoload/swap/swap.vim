@@ -11,8 +11,7 @@ function! swap#swap#new(mode, order_list) abort "{{{
   let swap.order_list = a:order_list
   let swap.rules = s:get_rules(a:mode)
   return swap
-endfunction
-"}}}
+endfunction "}}}
 
 let s:swap_prototype = {
       \   'dotrepeat': 0,
@@ -32,8 +31,7 @@ function! s:swap_prototype.execute(motionwise) dict abort "{{{
     call self._visual(a:motionwise)
   endif
   let self.dotrepeat = 1
-endfunction
-"}}}
+endfunction "}}}
 function! s:swap_prototype.scan(motionwise) abort "{{{
   let rules = deepcopy(self.rules)
   return s:scan(rules, a:motionwise)
@@ -49,8 +47,7 @@ function! s:swap_prototype._normal(motionwise) dict abort  "{{{
       let self.order_list = self._swap(buffer)
     endif
   endif
-endfunction
-"}}}
+endfunction "}}}
 function! s:swap_prototype._visual(motionwise) dict abort  "{{{
   let region = s:get_assigned_region(a:motionwise)
   let rules = deepcopy(self.rules)
@@ -62,16 +59,14 @@ function! s:swap_prototype._visual(motionwise) dict abort  "{{{
     let self.rules = [rule]
     let self.order_list = self._swap(buffer)
   endif
-endfunction
-"}}}
+endfunction "}}}
 function! s:swap_prototype._swap(buffer) dict abort "{{{
   if self.order_list != []
     return self._swap_sequential(a:buffer)
   else
     return self._swap_interactive(a:buffer)
   endif
-endfunction
-"}}}
+endfunction "}}}
 function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
   if a:buffer == {}
     return []
@@ -96,8 +91,7 @@ function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
     call a:buffer.clear_highlight()
   endtry
   return interface.history
-endfunction
-"}}}
+endfunction "}}}
 function! s:swap_prototype._swap_sequential(buffer) dict abort  "{{{
   if a:buffer != {}
     let self.undojoin = 0
@@ -106,8 +100,7 @@ function! s:swap_prototype._swap_sequential(buffer) dict abort  "{{{
     endfor
   endif
   return self.order_list
-endfunction
-"}}}
+endfunction "}}}
 function! s:swap_prototype._swap_once(buffer, order) dict abort "{{{
   if a:order == []
     return
@@ -135,16 +128,14 @@ function! s:swap_prototype._swap_once(buffer, order) dict abort "{{{
   " swap items in buffer
   call a:buffer.swap(order, self.undojoin)
   let self.undojoin = 1
-endfunction
-"}}}
+endfunction "}}}
 function! s:swap_prototype.error.catch(msg, ...) dict abort  "{{{
     let self.catched = 1
     let self.message = a:msg
     if a:0
       throw a:1
     endif
-endfunction
-"}}}
+endfunction "}}}
 
 function! s:get_rules(mode) abort  "{{{
   let rules = deepcopy(get(g:, 'swap#rules', g:swap#default_rules))
@@ -155,8 +146,7 @@ function! s:get_rules(mode) abort  "{{{
     call s:remove_duplicate_rules(rules)
   endif
   return map(rules, 'swap#rule#get(v:val)')
-endfunction
-"}}}
+endfunction "}}}
 function! s:filter_filetype(rule) abort  "{{{
   if !has_key(a:rule, 'filetype')
     return 1
@@ -168,16 +158,14 @@ function! s:filter_filetype(rule) abort  "{{{
     let filter = 'v:val !=# "" && count(filetypes, v:val) > 0'
   endif
   return filter(copy(a:rule['filetype']), filter) != []
-endfunction
-"}}}
+endfunction "}}}
 function! s:filter_mode(rule, mode) abort  "{{{
   if !has_key(a:rule, 'mode')
     return 1
   else
     return stridx(a:rule.mode, a:mode) > -1
   endif
-endfunction
-"}}}
+endfunction "}}}
 function! s:remove_duplicate_rules(rules) abort "{{{
   let i = 0
   while i < len(a:rules)
@@ -203,8 +191,7 @@ function! s:remove_duplicate_rules(rules) abort "{{{
     endwhile
     let i += 1
   endwhile
-endfunction
-"}}}
+endfunction "}}}
 function! s:get_assigned_region(motionwise) abort "{{{
   let region = deepcopy(s:null_region)
   let region.head = getpos("'[")
@@ -232,8 +219,7 @@ function! s:get_assigned_region(motionwise) abort "{{{
 
   let region.len = s:get_buf_length(region)
   return region
-endfunction
-"}}}
+endfunction "}}}
 function! s:get_priority_group(rules) abort "{{{
   " NOTE: This function move items in a:rules to priority_group.
   "       Thus it makes changes to a:rules also.
@@ -247,8 +233,7 @@ function! s:get_priority_group(rules) abort "{{{
     call add(priority_group, remove(a:rules, 0))
   endwhile
   return priority_group
-endfunction
-"}}}
+endfunction "}}}
 function! s:scan(rules, motionwise) abort "{{{
   let view = winsaveview()
   let curpos = getpos('.')
@@ -262,8 +247,7 @@ function! s:scan(rules, motionwise) abort "{{{
   endwhile
   call winrestview(view)
   return buffer != {} ? [buffer, rule] : [{}, {}]
-endfunction
-"}}}
+endfunction "}}}
 function! s:scan_group(priority_group, curpos, motionwise) abort "{{{
   while a:priority_group != []
     for rule in a:priority_group
@@ -281,8 +265,7 @@ function! s:scan_group(priority_group, curpos, motionwise) abort "{{{
     endfor
   endwhile
   return [{}, {}]
-endfunction
-"}}}
+endfunction "}}}
 function! s:check(region, rules) abort  "{{{
   if a:region == s:null_region
     return [{}, {}]
@@ -300,8 +283,7 @@ function! s:check(region, rules) abort  "{{{
   endwhile
   call winrestview(view)
   return buffer != {} ? [buffer, rule] : [{}, {}]
-endfunction
-"}}}
+endfunction "}}}
 function! s:check_group(region, priority_group, curpos) abort "{{{
   for rule in a:priority_group
     if rule.check(a:region)
@@ -312,8 +294,7 @@ function! s:check_group(region, priority_group, curpos) abort "{{{
     endif
   endfor
   return [{}, {}]
-endfunction
-"}}}
+endfunction "}}}
 function! s:compare_priority(r1, r2) abort "{{{
   let priority_r1 = get(a:r1, 'priority', 0)
   let priority_r2 = get(a:r2, 'priority', 0)
@@ -324,17 +305,14 @@ function! s:compare_priority(r1, r2) abort "{{{
   else
     return 0
   endif
-endfunction
-"}}}
+endfunction "}}}
 function! s:compare_len(r1, r2) abort "{{{
   return a:r1.region.len - a:r2.region.len
-endfunction
-"}}}
+endfunction "}}}
 function! s:substitute_symbol(order, symbol, symbol_idx) abort "{{{
   let symbol = s:escape(a:symbol)
   return map(a:order, 'type(v:val) == s:type_str ? substitute(v:val, symbol, a:symbol_idx, "") : v:val')
-endfunction
-"}}}
+endfunction "}}}
 
 let [s:get_buf_length, s:sort, s:is_valid_region, s:escape, s:motionwise2visualkey]
       \ = swap#lib#funcref(['get_buf_length', 'sort', 'is_valid_region', 'escape', 'motionwise2visualkey'])
