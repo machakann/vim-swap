@@ -85,7 +85,7 @@ function! s:search_body(body, pos, timeout) abort "{{{
   else
     let target = deepcopy(s:null_region)
   endif
-  return [target, target]
+  return target
 endfunction "}}}
 function! s:search_surrounds(surrounds, pos, nest, timeout) abort "{{{
   if a:pos[0] == s:null_pos || a:pos[1] == s:null_pos
