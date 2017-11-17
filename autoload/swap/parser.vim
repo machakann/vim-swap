@@ -419,6 +419,8 @@ function! s:get_buf_text(region) abort  "{{{
   let text = ''
   let visual = [getpos("'<"), getpos("'>")]
   let registers = s:saveregisters()
+  let selection = &selection
+  set selection=inclusive
   try
     call setpos('.', a:region.head)
     execute 'normal! ' . a:region.visualkey
@@ -426,6 +428,7 @@ function! s:get_buf_text(region) abort  "{{{
     silent noautocmd normal! ""y
     let text = @@
   finally
+    let &selection = selection
     call s:restoreregisters(registers)
     call setpos("'<", visual[0])
     call setpos("'>", visual[1])

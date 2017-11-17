@@ -19,7 +19,7 @@ function! swap#textobj#select(type) abort "{{{
   call setpos('.', start.region.head)
   normal! o
   call setpos('.', end.region.tail)
-  if &selection != 'exclusive'
+  if &selection !=# 'exclusive'
     normal! h
   endif
 endfunction "}}}
