@@ -16,8 +16,8 @@ nnoremap <silent> <Plug>(swap-interactive) :<C-u>call swap#prerequisite('n')<CR>
 xnoremap <silent> <Plug>(swap-interactive) :<C-u>call swap#prerequisite('x')<CR>gvg@
 nnoremap <silent> <Plug>(swap-prev) :<C-u>call swap#prerequisite('n', [['#', '#-1']])<CR>g@l
 nnoremap <silent> <Plug>(swap-next) :<C-u>call swap#prerequisite('n', [['#', '#+1']])<CR>g@l
-noremap <silent> <Plug>(swap-textobject-i) :<C-u>call swap#textobj#select('i')
-noremap <silent> <Plug>(swap-textobject-a) :<C-u>call swap#textobj#select('a')
+noremap <silent> <Plug>(swap-textobject-i) :<C-u>call swap#textobj#select('i')<CR>
+noremap <silent> <Plug>(swap-textobject-a) :<C-u>call swap#textobj#select('a')<CR>
 
 " swap mode mappings
 nnoremap <silent> <Plug>(swap-mode-0) :<C-u>call swap#interface#swapmode_key_nr('0')<CR>
