@@ -1,6 +1,6 @@
 " lib.vim - Miscellaneous functions library.
 
-let s:null_pos = [0, 0, 0, 0]
+call swap#constant#import(s:, ['NULLPOS'])
 
 " patches
 if v:version > 704 || (v:version == 704 && has('patch237'))
@@ -9,8 +9,16 @@ else
   let s:has_patch_7_4_358 = v:version == 704 && has('patch358')
 endif
 
-function! swap#lib#funcref(list) abort "{{{
-  return map(copy(a:list), 'function("s:" . v:val)')
+function! swap#lib#import(...) abort "{{{
+  if a:0 >= 1
+    let lib = s:lib
+    if a:0 >= 2
+      let lib = filter(deepcopy(s:lib), 'count(a:2, v:key) > 0')
+      lockvar! lib
+    endif
+    call extend(a:1, lib)
+  endif
+  return s:lib
 endfunction "}}}
 
 function! s:get_buf_length(region) abort  "{{{
@@ -64,14 +72,14 @@ else
 endif
 "}}}
 function! s:is_valid_region(region) abort "{{{
-  return a:region.head != s:null_pos && a:region.tail != s:null_pos
+  return a:region.head != s:NULLPOS && a:region.tail != s:NULLPOS
         \ && (a:region.type ==# 'line' || s:is_ahead(a:region.tail, a:region.head))
 endfunction "}}}
 function! s:is_ahead(pos1, pos2) abort  "{{{
   return a:pos1[1] > a:pos2[1] || (a:pos1[1] == a:pos2[1] && a:pos1[2] > a:pos2[2])
 endfunction "}}}
 function! s:is_in_between(pos, head, tail) abort  "{{{
-  return (a:pos != s:null_pos) && (a:head != s:null_pos) && (a:tail != s:null_pos)
+  return (a:pos != s:NULLPOS) && (a:head != s:NULLPOS) && (a:tail != s:NULLPOS)
     \  && ((a:pos[1] > a:head[1]) || ((a:pos[1] == a:head[1]) && (a:pos[2] >= a:head[2])))
     \  && ((a:pos[1] < a:tail[1]) || ((a:pos[1] == a:tail[1]) && (a:pos[2] <= a:tail[2])))
 endfunction "}}}
@@ -88,6 +96,30 @@ function! s:motionwise2visualkey(motionwise) abort  "{{{
      \ : a:motionwise ==# 'block' ? "\<C-v>"
      \ : 'v'
 endfunction "}}}
+function! s:get_left_pos(pos, ...) abort  "{{{
+  call setpos('.', a:pos)
+  execute printf('normal! %dh', get(a:000, 0, 1))
+  return getpos('.')
+endfunction "}}}
+function! s:get_right_pos(pos, ...) abort  "{{{
+  call setpos('.', a:pos)
+  execute printf('normal! %dl', get(a:000, 0, 1))
+  return getpos('.')
+endfunction "}}}
+
+let s:lib = {}
+let s:lib.get_buf_length = function('s:get_buf_length')
+let s:lib.buf_byte_len = function('s:buf_byte_len')
+let s:lib.c2p = function('s:c2p')
+let s:lib.sort = function('s:sort')
+let s:lib.is_valid_region = function('s:is_valid_region')
+let s:lib.is_ahead = function('s:is_ahead')
+let s:lib.is_in_between = function('s:is_in_between')
+let s:lib.escape = function('s:escape')
+let s:lib.virtcol2col = function('s:virtcol2col')
+let s:lib.motionwise2visualkey = function('s:motionwise2visualkey')
+let s:lib.get_left_pos = function('s:get_left_pos')
+let s:lib.get_right_pos = function('s:get_right_pos')
 
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:

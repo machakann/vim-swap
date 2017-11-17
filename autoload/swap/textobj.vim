@@ -1,8 +1,5 @@
 " textobj object - Select an item.
 
-let s:null_pos    = [0, 0, 0, 0]
-let s:null_region = {'head': copy(s:null_pos), 'tail': copy(s:null_pos), 'len': -1, 'type': '', 'visualkey': ''}
-
 function! swap#textobj#select(type) abort "{{{
   let l:count = v:count1
   let swap = swap#swap#new('n', [])

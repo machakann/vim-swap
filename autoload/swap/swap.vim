@@ -1,9 +1,8 @@
 " swap object - Managing a whole action.
 
-let s:type_str    = type('')
-let s:type_num    = type(0)
-let s:null_pos    = [0, 0, 0, 0]
-let s:null_region = {'head': copy(s:null_pos), 'tail': copy(s:null_pos), 'len': -1, 'type': ''}
+call swap#constant#import(s:, ['TYPESTR', 'TYPENUM', 'NULLREGION'])
+call swap#lib#import(s:, ['get_buf_length', 'sort', 'is_valid_region',
+                        \ 'escape', 'motionwise2visualkey'])
 
 function! swap#swap#new(mode, order_list) abort "{{{
   let swap = deepcopy(s:swap_prototype)
@@ -116,10 +115,10 @@ function! s:swap_prototype._swap_once(buffer, order) dict abort "{{{
   endfor
 
   " evaluate after substituting symbols
-  call map(order, 'type(v:val) == s:type_str ? eval(v:val) : v:val')
+  call map(order, 'type(v:val) == s:TYPESTR ? eval(v:val) : v:val')
 
   let n = len(a:buffer.items)
-  if type(order[0]) != s:type_num || type(order[1]) != s:type_num
+  if type(order[0]) != s:TYPENUM || type(order[1]) != s:TYPENUM
         \ || order[0] < 1 || order[0] > n || order[1] < 1 || order[1] > n
     " the index is out of range
     return
@@ -193,14 +192,14 @@ function! s:remove_duplicate_rules(rules) abort "{{{
   endwhile
 endfunction "}}}
 function! s:get_assigned_region(motionwise) abort "{{{
-  let region = deepcopy(s:null_region)
+  let region = deepcopy(s:NULLREGION)
   let region.head = getpos("'[")
   let region.tail = getpos("']")
   let region.type = a:motionwise
   let region.visualkey = s:motionwise2visualkey(a:motionwise)
 
   if !s:is_valid_region(region)
-    return deepcopy(s:null_region)
+    return deepcopy(s:NULLREGION)
   endif
 
   let endcol = col([region.tail[1], '$'])
@@ -214,7 +213,7 @@ function! s:get_assigned_region(motionwise) abort "{{{
   endif
 
   if !s:is_valid_region(region)
-    return deepcopy(s:null_region)
+    return deepcopy(s:NULLREGION)
   endif
 
   let region.len = s:get_buf_length(region)
@@ -267,7 +266,7 @@ function! s:scan_group(priority_group, curpos, motionwise) abort "{{{
   return [{}, {}]
 endfunction "}}}
 function! s:check(region, rules) abort  "{{{
-  if a:region == s:null_region
+  if a:region == s:NULLREGION
     return [{}, {}]
   endif
 
@@ -311,11 +310,9 @@ function! s:compare_len(r1, r2) abort "{{{
 endfunction "}}}
 function! s:substitute_symbol(order, symbol, symbol_idx) abort "{{{
   let symbol = s:escape(a:symbol)
-  return map(a:order, 'type(v:val) == s:type_str ? substitute(v:val, symbol, a:symbol_idx, "") : v:val')
+  return map(a:order, 'type(v:val) == s:TYPESTR ? substitute(v:val, symbol, a:symbol_idx, "") : v:val')
 endfunction "}}}
 
-let [s:get_buf_length, s:sort, s:is_valid_region, s:escape, s:motionwise2visualkey]
-      \ = swap#lib#funcref(['get_buf_length', 'sort', 'is_valid_region', 'escape', 'motionwise2visualkey'])
 
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:

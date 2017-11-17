@@ -1,22 +1,22 @@
 " rule object - Describe the rule of swapping action.
 
-let s:null_coord  = [0, 0]
-let s:null_pos    = [0, 0, 0, 0]
-let s:null_region = {'head': copy(s:null_pos), 'tail': copy(s:null_pos), 'len': -1, 'type': ''}
+call swap#constant#import(s:, ['NULLCOORD', 'NULLPOS', 'NULLREGION'])
+call swap#lib#import(s:, ['get_buf_length', 'c2p', 'is_ahead', 'is_in_between',
+                        \ 'motionwise2visualkey', 'get_left_pos', 'get_right_pos'])
 
 function! swap#rule#get(rule) abort "{{{
   return extend(a:rule, deepcopy(s:rule_prototype), 'force')
 endfunction "}}}
 
 let s:rule_prototype = {
-      \   'region': deepcopy(s:null_region)
+      \   'region': deepcopy(s:NULLREGION)
       \ }
 function! s:rule_prototype.search(curpos, motionwise) dict abort  "{{{
   let timeout = g:swap#stimeoutlen
   if has_key(self, 'body')
-    if self.region == s:null_region
+    if self.region == s:NULLREGION
       let self.region = s:search_body(self.body, a:curpos, timeout)
-      if self.region != s:null_region && s:is_in_between(a:curpos, self.region.head, self.region.tail)
+      if self.region != s:NULLREGION && s:is_in_between(a:curpos, self.region.head, self.region.tail)
         let self.region.len = s:get_buf_length(self.region)
         let self.region.visualkey = s:motionwise2visualkey(a:motionwise)
         let self.region.type = a:motionwise
@@ -25,13 +25,13 @@ function! s:rule_prototype.search(curpos, motionwise) dict abort  "{{{
     endif
   elseif has_key(self, 'surrounds')
     let nest = get(self.surrounds, -1, 0)
-    if self.region == s:null_region
+    if self.region == s:NULLREGION
       let pos = [a:curpos, a:curpos]
     else
       let pos = s:get_outer_pos(self.surrounds, self.region)
     endif
     let self.region = s:search_surrounds(self.surrounds, pos, nest, timeout)
-    if self.region != s:null_region
+    if self.region != s:NULLREGION
       let [head, tail] = s:get_outer_pos(self.surrounds, self.region)
       if s:is_in_between(a:curpos, head, tail)
         let self.region.len = s:get_buf_length(self.region)
@@ -41,7 +41,7 @@ function! s:rule_prototype.search(curpos, motionwise) dict abort  "{{{
       endif
     endif
   endif
-  let self.region = deepcopy(s:null_region)
+  let self.region = deepcopy(s:NULLREGION)
   return self.region
 endfunction "}}}
 function! s:rule_prototype.check(region) dict abort  "{{{
@@ -68,28 +68,28 @@ function! s:rule_prototype.check(region) dict abort  "{{{
   return 1
 endfunction "}}}
 function! s:rule_prototype.initialize() dict abort  "{{{
-  let self.region = deepcopy(s:null_region)
+  let self.region = deepcopy(s:NULLREGION)
   return self
 endfunction "}}}
 
 function! s:search_body(body, pos, timeout) abort "{{{
   call setpos('.', a:pos)
   let head = searchpos(a:body, 'cbW',  0, a:timeout)
-  if head == s:null_coord | return deepcopy(s:null_region) | endif
+  if head == s:NULLCOORD | return deepcopy(s:NULLREGION) | endif
   let head = s:c2p(head)
   let tail = searchpos(a:body, 'eW', 0, a:timeout)
-  if tail == s:null_coord | return deepcopy(s:null_region) | endif
+  if tail == s:NULLCOORD | return deepcopy(s:NULLREGION) | endif
   let tail = s:c2p(tail)
   if s:is_ahead(tail, head) && s:is_in_between(a:pos, head, tail)
-    let target = extend(deepcopy(s:null_region), {'head': head, 'tail': tail}, 'force')
+    let target = extend(deepcopy(s:NULLREGION), {'head': head, 'tail': tail}, 'force')
   else
-    let target = deepcopy(s:null_region)
+    let target = deepcopy(s:NULLREGION)
   endif
   return target
 endfunction "}}}
 function! s:search_surrounds(surrounds, pos, nest, timeout) abort "{{{
-  if a:pos[0] == s:null_pos || a:pos[1] == s:null_pos
-    return deepcopy(s:null_region)
+  if a:pos[0] == s:NULLPOS || a:pos[1] == s:NULLPOS
+    return deepcopy(s:NULLREGION)
   endif
 
   call setpos('.', a:pos[1])
@@ -98,7 +98,7 @@ function! s:search_surrounds(surrounds, pos, nest, timeout) abort "{{{
   else
     let tail = s:searchpos_nonest_tail(a:surrounds, a:timeout)
   endif
-  if tail == s:null_coord | return deepcopy(s:null_region) | endif
+  if tail == s:NULLCOORD | return deepcopy(s:NULLREGION) | endif
 
   if a:nest
     let head = s:searchpos_nested_head(a:surrounds, a:timeout)
@@ -106,15 +106,15 @@ function! s:search_surrounds(surrounds, pos, nest, timeout) abort "{{{
     call setpos('.', a:pos[0])
     let head = s:searchpos_nonest_head(a:surrounds, a:timeout)
   endif
-  if head == s:null_coord | return deepcopy(s:null_region) | endif
+  if head == s:NULLCOORD | return deepcopy(s:NULLREGION) | endif
 
   let tail = s:get_left_pos(s:c2p(tail))
   let head = s:get_right_pos(s:c2p(head))
-  return extend(deepcopy(s:null_region), {'head': head, 'tail': tail}, 'force')
+  return extend(deepcopy(s:NULLREGION), {'head': head, 'tail': tail}, 'force')
 endfunction "}}}
 function! s:searchpos_nested_head(pattern, timeout) abort  "{{{
   let coord = searchpairpos(a:pattern[0], '', a:pattern[1], 'bW', '', 0, a:timeout)
-  if coord != s:null_coord
+  if coord != s:NULLCOORD
     let coord = searchpos(a:pattern[0], 'ceW', 0, a:timeout)
   endif
   return coord
@@ -164,30 +164,18 @@ function! s:get_outer_pos(surrounds, region) abort  "{{{
   let timeout = g:swap#stimeoutlen
   call setpos('.', a:region.head)
   let head = s:c2p(searchpos(a:surrounds[0], 'bW', 0, timeout))
-  if head != s:null_pos
+  if head != s:NULLPOS
     let head = s:get_left_pos(head)
   endif
 
   call setpos('.', a:region.tail)
   let tail = s:c2p(searchpos(a:surrounds[1], 'eW', 0, timeout))
-  if tail != s:null_pos
+  if tail != s:NULLPOS
     let tail = s:get_right_pos(tail)
   endif
   return [head, tail]
 endfunction "}}}
-function! s:get_left_pos(pos, ...) abort  "{{{
-  call setpos('.', a:pos)
-  execute printf('normal! %dh', get(a:000, 0, 1))
-  return getpos('.')
-endfunction "}}}
-function! s:get_right_pos(pos, ...) abort  "{{{
-  call setpos('.', a:pos)
-  execute printf('normal! %dl', get(a:000, 0, 1))
-  return getpos('.')
-endfunction "}}}
 
-let [s:get_buf_length, s:c2p, s:is_ahead, s:is_in_between, s:motionwise2visualkey]
-      \ = swap#lib#funcref(['get_buf_length', 'c2p', 'is_ahead', 'is_in_between', 'motionwise2visualkey'])
 
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:

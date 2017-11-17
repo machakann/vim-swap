@@ -1,14 +1,7 @@
 " parser - Parse a text to give a buffer object.
 
-let s:null_pos    = [0, 0, 0, 0]
-let s:null_region = {'head': copy(s:null_pos), 'tail': copy(s:null_pos), 'len': -1, 'type': '', 'visualkey': ''}
-
-" patches
-if v:version > 704 || (v:version == 704 && has('patch237'))
-  let s:has_patch_7_4_362 = has('patch-7.4.362')
-else
-  let s:has_patch_7_4_362 = v:version == 704 && has('patch362')
-endif
+call swap#constant#import(s:, ['NULLREGION'])
+call swap#lib#import(s:, ['sort', 'escape', 'is_ahead', 'virtcol2col'])
 
 function! swap#parser#parse(region, rule, curpos) abort "{{{
   return s:Buffer(a:region, a:rule, a:curpos)
@@ -22,7 +15,7 @@ let s:Item_prototype = {
       \   'attr': '',
       \   'string': '',
       \   'highlightid': [],
-      \   'region': deepcopy(s:null_region),
+      \   'region': deepcopy(s:NULLREGION),
       \ }
 function! s:Item_prototype.cursor(...) dict abort "{{{
   let to_tail = get(a:000, 0, 0)
@@ -76,7 +69,7 @@ function! s:Item(item) abort "{{{
 endfunction "}}}
 
 " function! s:matchaddpos(group, pos) abort "{{{
-if s:has_patch_7_4_362
+if exists('*matchaddpos')
   function! s:matchaddpos(group, pos) abort
     return [matchaddpos(a:group, a:pos)]
   endfunction
@@ -103,7 +96,7 @@ endfunction "}}}
 "}}}
 " Buffer object {{{
 let s:Buffer_prototype = {
-      \   'region': deepcopy(s:null_region),
+      \   'region': deepcopy(s:NULLREGION),
       \   'all': [],
       \   'items': [],
       \   'delimiters': [],
@@ -720,8 +713,6 @@ endfunction "}}}
 function! s:compare_idx(i1, i2) abort "{{{
   return a:i1[0] - a:i2[0]
 endfunction "}}}
-
-let [s:sort, s:escape, s:is_ahead, s:virtcol2col] = swap#lib#funcref(['sort', 'escape', 'is_ahead', 'virtcol2col'])
 
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:

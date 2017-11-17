@@ -1,7 +1,7 @@
 " interface object - Interactive order determination, "swap mode".
 
-let s:type_str = type('')
-let s:type_num = type(0)
+call swap#constant#import(s:, ['TYPESTR', 'TYPENUM'])
+call swap#lib#import(s:, ['is_ahead', 'is_in_between'])
 
 " patches
 if v:version > 704 || (v:version == 704 && has('patch237'))
@@ -246,9 +246,9 @@ function! s:interface_prototype.redo_order() dict abort  "{{{
   return copy(self.history[-1*self.undolevel])
 endfunction "}}}
 function! s:interface_prototype.idx.is_valid(idx) dict abort  "{{{
-  if type(a:idx) == s:type_num
+  if type(a:idx) == s:TYPENUM
     return a:idx >= 0 && a:idx <= self.end
-  elseif type(a:idx) == s:type_str
+  elseif type(a:idx) == s:TYPESTR
     return str2nr(a:idx) >= 0 && str2nr(a:idx) <= self.end
   else
     return 0
@@ -274,7 +274,7 @@ function! s:query(key_map) abort "{{{
       endif
     endif
 
-    let c = type(c) == s:type_num ? nr2char(c) : c
+    let c = type(c) == s:TYPENUM ? nr2char(c) : c
     let input .= c
 
     " check forward match
@@ -534,8 +534,6 @@ function! swap#interface#swapmode_key_ESC() abort  "{{{
     let s:interface.escaped = 1
   endif
 endfunction "}}}
-
-let [s:is_ahead, s:is_in_between] = swap#lib#funcref(['is_ahead', 'is_in_between'])
 
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:
