@@ -1,5 +1,5 @@
 " The vim plugin to reorder delimited items.
-" Last Change: 27-Sep-2016.
+" Last Change: 17-Nov-2017.
 " Maintainer : Masaaki Nakamura <mckn@outlook.jp>
 
 " License    : NYSL
@@ -16,6 +16,8 @@ nnoremap <silent> <Plug>(swap-interactive) :<C-u>call swap#prerequisite('n')<CR>
 xnoremap <silent> <Plug>(swap-interactive) :<C-u>call swap#prerequisite('x')<CR>gvg@
 nnoremap <silent> <Plug>(swap-prev) :<C-u>call swap#prerequisite('n', [['#', '#-1']])<CR>g@l
 nnoremap <silent> <Plug>(swap-next) :<C-u>call swap#prerequisite('n', [['#', '#+1']])<CR>g@l
+noremap <silent> <Plug>(swap-textobject-i) :<C-u>call swap#textobj#select('i')
+noremap <silent> <Plug>(swap-textobject-a) :<C-u>call swap#textobj#select('a')
 
 " swap mode mappings
 nnoremap <silent> <Plug>(swap-mode-0) :<C-u>call swap#interface#swapmode_key_nr('0')<CR>

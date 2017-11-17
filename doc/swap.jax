@@ -1,5 +1,5 @@
 *swap.txt*	いれかえたりする。
-						Last change:26-Sep-2017.
+						Last change:17-Nov-2017.
 
 書いた人   : machakann <mckn{at}outlook.jp>
 ライセンス : NYSL ライセンス
@@ -83,6 +83,15 @@ INTRODUCTION				*swap-introduction*
 合、ドットリピートはカーソル位置にかかわらず、その時の対象テキストの一番目と二
 番目の要素を入れ替えます。
 
+------------------------------------------------------------------------------
+このプラグインは入れ替え対象となる文字列を選択するテキストオブジェクトも提供し
+ています。次の行を vimrc に加えることで利用することができます。
+>
+	omap i, <Plug>(swap-textobject-i)
+	xmap i, <Plug>(swap-textobject-i)
+	omap a, <Plug>(swap-textobject-a)
+	xmap a, <Plug>(swap-textobject-a)
+<
 ==============================================================================
 KEYMAPPINGS				*swap-keymappings*
 
@@ -111,6 +120,15 @@ g:swap_no_default_key_mappings を vimrc で定義してください。
 
 *<Plug>(swap-interactive)*
 	"swap mode" を開始します。 `gs` に割り当てられます。
+
+テキストオブジェクト~
+*<Plug>(swap-textobject-i)*
+	入れ替え対象となる文字列を選択するテキストオブジェクトです。選択領域の
+	端に区切り文字列を含みません。 [count] 指定は有効です。
+
+*<Plug>(swap-textobject-a)*
+	入れ替え対象となる文字列を選択するテキストオブジェクトです。選択領域の
+	一端に区切り文字列を含みます。 [count] 指定は有効です。
 
 --------------------------------------------------------------------------
 swap mode における操作~

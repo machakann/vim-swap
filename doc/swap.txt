@@ -1,5 +1,5 @@
 *swap.txt*	Reorder delimited items.
-						Last change:27-Sep-2017.
+						Last change:17-Nov-2017.
 
 Author  : machakann <mckn{at}outlook.jp>
 License : NYSL license
@@ -84,6 +84,15 @@ effect on an item under cursor also in repeatings. `gs` is repeated by
 absolute positions, for example if 1st and 2nd items were swapped at first
 then it would repeat swapping 1st and 2nd items regardless of cursor position.
 
+------------------------------------------------------------------------------
+This plugin also provide textobjects to select those "swappable" items. Add
+following lines in your vimrc.
+>
+	omap i, <Plug>(swap-textobject-i)
+	xmap i, <Plug>(swap-textobject-i)
+	omap a, <Plug>(swap-textobject-a)
+	xmap a, <Plug>(swap-textobject-a)
+<
 ==============================================================================
 KEYMAPPINGS				*swap-keymappings*
 
@@ -115,6 +124,16 @@ keymappings~
 *<Plug>(swap-interactive)*
 	The keymappings starts "swap mode" to reorder items interactively.
 	It is mapped to `gs` in default.
+
+textobjects~
+*<Plug>(swap-textobject-i)*
+	This is a textobject keymapping to select swappable items without
+	ended delimiter. It accepts [count] assignment.
+
+*<Plug>(swap-textobject-a)*
+	This is a textobject keymapping to select swappable items with an
+	ended delimiter. It accepts [count] assignment.
+
 --------------------------------------------------------------------------
 operation in swap mode~
 

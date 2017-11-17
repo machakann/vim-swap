@@ -16,6 +16,9 @@ endfunction "}}}
 
 " Item object {{{
 let s:Item_prototype = {
+      \   'idx': -1,
+      \   'itemidx': -1,
+      \   'delimiteridx': -1,
       \   'attr': '',
       \   'string': '',
       \   'highlightid': [],
@@ -208,8 +211,7 @@ function! s:Buffer(region, rule, curpos) abort "{{{
   let buffer = deepcopy(s:Buffer_prototype)
   let buffer.region = a:region
   let buffer.all = s:parse_{a:region.type}wise(text, a:rule)
-  let buffer.items = filter(copy(buffer.all), 'v:val.attr ==# "item"')
-  let buffer.delimiters = filter(copy(buffer.all), 'v:val.attr ==# "delimiter"')
+  call s:assort(buffer)
   call map(buffer.all, 's:Item(v:val)')
   call s:address_{a:region.type}wise(buffer.all, a:region)
   call buffer.update_sharp(a:curpos)
@@ -469,6 +471,20 @@ endfunction "}}}
 function! s:setregister(register, contains) abort "{{{
   let [value, options] = a:contains
   return setreg(a:register, value, options)
+endfunction "}}}
+function! s:assort(buffer) abort "{{{
+  for idx in range(len(a:buffer.all))
+    let item = a:buffer.all[idx]
+    let item.idx = idx
+    if item.attr ==# 'item'
+      let item.itemidx = len(a:buffer.items)
+      call add(a:buffer.items, item)
+    elseif item.attr ==# 'delimiter'
+      let item.delimiteridx = len(a:buffer.delimiters)
+      call add(a:buffer.delimiters, item)
+    endif
+  endfor
+  return a:buffer
 endfunction "}}}
 function! s:click(text, target, idx) abort  "{{{
   let idx = a:target[0]

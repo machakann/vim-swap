@@ -658,6 +658,320 @@ function! s:suite.integration_visual() abort  "{{{
   call g:assert.equals(getline(3), 'baz', 'failed at #3')
   %delete
 endfunction "}}}
+function! s:suite.integration_textobj_i() abort "{{{
+  " #1
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz')
+  call cursor(1, 1)
+  call swap#textobj#select('i')
+  call g:assert.equals(mode(), 'v', 'Failed at #1-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 1, 0], 'Failed at #1-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 3, 0], 'Failed at #1-3')
+  execute "normal! \<Esc>"
+
+  " #2
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz')
+  call cursor(1, 6)
+  call swap#textobj#select('i')
+  call g:assert.equals(mode(), 'v', 'Failed at #2-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 6, 0], 'Failed at #2-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 8, 0], 'Failed at #2-3')
+  execute "normal! \<Esc>"
+
+  " #3
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz')
+  call cursor(1, 11)
+  call swap#textobj#select('i')
+  call g:assert.equals(mode(), 'v', 'Failed at #3-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 11, 0], 'Failed at #3-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 13, 0], 'Failed at #3-3')
+  execute "normal! \<Esc>"
+
+  " #4
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz')
+  call cursor(1, 4)
+  call swap#textobj#select('i')
+  call g:assert.equals(mode(), 'v', 'Failed at #4-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 6, 0], 'Failed at #4-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 8, 0], 'Failed at #4-3')
+  execute "normal! \<Esc>"
+
+  " #5
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz')
+  call cursor(1, 9)
+  call swap#textobj#select('i')
+  call g:assert.equals(mode(), 'v', 'Failed at #5-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 11, 0], 'Failed at #5-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 13, 0], 'Failed at #5-3')
+  execute "normal! \<Esc>"
+
+  " #6
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz')
+  call cursor(1, 1)
+  execute "normal! 2:\<C-u>call swap#textobj#select('i')\<CR>"
+  call g:assert.equals(mode(), 'v', 'Failed at #6-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 1, 0], 'Failed at #6-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 8, 0], 'Failed at #6-3')
+  execute "normal! \<Esc>"
+
+  " #7
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz')
+  call cursor(1, 1)
+  execute "normal! 3:\<C-u>call swap#textobj#select('i')\<CR>"
+  call g:assert.equals(mode(), 'v', 'Failed at #7-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1,  1, 0], 'Failed at #7-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 13, 0], 'Failed at #7-3')
+  execute "normal! \<Esc>"
+
+  " #8
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz')
+  call cursor(1, 6)
+  execute "normal! 2:\<C-u>call swap#textobj#select('i')\<CR>"
+  call g:assert.equals(mode(), 'v', 'Failed at #8-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1,  6, 0], 'Failed at #8-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 13, 0], 'Failed at #8-3')
+  execute "normal! \<Esc>"
+
+  " #9
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', '], 'immutable': ['\s*"immutable\d\?"\s*']}]
+  call setline(1, 'foo, "immutable" bar, baz')
+  call cursor(1, 16)
+  call swap#textobj#select('i')
+  call g:assert.equals(mode(), 'v', 'Failed at #9-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 18, 0], 'Failed at #9-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 20, 0], 'Failed at #9-3')
+  execute "normal! \<Esc>"
+
+  " #10
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', '], 'immutable': ['\s*"immutable\d\?"\s*']}]
+  call setline(1, 'foo, "immutable1" "immutable2" bar, baz')
+  call cursor(1, 32)
+  call swap#textobj#select('i')
+  call g:assert.equals(mode(), 'v', 'Failed at #10-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 32, 0], 'Failed at #10-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 34, 0], 'Failed at #10-3')
+  execute "normal! \<Esc>"
+
+  " #11
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', '], 'immutable': ['\s*"immutable\d\?"\s*']}]
+  call setline(1, 'foo, "immutable1" "immutable2" bar, baz')
+  call cursor(1, 18)
+  call swap#textobj#select('i')
+  call g:assert.equals(mode(), 'v', 'Failed at #11-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 32, 0], 'Failed at #11-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 34, 0], 'Failed at #11-3')
+  execute "normal! \<Esc>"
+
+  " #12
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, ', foo, bar, baz')
+  call cursor(1, 1)
+  call swap#textobj#select('i')
+  call g:assert.equals(mode(), 'v', 'Failed at #12-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 3, 0], 'Failed at #12-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 5, 0], 'Failed at #12-3')
+  execute "normal! \<Esc>"
+
+  " #13
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz, ')
+  call cursor(1, 11)
+  call swap#textobj#select('i')
+  call g:assert.equals(mode(), 'v', 'Failed at #13-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 11, 0], 'Failed at #13-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 13, 0], 'Failed at #13-3')
+  execute "normal! \<Esc>"
+endfunction "}}}
+function! s:suite.integration_textobj_a() abort "{{{
+  " #1
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz')
+  call cursor(1, 1)
+  call swap#textobj#select('a')
+  call g:assert.equals(mode(), 'v', 'Failed at #1-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 1, 0], 'Failed at #1-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 5, 0], 'Failed at #1-3')
+  execute "normal! \<Esc>"
+
+  " #2
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz')
+  call cursor(1, 6)
+  call swap#textobj#select('a')
+  call g:assert.equals(mode(), 'v', 'Failed at #2-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 4, 0], 'Failed at #2-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 8, 0], 'Failed at #2-3')
+  execute "normal! \<Esc>"
+
+  " #3
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz')
+  call cursor(1, 11)
+  call swap#textobj#select('a')
+  call g:assert.equals(mode(), 'v', 'Failed at #3-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1,  9, 0], 'Failed at #3-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 13, 0], 'Failed at #3-3')
+  execute "normal! \<Esc>"
+
+  " #4
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz')
+  call cursor(1, 4)
+  call swap#textobj#select('a')
+  call g:assert.equals(mode(), 'v', 'Failed at #4-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 4, 0], 'Failed at #4-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 8, 0], 'Failed at #4-3')
+  execute "normal! \<Esc>"
+
+  " #5
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz')
+  call cursor(1, 9)
+  call swap#textobj#select('a')
+  call g:assert.equals(mode(), 'v', 'Failed at #5-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1,  9, 0], 'Failed at #5-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 13, 0], 'Failed at #5-3')
+  execute "normal! \<Esc>"
+
+  " #6
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz')
+  call cursor(1, 1)
+  execute "normal! 2:\<C-u>call swap#textobj#select('a')\<CR>"
+  call g:assert.equals(mode(), 'v', 'Failed at #6-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1,  1, 0], 'Failed at #6-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 10, 0], 'Failed at #6-3')
+  execute "normal! \<Esc>"
+
+  " #7
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz')
+  call cursor(1, 1)
+  execute "normal! 3:\<C-u>call swap#textobj#select('a')\<CR>"
+  call g:assert.equals(mode(), 'v', 'Failed at #7-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1,  1, 0], 'Failed at #7-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 13, 0], 'Failed at #7-3')
+  execute "normal! \<Esc>"
+
+  " #8
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz')
+  call cursor(1, 6)
+  execute "normal! 2:\<C-u>call swap#textobj#select('a')\<CR>"
+  call g:assert.equals(mode(), 'v', 'Failed at #8-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1,  4, 0], 'Failed at #8-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 13, 0], 'Failed at #8-3')
+  execute "normal! \<Esc>"
+
+  " #9
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', '], 'immutable': ['\s*"immutable\d\?"\s*']}]
+  call setline(1, 'foo, "immutable" bar, baz')
+  call cursor(1, 16)
+  call swap#textobj#select('a')
+  call g:assert.equals(mode(), 'v', 'Failed at #9-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1,  4, 0], 'Failed at #9-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 20, 0], 'Failed at #9-3')
+  execute "normal! \<Esc>"
+
+  " #10
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', '], 'immutable': ['\s*"immutable\d\?"\s*']}]
+  call setline(1, 'foo, "immutable1" "immutable2" bar, baz')
+  call cursor(1, 32)
+  call swap#textobj#select('a')
+  call g:assert.equals(mode(), 'v', 'Failed at #10-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1,  4, 0], 'Failed at #10-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 34, 0], 'Failed at #10-3')
+  execute "normal! \<Esc>"
+
+  " #11
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', '], 'immutable': ['\s*"immutable\d\?"\s*']}]
+  call setline(1, 'foo, "immutable1" "immutable2" bar, baz')
+  call cursor(1, 18)
+  call swap#textobj#select('a')
+  call g:assert.equals(mode(), 'v', 'Failed at #11-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1,  4, 0], 'Failed at #11-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 34, 0], 'Failed at #11-3')
+  execute "normal! \<Esc>"
+
+  " #12
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, ', foo, bar, baz')
+  call cursor(1, 1)
+  call swap#textobj#select('a')
+  call g:assert.equals(mode(), 'v', 'Failed at #12-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 1, 0], 'Failed at #12-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 5, 0], 'Failed at #12-3')
+  execute "normal! \<Esc>"
+
+  " #13
+  let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+  call setline(1, 'foo, bar, baz, ')
+  call cursor(1, 11)
+  call swap#textobj#select('a')
+  call g:assert.equals(mode(), 'v', 'Failed at #13-1')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1,  9, 0], 'Failed at #13-2')
+  normal! o
+  call g:assert.equals(getpos('.'), [0, 1, 13, 0], 'Failed at #13-3')
+  execute "normal! \<Esc>"
+endfunction "}}}
 
 
 

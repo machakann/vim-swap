@@ -49,5 +49,19 @@ Select the three lines and press **gsl\<Esc\>**, then swaps the first line and t
 ```
 
 
+# textobject
+
+The following lines enables to use textobjects to select "swappable" items.
+
+```vim
+omap i, <Plug>(swap-textobject-i)
+xmap i, <Plug>(swap-textobject-i)
+omap a, <Plug>(swap-textobject-a)
+xmap a, <Plug>(swap-textobject-a)
+```
+
+Those textobjects work well with `[count]` assignment.
+
+
 # Demo
 ![swap.vim](http://art9.photozou.jp/pub/986/3080986/photo/232868997_org.v1453815504.gif)
