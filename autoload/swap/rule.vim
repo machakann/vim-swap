@@ -126,10 +126,12 @@ function! s:searchpos_nested_tail(pattern, timeout) abort  "{{{
   return searchpairpos(a:pattern[0], '', a:pattern[1], 'cW', '', 0, a:timeout)
 endfunction "}}}
 function! s:searchpos_nonest_head(pattern, timeout) abort  "{{{
-  return searchpos(a:pattern[0], 'beW', 0, a:timeout)
+  call search(a:pattern[0], 'bW', 0, a:timeout)
+  return searchpos(a:pattern[0], 'ceW', 0, a:timeout)
 endfunction "}}}
 function! s:searchpos_nonest_tail(pattern, timeout) abort  "{{{
-  return searchpos(a:pattern[1], 'cW', 0, a:timeout)
+  call search(a:pattern[1], 'ceW', 0, a:timeout)
+  return searchpos(a:pattern[1], 'bcW', 0, a:timeout)
 endfunction "}}}
 function! s:check_body(body, region, timeout) abort "{{{
   let is_matched = 1
