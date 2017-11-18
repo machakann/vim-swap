@@ -14,7 +14,7 @@ let g:swap#default_rules = [
       \     'delimiter': ['\s\+'],
       \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
       \     'quotes': [['"', '"'], ["'", "'"]],
-      \     'immutable': ['\%(^\s\|\n\)\s*', '\s\+$'],
+      \     'immutable': ['^\s\+', '\s\+$'],
       \     'priority': -50
       \   },
       \
@@ -24,7 +24,7 @@ let g:swap#default_rules = [
       \     'delimiter': ['\s*,\s*'],
       \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
       \     'quotes': [['"', '"'], ["'", "'"]],
-      \     'immutable': ['\%(^\s\|\n\)\s*', '\s\+$'],
+      \     'immutable': ['^\s\+', '\s\+$'],
       \   },
       \
       \   {
@@ -46,67 +46,67 @@ let g:swap#default_rules = [
       \   {
       \     'description': 'Reorder the comma-separated items in [].',
       \     'mode': 'n',
-      \     'surrounds': ['\[', '\]', 1],
-      \     'delimiter': ['\s*,\s*'],
+      \     'surrounds': ['\[\_s*', '\_s*\]', 1],
+      \     'delimiter': ['\s*,\s*\%(\n\s*\)*'],
       \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
       \     'quotes': [['"', '"'], ["'", "'"]],
-      \     'immutable': ['\%(^\|\n\)\s\+', '\s\+$']
+      \     'immutable': ['^\s\+', '\s\+$']
       \   },
       \
       \   {
       \     'description': 'Reorder the comma-separated items in {}.',
       \     'mode': 'n',
-      \     'surrounds': ['{', '}', 1],
-      \     'delimiter': ['\s*,\s*'],
+      \     'surrounds': ['{\_s*', '\_s*}', 1],
+      \     'delimiter': ['\s*,\s*\%(\n\s*\)*'],
       \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
       \     'quotes': [['"', '"'], ["'", "'"]],
-      \     'immutable': ['\%(^\|\n\)\s\+', '\s\+$']
+      \     'immutable': ['^\s\+', '\s\+$']
       \   },
       \
       \   {
       \     'description': 'Reorder the comma-separated items in ().',
       \     'mode': 'n',
-      \     'surrounds': ['(', ')', 1],
-      \     'delimiter': ['\s*,\s*'],
+      \     'surrounds': ['(\_s*', '\_s*)', 1],
+      \     'delimiter': ['\s*,\s*\%(\n\s*\)*'],
       \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
       \     'quotes': [['"', '"'], ["'", "'"]],
-      \     'immutable': ['\%(^\|\n\)\s\+', '\s\+$']
+      \     'immutable': ['^\s\+', '\s\+$']
       \   },
       \
       \   {
       \     'description': 'Reorder the comma-separated items in [] for Vim script, with taking into account line continuations by backslashes.',
       \     'filetype': ['vim'],
       \     'mode': 'n',
-      \     'surrounds': ['\[', '\]', 1],
-      \     'delimiter': ['\s*,\s*'],
+      \     'surrounds': ['\[\_s*', '\_s*\]', 1],
+      \     'delimiter': ['\s*,\s*\%(\n\s*\%(\\\s*\)\?\)*'],
       \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
       \     'quotes': [['"', '"']],
       \     'literal_quotes': [["'", "'"]],
-      \     'immutable': ['\%(^\|\n\)\s*\\\s*', '\s\+$']
+      \     'immutable': ['^\s*\\\s*', '\s\+$']
       \   },
       \
       \   {
       \     'description': 'Reorder the comma-separated items in {} for Vim script, with taking into account line continuations by backslashes.',
       \     'filetype': ['vim'],
       \     'mode': 'n',
-      \     'surrounds': ['{', '}', 1],
-      \     'delimiter': ['\s*,\s*'],
+      \     'surrounds': ['{\_s*', '\_s*}', 1],
+      \     'delimiter': ['\s*,\s*\%(\n\s*\%(\\\s*\)\?\)*'],
       \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
       \     'quotes': [['"', '"']],
       \     'literal_quotes': [["'", "'"]],
-      \     'immutable': ['\%(^\|\n\)\s*\\\s*', '\s\+$']
+      \     'immutable': ['^\s*\\\s*', '\s\+$']
       \   },
       \
       \   {
       \     'description': 'Reorder the comma-separated items in () for Vim script, with taking into account line continuations by backslash.',
       \     'filetype': ['vim'],
       \     'mode': 'n',
-      \     'surrounds': ['(', ')', 1],
-      \     'delimiter': ['\s*,\s*'],
+      \     'surrounds': ['(\_s*', '\_s*)', 1],
+      \     'delimiter': ['\s*,\s*\%(\n\s*\%(\\\s*\)\?\)*'],
       \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
       \     'quotes': [['"', '"']],
       \     'literal_quotes': [["'", "'"]],
-      \     'immutable': ['\%(^\|\n\)\s*\\\s*', '\s\+$']
+      \     'immutable': ['^\s*\\\s*', '\s\+$']
       \   },
       \
       \   {
