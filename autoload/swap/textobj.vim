@@ -4,7 +4,7 @@ function! swap#textobj#select(type) abort "{{{
   let l:count = v:count1
   let swap = swap#swap#new('n', [])
   let [buffer, rule] = swap.scan('char')
-  if empty(buffer.items)
+  if empty(buffer) || empty(buffer.items)
     return
   endif
   if a:type ==# 'a'
