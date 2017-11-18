@@ -236,6 +236,30 @@ function! s:keymap(noremap, lhs, rhs) abort  "{{{
 endfunction "}}}
 
 " key layout in swap mode
+" swap mode mappings{{{
+nnoremap <silent> <Plug>(swap-mode-0) :<C-u>call swap#interface#swapmode_key_nr('0')<CR>
+nnoremap <silent> <Plug>(swap-mode-1) :<C-u>call swap#interface#swapmode_key_nr('1')<CR>
+nnoremap <silent> <Plug>(swap-mode-2) :<C-u>call swap#interface#swapmode_key_nr('2')<CR>
+nnoremap <silent> <Plug>(swap-mode-3) :<C-u>call swap#interface#swapmode_key_nr('3')<CR>
+nnoremap <silent> <Plug>(swap-mode-4) :<C-u>call swap#interface#swapmode_key_nr('4')<CR>
+nnoremap <silent> <Plug>(swap-mode-5) :<C-u>call swap#interface#swapmode_key_nr('5')<CR>
+nnoremap <silent> <Plug>(swap-mode-6) :<C-u>call swap#interface#swapmode_key_nr('6')<CR>
+nnoremap <silent> <Plug>(swap-mode-7) :<C-u>call swap#interface#swapmode_key_nr('7')<CR>
+nnoremap <silent> <Plug>(swap-mode-8) :<C-u>call swap#interface#swapmode_key_nr('8')<CR>
+nnoremap <silent> <Plug>(swap-mode-9) :<C-u>call swap#interface#swapmode_key_nr('9')<CR>
+nnoremap <silent> <Plug>(swap-mode-CR) :<C-u>call swap#interface#swapmode_key_CR()<CR>
+nnoremap <silent> <Plug>(swap-mode-BS) :<C-u>call swap#interface#swapmode_key_BS()<CR>
+nnoremap <silent> <Plug>(swap-mode-undo) :<C-u>call swap#interface#swapmode_key_undo()<CR>
+nnoremap <silent> <Plug>(swap-mode-redo) :<C-u>call swap#interface#swapmode_key_redo()<CR>
+nnoremap <silent> <Plug>(swap-mode-current) :<C-u>call swap#interface#swapmode_key_current()<CR>
+nnoremap <silent> <Plug>(swap-mode-fix-nr) :<C-u>call swap#interface#swapmode_key_fix_nr()<CR>
+nnoremap <silent> <Plug>(swap-mode-move-prev) :<C-u>call swap#interface#swapmode_key_move_prev()<CR>
+nnoremap <silent> <Plug>(swap-mode-move-next) :<C-u>call swap#interface#swapmode_key_move_next()<CR>
+nnoremap <silent> <Plug>(swap-mode-swap-prev) :<C-u>call swap#interface#swapmode_key_swap_prev()<CR>
+nnoremap <silent> <Plug>(swap-mode-swap-next) :<C-u>call swap#interface#swapmode_key_swap_next()<CR>
+nnoremap <silent> <Plug>(swap-mode-echo) :<C-u>call swap#interface#swapmode_key_echo()<CR>
+nnoremap <silent> <Plug>(swap-mode-Esc) :<C-u>call swap#interface#swapmode_key_ESC()<CR>
+"}}}
 " key layout - discreet "{{{
 let g:swap#key_layout_discreet = [
       \   {'input': '0', 'output': "\<Plug>(swap-mode-0)"},

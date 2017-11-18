@@ -1,5 +1,5 @@
 " The vim plugin to reorder delimited items.
-" Last Change: 17-Nov-2017.
+" Last Change: 19-Nov-2017.
 " Maintainer : Masaaki Nakamura <mckn@outlook.jp>
 
 " License    : NYSL
@@ -18,30 +18,6 @@ nnoremap <silent> <Plug>(swap-prev) :<C-u>call swap#prerequisite('n', [['#', '#-
 nnoremap <silent> <Plug>(swap-next) :<C-u>call swap#prerequisite('n', [['#', '#+1']])<CR>g@l
 noremap <silent> <Plug>(swap-textobject-i) :<C-u>call swap#textobj#select('i')<CR>
 noremap <silent> <Plug>(swap-textobject-a) :<C-u>call swap#textobj#select('a')<CR>
-
-" swap mode mappings
-nnoremap <silent> <Plug>(swap-mode-0) :<C-u>call swap#interface#swapmode_key_nr('0')<CR>
-nnoremap <silent> <Plug>(swap-mode-1) :<C-u>call swap#interface#swapmode_key_nr('1')<CR>
-nnoremap <silent> <Plug>(swap-mode-2) :<C-u>call swap#interface#swapmode_key_nr('2')<CR>
-nnoremap <silent> <Plug>(swap-mode-3) :<C-u>call swap#interface#swapmode_key_nr('3')<CR>
-nnoremap <silent> <Plug>(swap-mode-4) :<C-u>call swap#interface#swapmode_key_nr('4')<CR>
-nnoremap <silent> <Plug>(swap-mode-5) :<C-u>call swap#interface#swapmode_key_nr('5')<CR>
-nnoremap <silent> <Plug>(swap-mode-6) :<C-u>call swap#interface#swapmode_key_nr('6')<CR>
-nnoremap <silent> <Plug>(swap-mode-7) :<C-u>call swap#interface#swapmode_key_nr('7')<CR>
-nnoremap <silent> <Plug>(swap-mode-8) :<C-u>call swap#interface#swapmode_key_nr('8')<CR>
-nnoremap <silent> <Plug>(swap-mode-9) :<C-u>call swap#interface#swapmode_key_nr('9')<CR>
-nnoremap <silent> <Plug>(swap-mode-CR) :<C-u>call swap#interface#swapmode_key_CR()<CR>
-nnoremap <silent> <Plug>(swap-mode-BS) :<C-u>call swap#interface#swapmode_key_BS()<CR>
-nnoremap <silent> <Plug>(swap-mode-undo) :<C-u>call swap#interface#swapmode_key_undo()<CR>
-nnoremap <silent> <Plug>(swap-mode-redo) :<C-u>call swap#interface#swapmode_key_redo()<CR>
-nnoremap <silent> <Plug>(swap-mode-current) :<C-u>call swap#interface#swapmode_key_current()<CR>
-nnoremap <silent> <Plug>(swap-mode-fix-nr) :<C-u>call swap#interface#swapmode_key_fix_nr()<CR>
-nnoremap <silent> <Plug>(swap-mode-move-prev) :<C-u>call swap#interface#swapmode_key_move_prev()<CR>
-nnoremap <silent> <Plug>(swap-mode-move-next) :<C-u>call swap#interface#swapmode_key_move_next()<CR>
-nnoremap <silent> <Plug>(swap-mode-swap-prev) :<C-u>call swap#interface#swapmode_key_swap_prev()<CR>
-nnoremap <silent> <Plug>(swap-mode-swap-next) :<C-u>call swap#interface#swapmode_key_swap_next()<CR>
-nnoremap <silent> <Plug>(swap-mode-echo) :<C-u>call swap#interface#swapmode_key_echo()<CR>
-nnoremap <silent> <Plug>(swap-mode-Esc) :<C-u>call swap#interface#swapmode_key_ESC()<CR>
 
 " highlight group
 function! s:default_highlight() abort
