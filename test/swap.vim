@@ -828,6 +828,14 @@ function! s:suite.integration_textobj_i() abort "{{{
   call swap#textobj#select('i')
   normal! ""y
   call g:assert.equals(@@, 'baz', 'Failed at #13')
+
+  " #14
+  let g:swap#rules = [{'surrounds': ['(', ')'], 'delimiter': [', ']}]
+  call setline(1, '(((foo), bar), baz)')
+  call cursor(1, 4)
+  call swap#textobj#select('i')
+  normal! ""y
+  call g:assert.equals(@@, 'foo', 'Failed at #14')
 endfunction "}}}
 function! s:suite.integration_textobj_a() abort "{{{
   " #1
@@ -933,6 +941,14 @@ function! s:suite.integration_textobj_a() abort "{{{
   call swap#textobj#select('a')
   normal! ""y
   call g:assert.equals(@@, ', baz', 'Failed at #13')
+
+  " #14
+  let g:swap#rules = [{'surrounds': ['(', ')'], 'delimiter': [', ']}]
+  call setline(1, '(((foo), bar), baz)')
+  call cursor(1, 4)
+  call swap#textobj#select('i')
+  normal! ""y
+  call g:assert.equals(@@, 'foo', 'Failed at #14')
 endfunction "}}}
 function! s:suite.integration_textobj_i_exclusive() abort "{{{
   set selection=exclusive

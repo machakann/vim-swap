@@ -31,9 +31,10 @@ function! s:swap_prototype.execute(motionwise) dict abort "{{{
   endif
   let self.dotrepeat = 1
 endfunction "}}}
-function! s:swap_prototype.scan(motionwise) abort "{{{
+function! s:swap_prototype.scan(motionwise, ...) abort "{{{
   let rules = deepcopy(self.rules)
-  return s:scan(rules, a:motionwise)
+  let textobj = get(a:000, 0, 0)
+  return s:scan(rules, a:motionwise, textobj)
 endfunction "}}}
 function! s:swap_prototype._normal(motionwise) dict abort  "{{{
   if self.dotrepeat
@@ -233,13 +234,14 @@ function! s:get_priority_group(rules) abort "{{{
   endwhile
   return priority_group
 endfunction "}}}
-function! s:scan(rules, motionwise) abort "{{{
+function! s:scan(rules, motionwise, ...) abort "{{{
   let view = winsaveview()
+  let textobj = get(a:000, 0, 0)
   let curpos = getpos('.')
   let buffer = {}
   while a:rules != []
     let priority_group = s:get_priority_group(a:rules)
-    let [buffer, rule] = s:scan_group(priority_group, curpos, a:motionwise)
+    let [buffer, rule] = s:scan_group(priority_group, curpos, a:motionwise, textobj)
     if buffer != {}
       break
     endif
@@ -247,7 +249,8 @@ function! s:scan(rules, motionwise) abort "{{{
   call winrestview(view)
   return buffer != {} ? [buffer, rule] : [{}, {}]
 endfunction "}}}
-function! s:scan_group(priority_group, curpos, motionwise) abort "{{{
+function! s:scan_group(priority_group, curpos, motionwise, ...) abort "{{{
+  let textobj = get(a:000, 0, 0)
   while a:priority_group != []
     for rule in a:priority_group
       call rule.search(a:curpos, a:motionwise)
@@ -258,7 +261,7 @@ function! s:scan_group(priority_group, curpos, motionwise) abort "{{{
     for rule in a:priority_group
       let region = rule.region
       let buffer = swap#parser#parse(region, rule, a:curpos)
-      if buffer.swappable()
+      if buffer.swappable() || (textobj && buffer.selectable())
         return [buffer, rule]
       endif
     endfor

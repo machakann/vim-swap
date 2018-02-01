@@ -126,6 +126,9 @@ function! s:Buffer_prototype.swappable() dict abort  "{{{
   let cond3 = filter(copy(self.all), 'v:val.attr ==# "delimiter"') != []
   return cond1 && cond2 && cond3 ? 1 : 0
 endfunction "}}}
+function! s:Buffer_prototype.selectable() dict abort  "{{{
+  return filter(copy(self.items), 'v:val.string !=# ""') != []
+endfunction "}}}
 function! s:Buffer_prototype.swap(order, undojoin) dict abort  "{{{
   let idx1 = a:order[0] - 1
   let idx2 = a:order[1] - 1
