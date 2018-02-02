@@ -239,13 +239,19 @@ function! s:scan(rules, motionwise, ...) abort "{{{
   let textobj = get(a:000, 0, 0)
   let curpos = getpos('.')
   let buffer = {}
-  while a:rules != []
-    let priority_group = s:get_priority_group(a:rules)
-    let [buffer, rule] = s:scan_group(priority_group, curpos, a:motionwise, textobj)
-    if buffer != {}
-      break
-    endif
-  endwhile
+  let virtualedit = &virtualedit
+  let &virtualedit = 'onemore'
+  try
+    while a:rules != []
+      let priority_group = s:get_priority_group(a:rules)
+      let [buffer, rule] = s:scan_group(priority_group, curpos, a:motionwise, textobj)
+      if buffer != {}
+        break
+      endif
+    endwhile
+  finally
+    let &virtualedit = virtualedit
+  endtry
   call winrestview(view)
   return buffer != {} ? [buffer, rule] : [{}, {}]
 endfunction "}}}

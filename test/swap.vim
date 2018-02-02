@@ -664,6 +664,12 @@ function! s:suite.integration_normal() abort  "{{{
   call g:assert.equals(getline(3), 'f,',   'failed at #27')
   call g:assert.equals(getline(4), 'baz)', 'failed at #27')
   %delete
+
+  " #28
+  call append(0, ['(', 'foo, bar, baz)'])
+  execute "normal 2G6lg<"
+  call g:assert.equals(getline('.'), 'bar, foo, baz)', 'failed at #28')
+  %delete
 endfunction "}}}
 function! s:suite.integration_normal_selection_option() abort  "{{{
   " #1

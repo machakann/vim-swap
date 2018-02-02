@@ -14,7 +14,7 @@ let g:swap#default_rules = [
       \     'delimiter': ['\s\+'],
       \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
       \     'quotes': [['"', '"'], ["'", "'"]],
-      \     'immutable': ['\%(^\s\|\n\)\s*', '\s\+$'],
+      \     'immutable': ['\%(^\_s\|\n\)\s*', '\s\+$'],
       \     'priority': -50
       \   },
       \
@@ -24,7 +24,7 @@ let g:swap#default_rules = [
       \     'delimiter': ['\s*,\s*'],
       \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
       \     'quotes': [['"', '"'], ["'", "'"]],
-      \     'immutable': ['\%(^\s\|\n\)\s*', '\s\+$'],
+      \     'immutable': ['\%(^\_s\|\n\)\s*', '\s\+$'],
       \   },
       \
       \   {
@@ -50,7 +50,7 @@ let g:swap#default_rules = [
       \     'delimiter': ['\s*,\s*'],
       \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
       \     'quotes': [['"', '"'], ["'", "'"]],
-      \     'immutable': ['\%(^\|\n\)\s\+', '\s\+$']
+      \     'immutable': ['\%(^\_s\|\n\)\s*', '\s\+$']
       \   },
       \
       \   {
@@ -60,7 +60,7 @@ let g:swap#default_rules = [
       \     'delimiter': ['\s*,\s*'],
       \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
       \     'quotes': [['"', '"'], ["'", "'"]],
-      \     'immutable': ['\%(^\|\n\)\s\+', '\s\+$']
+      \     'immutable': ['\%(^\_s\|\n\)\s*', '\s\+$']
       \   },
       \
       \   {
@@ -70,7 +70,7 @@ let g:swap#default_rules = [
       \     'delimiter': ['\s*,\s*'],
       \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
       \     'quotes': [['"', '"'], ["'", "'"]],
-      \     'immutable': ['\%(^\|\n\)\s\+', '\s\+$']
+      \     'immutable': ['\%(^\_s\|\n\)\s*', '\s\+$']
       \   },
       \
       \   {
@@ -82,7 +82,7 @@ let g:swap#default_rules = [
       \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
       \     'quotes': [['"', '"']],
       \     'literal_quotes': [["'", "'"]],
-      \     'immutable': ['\%(^\|\n\)\s*\\\s*', '\s\+$']
+      \     'immutable': ['\%(^\_s\|\n\)\s*\\\s*', '\s\+$']
       \   },
       \
       \   {
@@ -94,7 +94,7 @@ let g:swap#default_rules = [
       \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
       \     'quotes': [['"', '"']],
       \     'literal_quotes': [["'", "'"]],
-      \     'immutable': ['\%(^\|\n\)\s*\\\s*', '\s\+$']
+      \     'immutable': ['\%(^\_s\|\n\)\s*\\\s*', '\s\+$']
       \   },
       \
       \   {
@@ -106,7 +106,7 @@ let g:swap#default_rules = [
       \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
       \     'quotes': [['"', '"']],
       \     'literal_quotes': [["'", "'"]],
-      \     'immutable': ['\%(^\|\n\)\s*\\\s*', '\s\+$']
+      \     'immutable': ['\%(^\_s\|\n\)\s*\\\s*', '\s\+$']
       \   },
       \
       \   {
