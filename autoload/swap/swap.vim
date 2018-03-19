@@ -81,12 +81,6 @@ function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
       call self._swap_once(a:buffer, order)
     endwhile
   catch /^Vim:Interrupt$/
-  catch /^Vim\%((\a\+)\)\=:E21/
-    let err = g:swap.error
-    call err.catch('vim-swap: Cannot make changes to read-only buffer.', 'SwapModeErr')
-  catch
-    let err = g:swap.error
-    call err.catch(printf('vim-swap: Unanticipated error. [%s] %s', v:throwpoint, v:exception), 'SwapModeErr')
   finally
     call a:buffer.clear_highlight()
   endtry
