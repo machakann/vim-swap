@@ -169,6 +169,20 @@ let g:swap#default_rules = [
 let s:has_gui_running = has('gui_running')
 
 
+" highlight group
+function! s:default_highlight() abort
+  highlight default link SwapItem Underlined
+  highlight default link SwapCurrentItem IncSearch
+  highlight default link SwapSelectedItem Visual
+endfunction
+call s:default_highlight()
+
+augroup swapdotvim-highlight
+  autocmd!
+  autocmd ColorScheme * call s:default_highlight()
+augroup END
+
+
 " This function sets 'operatorfunc' option. Use like this:
 "   nnoremap <silent> gs :<C-u>call swap#prerequisite('n')g@l
 "   xnoremap <silent> gs :<C-u>call swap#prerequisite('x')gvg@
