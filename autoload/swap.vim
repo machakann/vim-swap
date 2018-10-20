@@ -187,8 +187,6 @@ function! swap#swap(motionwise) abort "{{{
   try
     call g:swap.execute(a:motionwise)
   catch /^SwapModeErr/
-  catch
-    call err.catch(printf('vim-swap: Unanticipated error. [%s] %s', v:throwpoint, v:exception))
   finally
     call s:restore_options(options)
 

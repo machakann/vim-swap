@@ -147,15 +147,6 @@ function! s:swap_prototype._swap_once(buffer, order) dict abort "{{{
 endfunction "}}}
 
 
-function! s:swap_prototype.error.catch(msg, ...) dict abort  "{{{
-  let self.catched = 1
-  let self.message = a:msg
-  if a:0
-    throw a:1
-  endif
-endfunction "}}}
-
-
 function! s:get_rules(mode) abort  "{{{
   let rules = deepcopy(get(g:, 'swap#rules', g:swap#default_rules))
   call map(rules, 'extend(v:val, {"priority": 0}, "keep")')
