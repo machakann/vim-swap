@@ -43,9 +43,8 @@ function! s:clock_prototype.elapsed() dict abort "{{{
   if self.started
     let total = str2float(reltimestr(reltime(self.zerotime)))
     return floor((total - self.losstime)*1000)
-  else
-    return 0
   endif
+  return 0
 endfunction "}}}
 
 

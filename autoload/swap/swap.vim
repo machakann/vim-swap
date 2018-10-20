@@ -105,12 +105,14 @@ endfunction "}}}
 
 
 function! s:swap_prototype._swap_sequential(buffer) dict abort  "{{{
-  if a:buffer != {}
-    let self.undojoin = 0
-    for order in self.order_list
-      call self._swap_once(a:buffer, order)
-    endfor
+  if a:buffer == {}
+    return
   endif
+
+  let self.undojoin = 0
+  for order in self.order_list
+    call self._swap_once(a:buffer, order)
+  endfor
   return self.order_list
 endfunction "}}}
 
@@ -146,11 +148,11 @@ endfunction "}}}
 
 
 function! s:swap_prototype.error.catch(msg, ...) dict abort  "{{{
-    let self.catched = 1
-    let self.message = a:msg
-    if a:0
-      throw a:1
-    endif
+  let self.catched = 1
+  let self.message = a:msg
+  if a:0
+    throw a:1
+  endif
 endfunction "}}}
 
 
@@ -183,9 +185,8 @@ endfunction "}}}
 function! s:filter_mode(rule, mode) abort  "{{{
   if !has_key(a:rule, 'mode')
     return 1
-  else
-    return stridx(a:rule.mode, a:mode) > -1
   endif
+  return stridx(a:rule.mode, a:mode) > -1
 endfunction "}}}
 
 

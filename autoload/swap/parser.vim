@@ -31,40 +31,42 @@ endfunction "}}}
 
 
 function! s:Item_prototype.highlight(group) dict abort "{{{
-  if self.region.len > 0
-    let n = 0
-    let order = []
-    let order_list = []
-    let lines = split(self.string, '\n\zs')
-    let n_lines = len(lines)
-    if n_lines == 1
-      let order = [self.region.head[1:2] + [self.region.len]]
-      let order_list = [order]
-    else
-      for i in range(n_lines)
-        if i == 0
-          let order += [self.region.head[1:2] + [strlen(lines[0])]]
-        elseif i == n_lines-1
-          let order += [[self.region.head[1] + i, 1, strlen(lines[i])]]
-        else
-          let order += [[self.region.head[1] + i]]
-        endif
-
-        if n == 7
-          let order_list += [copy(order)]
-          let order = []
-          let n = 0
-        else
-          let n += 1
-        endif
-      endfor
-      let order_list += [copy(order)]
-    endif
-
-    for order in order_list
-      let self.highlightid += s:matchaddpos(a:group, order)
-    endfor
+  if self.region.len <= 0
+    return
   endif
+
+  let n = 0
+  let order = []
+  let order_list = []
+  let lines = split(self.string, '\n\zs')
+  let n_lines = len(lines)
+  if n_lines == 1
+    let order = [self.region.head[1:2] + [self.region.len]]
+    let order_list = [order]
+  else
+    for i in range(n_lines)
+      if i == 0
+        let order += [self.region.head[1:2] + [strlen(lines[0])]]
+      elseif i == n_lines-1
+        let order += [[self.region.head[1] + i, 1, strlen(lines[i])]]
+      else
+        let order += [[self.region.head[1] + i]]
+      endif
+
+      if n == 7
+        let order_list += [copy(order)]
+        let order = []
+        let n = 0
+      else
+        let n += 1
+      endif
+    endfor
+    let order_list += [copy(order)]
+  endif
+
+  for order in order_list
+    let self.highlightid += s:matchaddpos(a:group, order)
+  endfor
 endfunction "}}}
 
 
@@ -543,17 +545,17 @@ endfunction "}}}
 
 
 function! s:click(text, target, idx) abort  "{{{
-  let idx = a:target[0]
-  if idx < a:idx
-    let kind = a:target[3]
-    if kind ==# 'delimiter' || kind ==# 'immutable'
-      " delimiter or immutable
-      let a:target[0:2] = s:match(a:text, a:target[0:2], a:idx, 1)
-    else
-      " braket or quotes
-      let pair = a:target[1]
-      let a:target[0] = stridx(a:text, pair[0], a:idx)
-    endif
+  let [idx, pair, _, kind] = a:target
+  if idx >= a:idx
+    return a:target
+  endif
+
+  if kind ==# 'delimiter' || kind ==# 'immutable'
+    " delimiter or immutable
+    let a:target[0:2] = s:match(a:text, a:target[0:2], a:idx, 1)
+  else
+    " braket or quotes
+    let a:target[0] = stridx(a:text, pair[0], a:idx)
   endif
   return a:target
 endfunction "}}}
@@ -693,17 +695,18 @@ endfunction "}}}
 
 function! s:add_buffer_text(buffer, attr, text, head, next_head) abort  "{{{
   " NOTE: Zero-width 'item', 'delimiter' and 'immutable' should be possible.
-  "       If it is not favolable, I should control outside of this function.
-  if a:head >= 0
-    if a:next_head < 0
-      let string = a:text[a:head :]
-    elseif a:next_head <= a:head
-      let string = ''
-    else
-      let string = a:text[a:head : a:next_head-1]
-    endif
-    call s:add_an_item(a:buffer, a:attr, string)
+  if a:head < 0
+    return
   endif
+
+  if a:next_head < 0
+    let string = a:text[a:head :]
+  elseif a:next_head <= a:head
+    let string = ''
+  else
+    let string = a:text[a:head : a:next_head-1]
+  endif
+  call s:add_an_item(a:buffer, a:attr, string)
 endfunction "}}}
 
 

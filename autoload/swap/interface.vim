@@ -81,59 +81,61 @@ endfunction "}}}
 
 
 function! s:interface_prototype.echo() dict abort "{{{
-  if self.phase == 0 || self.phase == 1
-    let max_len = &columns - 25
-    let message = []
-
-    for order in self.history[: -1*(self.undolevel+1)]
-      let message += [[order[0], g:swap#hl_itemnr]]
-      let message += [[g:swap#arrow, g:swap#hl_arrow]]
-      let message += [[order[1], g:swap#hl_itemnr]]
-      let message += [[', ', 'NONE']]
-    endfor
-    if self.phase == 0
-      if self.order[0] !=# ''
-        let message += [[self.order[0], self.idx.is_valid(self.order[0]) ? g:swap#hl_itemnr : 'ErrorMsg']]
-      else
-        if message != []
-          call remove(message, -1)
-        endif
-      endif
-    elseif self.phase == 1
-      if self.order[1] !=# ''
-        let message += [[self.order[0], g:swap#hl_itemnr]]
-        let message += [[g:swap#arrow, g:swap#hl_arrow]]
-        let message += [[self.order[1], self.idx.is_valid(self.order[1]) ? g:swap#hl_itemnr : 'ErrorMsg']]
-      else
-        let message += [[self.order[0], g:swap#hl_itemnr]]
-        let message += [[g:swap#arrow, g:swap#hl_arrow]]
-      endif
-    endif
-
-    if message != []
-      let len = eval(join(map(copy(message), 'strwidth(v:val[0])'), '+'))
-      if len > max_len
-        while len > max_len-1
-          let mes  = remove(message, 0)
-          let len -= strwidth(mes[0])
-        endwhile
-        if len < 0
-          let mes = [mes[0][len :], mes[1]]
-          call insert(message, mes)
-        endif
-        let precedes = matchstr(&listchars, 'precedes:\zs.\ze')
-        let precedes = precedes ==# '' ? '<' : precedes
-        call insert(message, [precedes, 'SpecialKey'])
-      endif
-    endif
-
-    echohl ModeMsg
-    echo 'Swap mode: '
-    echohl NONE
-    for mes in message
-      call self.echon(mes[0], mes[1])
-    endfor
+  if self.phase != 0 && self.phase != 1
+    return
   endif
+
+  let max_len = &columns - 25
+  let message = []
+
+  for order in self.history[: -1*(self.undolevel+1)]
+    let message += [[order[0], g:swap#hl_itemnr]]
+    let message += [[g:swap#arrow, g:swap#hl_arrow]]
+    let message += [[order[1], g:swap#hl_itemnr]]
+    let message += [[', ', 'NONE']]
+  endfor
+  if self.phase == 0
+    if self.order[0] !=# ''
+      let message += [[self.order[0], self.idx.is_valid(self.order[0]) ? g:swap#hl_itemnr : 'ErrorMsg']]
+    else
+      if message != []
+        call remove(message, -1)
+      endif
+    endif
+  elseif self.phase == 1
+    if self.order[1] !=# ''
+      let message += [[self.order[0], g:swap#hl_itemnr]]
+      let message += [[g:swap#arrow, g:swap#hl_arrow]]
+      let message += [[self.order[1], self.idx.is_valid(self.order[1]) ? g:swap#hl_itemnr : 'ErrorMsg']]
+    else
+      let message += [[self.order[0], g:swap#hl_itemnr]]
+      let message += [[g:swap#arrow, g:swap#hl_arrow]]
+    endif
+  endif
+
+  if message != []
+    let len = eval(join(map(copy(message), 'strwidth(v:val[0])'), '+'))
+    if len > max_len
+      while len > max_len-1
+        let mes  = remove(message, 0)
+        let len -= strwidth(mes[0])
+      endwhile
+      if len < 0
+        let mes = [mes[0][len :], mes[1]]
+        call insert(message, mes)
+      endif
+      let precedes = matchstr(&listchars, 'precedes:\zs.\ze')
+      let precedes = precedes ==# '' ? '<' : precedes
+      call insert(message, [precedes, 'SpecialKey'])
+    endif
+  endif
+
+  echohl ModeMsg
+  echo 'Swap mode: '
+  echohl NONE
+  for mes in message
+    call self.echon(mes[0], mes[1])
+  endfor
 endfunction "}}}
 
 
@@ -287,9 +289,8 @@ function! s:interface_prototype.idx.is_valid(idx) dict abort  "{{{
     return a:idx >= 0 && a:idx <= self.end
   elseif type(a:idx) == s:TYPESTR
     return str2nr(a:idx) >= 0 && str2nr(a:idx) <= self.end
-  else
-    return 0
   endif
+  return 0
 endfunction "}}}
 
 
@@ -349,19 +350,19 @@ endfunction "}}}
 function! s:is_input_matched(candidate, input, flag) abort "{{{
   if !has_key(a:candidate, 'output') || !has_key(a:candidate, 'input')
     return 0
-  elseif !a:flag && a:input ==# ''
-    return 1
   endif
 
-  let candidate = deepcopy(a:candidate)
+  if !a:flag && a:input ==# ''
+    return 1
+  endif
 
   " If a:flag == 0, check forward match. Otherwise, check complete match.
   if a:flag
     return a:input ==# a:candidate.input
-  else
-    let idx = strlen(a:input) - 1
-    return a:input ==# a:candidate.input[: idx]
   endif
+
+  let idx = strlen(a:input) - 1
+  return a:input ==# a:candidate.input[: idx]
 endfunction "}}}
 
 
@@ -404,10 +405,12 @@ endfunction "}}}
 "    swap_prev : Swap the current item with the previous item.
 "    swap_next : Swap the current item with the next item.
 function! s:interface_prototype.key_nr(nr) dict abort  "{{{
-  if self.phase == 0 || self.phase == 1
-    let self.order[self.phase] .= a:nr
-    call self.echo()
+  if self.phase != 0 && self.phase != 1
+    return
   endif
+
+  let self.order[self.phase] .= a:nr
+  call self.echo()
 endfunction "}}}
 
 
@@ -441,24 +444,32 @@ endfunction "}}}
 
 
 function! s:interface_prototype.key_undo() dict abort "{{{
-  if self.phase == 0 || self.phase == 1
-    if len(self.history) > self.undolevel
-      let self.order = self.undo_order()
-      let self.undolevel += 1
-      call self.exit()
-    endif
+  if self.phase != 0 && self.phase != 1
+    return
   endif
+
+  if len(self.history) <= self.undolevel
+    return
+  endif
+
+  let self.order = self.undo_order()
+  let self.undolevel += 1
+  call self.exit()
 endfunction "}}}
 
 
 function! s:interface_prototype.key_redo() dict abort "{{{
-  if self.phase == 0 || self.phase == 1
-    if self.undolevel
-      let self.order = self.redo_order()
-      let self.undolevel -= 1
-      call self.exit()
-    endif
+  if self.phase != 0 && self.phase != 1
+    return
   endif
+
+  if self.undolevel == 0
+    return
+  endif
+
+  let self.order = self.redo_order()
+  let self.undolevel -= 1
+  call self.exit()
 endfunction "}}}
 
 
@@ -493,137 +504,170 @@ endfunction "}}}
 
 
 function! s:interface_prototype.key_move_prev() dict abort  "{{{
-  if self.phase == 0 || self.phase == 1
-    if self.idx.current > 0
-      let idx = s:move_prev_skipping_blank(self.buffer.items, min([self.idx.current, self.idx.end+1]))
-      call self.set_current(idx)
-      call self.update_highlight()
-    endif
+  if self.phase != 0 && self.phase != 1
+    return
   endif
+
+  if self.idx.current <= 0
+    return
+  endif
+
+  let idx = s:move_prev_skipping_blank(
+    \ self.buffer.items,
+    \ min([self.idx.current, self.idx.end+1]))
+  call self.set_current(idx)
+  call self.update_highlight()
 endfunction "}}}
 
 
 function! s:interface_prototype.key_move_next() dict abort  "{{{
-  if self.phase == 0 || self.phase == 1
-    if self.idx.current < self.idx.end
-      let idx = s:move_next_skipping_blank(self.buffer.items, max([-1, self.idx.current]))
-      call self.set_current(idx)
-      call self.update_highlight()
-    endif
+  if self.phase != 0 && self.phase != 1
+    return
   endif
+
+  if self.idx.current >= self.idx.end
+    return
+  endif
+
+  let idx = s:move_next_skipping_blank(
+    \ self.buffer.items,
+    \ max([-1, self.idx.current]))
+  call self.set_current(idx)
+  call self.update_highlight()
 endfunction "}}}
 
 
 function! s:interface_prototype.key_swap_prev() dict abort  "{{{
-  if self.phase == 0 || self.phase == 1
-    if self.idx.current > 0 && self.idx.current <= self.idx.end
-      let self.order = [self.idx.current+1, self.idx.current]
-      call self.goto_phase(2)
-    endif
+  if self.phase != 0 && self.phase != 1
+    return
   endif
+
+  if self.idx.current <= 0 || self.idx.current > self.idx.end
+    return
+  endif
+
+  let self.order = [self.idx.current+1, self.idx.current]
+  call self.goto_phase(2)
 endfunction "}}}
 
 
 function! s:interface_prototype.key_swap_next() dict abort  "{{{
-  if self.phase == 0 || self.phase == 1
-    if self.idx.current >= 0 && self.idx.current < self.idx.end
-      let self.order = [self.idx.current+1, self.idx.current+2]
-      call self.goto_phase(2)
-    endif
+  if self.phase != 0 && self.phase != 1
+    return
   endif
+
+  if self.idx.current < 0 && self.idx.current >= self.idx.end
+    return
+  endif
+
+  let self.order = [self.idx.current+1, self.idx.current+2]
+  call self.goto_phase(2)
 endfunction "}}}
 
 
 
 function! swap#interface#swapmode_key_nr(nr) abort  "{{{
-  if exists('s:interface')
-    call s:interface.key_nr(a:nr)
+  if !exists('s:interface')
+    return
   endif
+  call s:interface.key_nr(a:nr)
 endfunction "}}}
 
 
 function! swap#interface#swapmode_key_CR() abort  "{{{
-  if exists('s:interface')
-    call s:interface.key_CR()
+  if !exists('s:interface')
+    return
   endif
+  call s:interface.key_CR()
 endfunction "}}}
 
 
 function! swap#interface#swapmode_key_BS() abort  "{{{
-  if exists('s:interface')
-    call s:interface.key_BS()
+  if !exists('s:interface')
+    return
   endif
+  call s:interface.key_BS()
 endfunction "}}}
 
 
 function! swap#interface#swapmode_key_undo() abort  "{{{
-  if exists('s:interface')
-    call s:interface.key_undo()
+  if !exists('s:interface')
+    return
   endif
+  call s:interface.key_undo()
 endfunction "}}}
 
 
 function! swap#interface#swapmode_key_redo() abort  "{{{
-  if exists('s:interface')
-    call s:interface.key_redo()
+  if !exists('s:interface')
+    return
   endif
+  call s:interface.key_redo()
 endfunction "}}}
 
 
 function! swap#interface#swapmode_key_current() abort  "{{{
-  if exists('s:interface')
-    call s:interface.key_current()
+  if !exists('s:interface')
+    return
   endif
+  call s:interface.key_current()
 endfunction "}}}
 
 
 function! swap#interface#swapmode_key_fix_nr() abort  "{{{
-  if exists('s:interface')
-    call s:interface.key_fix_nr()
+  if !exists('s:interface')
+    return
   endif
+  call s:interface.key_fix_nr()
 endfunction "}}}
 
 
 function! swap#interface#swapmode_key_move_prev() abort  "{{{
-  if exists('s:interface')
-    call s:interface.key_move_prev()
+  if !exists('s:interface')
+    return
   endif
+  call s:interface.key_move_prev()
 endfunction "}}}
 
 
 function! swap#interface#swapmode_key_move_next() abort  "{{{
-  if exists('s:interface')
-    call s:interface.key_move_next()
+  if !exists('s:interface')
+    return
   endif
+  call s:interface.key_move_next()
 endfunction "}}}
 
 
 function! swap#interface#swapmode_key_swap_prev() abort  "{{{
-  if exists('s:interface')
-    call s:interface.key_swap_prev()
+  if !exists('s:interface')
+    return
   endif
+  call s:interface.key_swap_prev()
 endfunction "}}}
 
 
 function! swap#interface#swapmode_key_swap_next() abort  "{{{
-  if exists('s:interface')
-    call s:interface.key_swap_next()
+  if !exists('s:interface')
+    return
   endif
+  call s:interface.key_swap_next()
 endfunction "}}}
 
 
 function! swap#interface#swapmode_key_echo() abort  "{{{
-  if exists('s:interface')
-    call s:interface.echo()
+  if !exists('s:interface')
+    return
   endif
+  call s:interface.echo()
 endfunction "}}}
 
 
 function! swap#interface#swapmode_key_ESC() abort  "{{{
-  if exists('s:interface')
-    call s:interface.echo()
-    let s:interface.escaped = 1
+  if !exists('s:interface')
+    return
   endif
+  call s:interface.echo()
+  let s:interface.escaped = 1
 endfunction "}}}
 
 
