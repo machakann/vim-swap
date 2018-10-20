@@ -174,12 +174,12 @@ let s:has_gui_running = has('gui_running')
 "   xnoremap <silent> gs :<C-u>call swap#prerequisite('x')gvg@
 function! swap#prerequisite(mode, ...) abort "{{{
   let g:swap = swap#swap#new(a:mode, get(a:000, 0, []))
-  set operatorfunc=swap#swap
+  set operatorfunc=swap#operatorfunc
 endfunction "}}}
 
 
 " The operator function
-function! swap#swap(motionwise) abort "{{{
+function! swap#operatorfunc(motionwise) abort "{{{
   let view = winsaveview()
   let dotrepeat = g:swap.dotrepeat
   let err = g:swap.error
