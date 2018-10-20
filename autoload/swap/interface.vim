@@ -1,6 +1,8 @@
 " interface object - Interactive order determination, "swap mode".
 
-call swap#constant#import(s:, ['TYPESTR', 'TYPENUM'])
+let s:const = swap#constant#import()
+let s:TYPENUM = s:const.TYPENUM
+let s:TYPESTR = s:const.TYPESTR
 let s:lib = swap#lib#import()
 
 " patches

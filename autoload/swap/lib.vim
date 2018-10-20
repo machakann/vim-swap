@@ -1,6 +1,7 @@
 " lib.vim - Miscellaneous functions library.
 
-call swap#constant#import(s:, ['NULLPOS'])
+let s:const = swap#constant#import()
+let s:NULLPOS = s:const.NULLPOS
 
 " patches
 if v:version > 704 || (v:version == 704 && has('patch237'))
@@ -74,7 +75,7 @@ endif
 
 
 function! s:is_valid_region(region) abort "{{{
-  return a:region.head != s:NULLPOS && a:region.tail != s:NULLPOS
+  return a:region.head != s:const.NULLPOS && a:region.tail != s:const.NULLPOS
         \ && (a:region.type ==# 'line' || s:is_ahead(a:region.tail, a:region.head))
 endfunction "}}}
 
@@ -85,9 +86,9 @@ endfunction "}}}
 
 
 function! s:is_in_between(pos, head, tail) abort  "{{{
-  return (a:pos != s:NULLPOS) && (a:head != s:NULLPOS) && (a:tail != s:NULLPOS)
-    \  && ((a:pos[1] > a:head[1]) || ((a:pos[1] == a:head[1]) && (a:pos[2] >= a:head[2])))
-    \  && ((a:pos[1] < a:tail[1]) || ((a:pos[1] == a:tail[1]) && (a:pos[2] <= a:tail[2])))
+  return a:pos != s:NULLPOS && a:head != s:NULLPOS && a:tail != s:NULLPOS
+    \ && ((a:pos[1] > a:head[1]) || ((a:pos[1] == a:head[1]) && (a:pos[2] >= a:head[2])))
+    \ && ((a:pos[1] < a:tail[1]) || ((a:pos[1] == a:tail[1]) && (a:pos[2] <= a:tail[2])))
 endfunction "}}}
 
 

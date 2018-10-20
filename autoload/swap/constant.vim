@@ -1,14 +1,6 @@
 " constant object - Hold constants
 
 function! swap#constant#import(...) abort "{{{
-  if a:0 >= 1
-    let const = s:const
-    if a:0 >= 2
-      let const = filter(deepcopy(s:const), 'count(a:2, v:key) > 0')
-      lockvar! const
-    endif
-    call extend(a:1, const)
-  endif
   return s:const
 endfunction "}}}
 
@@ -16,7 +8,13 @@ unlet! s:const
 let s:const = {}
 let s:const.NULLCOORD = [0, 0]
 let s:const.NULLPOS = [0, 0, 0, 0]
-let s:const.NULLREGION = {'head': copy(s:const.NULLPOS), 'tail': copy(s:const.NULLPOS), 'len': -1, 'type': '', 'visualkey': ''}
+let s:const.NULLREGION = {
+  \ 'head': copy(s:const.NULLPOS),
+  \ 'tail': copy(s:const.NULLPOS),
+  \ 'len': -1,
+  \ 'type': '',
+  \ 'visualkey': ''
+  \ }
 
 if exists('v:t_number')
   let s:const.TYPESTR = v:t_string

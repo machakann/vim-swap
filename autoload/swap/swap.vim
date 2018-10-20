@@ -1,6 +1,9 @@
 " swap object - Managing a whole action.
 
-call swap#constant#import(s:, ['TYPESTR', 'TYPENUM', 'NULLREGION'])
+let s:const = swap#constant#import(s:, ['TYPESTR', 'TYPENUM', 'NULLREGION'])
+let s:TYPESTR = s:const.TYPESTR
+let s:TYPENUM = s:const.TYPENUM
+let s:NULLREGION = s:const.NULLREGION
 let s:lib = swap#lib#import()
 
 

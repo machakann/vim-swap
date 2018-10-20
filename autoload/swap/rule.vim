@@ -1,6 +1,9 @@
 " rule object - Describe the rule of swapping action.
 
-call swap#constant#import(s:, ['NULLCOORD', 'NULLPOS', 'NULLREGION'])
+let s:const = swap#constant#import()
+let s:NULLCOORD = s:const.NULLCOORD
+let s:NULLPOS = s:const.NULLPOS
+let s:NULLREGION = s:const.NULLREGION
 let s:lib = swap#lib#import()
 
 

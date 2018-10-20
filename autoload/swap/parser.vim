@@ -1,6 +1,7 @@
 " parser - Parse a text to give a buffer object.
 
-call swap#constant#import(s:, ['NULLREGION'])
+let s:const = swap#constant#import()
+let s:NULLREGION = s:const.NULLREGION
 let s:lib = swap#lib#import()
 
 
