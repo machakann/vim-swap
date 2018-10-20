@@ -164,13 +164,21 @@ let g:swap#default_rules = [
       \   },
       \ ]
 
+
 " features
 let s:has_gui_running = has('gui_running')
 
+
+" This function sets 'operatorfunc' option. Use like this:
+"   nnoremap <silent> gs :<C-u>call swap#prerequisite('n')g@l
+"   xnoremap <silent> gs :<C-u>call swap#prerequisite('x')gvg@
 function! swap#prerequisite(mode, ...) abort "{{{
   let g:swap = swap#swap#new(a:mode, get(a:000, 0, []))
   set operatorfunc=swap#swap
 endfunction "}}}
+
+
+" The operator function
 function! swap#swap(motionwise) abort "{{{
   let view = winsaveview()
   let dotrepeat = g:swap.dotrepeat
@@ -193,12 +201,17 @@ function! swap#swap(motionwise) abort "{{{
     endif
   endtry
 endfunction "}}}
+
+
 function! swap#map(lhs, rhs) abort "{{{
   call s:keymap(0, a:lhs, a:rhs)
 endfunction "}}}
+
+
 function! swap#noremap(lhs, rhs) abort "{{{
   call s:keymap(1, a:lhs, a:rhs)
 endfunction "}}}
+
 
 function! s:displace_options() abort  "{{{
   let options = {}
@@ -217,6 +230,8 @@ function! s:displace_options() abort  "{{{
   setlocal nocursorline
   return options
 endfunction "}}}
+
+
 function! s:restore_options(options) abort "{{{
   let &virtualedit = a:options.virtualedit
   let &whichwrap = a:options.whichwrap
@@ -229,11 +244,14 @@ function! s:restore_options(options) abort "{{{
   endif
   let &l:cursorline = a:options.cursorline
 endfunction "}}}
+
+
 function! s:keymap(noremap, lhs, rhs) abort  "{{{
   let g:swap#keymappings = get(g:, 'swap#keymappings', g:swap#default_keymappings)
   let keymap = {'noremap': a:noremap, 'input': a:lhs, 'output': a:rhs}
   let g:swap#keymappings += [keymap]
 endfunction "}}}
+
 
 " key layout in swap mode
 " swap mode mappings{{{
@@ -260,6 +278,7 @@ nnoremap <silent> <Plug>(swap-mode-swap-next) :<C-u>call swap#interface#swapmode
 nnoremap <silent> <Plug>(swap-mode-echo) :<C-u>call swap#interface#swapmode_key_echo()<CR>
 nnoremap <silent> <Plug>(swap-mode-Esc) :<C-u>call swap#interface#swapmode_key_ESC()<CR>
 "}}}
+
 " key layout - discreet "{{{
 let g:swap#key_layout_discreet = [
       \   {'input': '0', 'output': "\<Plug>(swap-mode-0)"},
@@ -288,6 +307,7 @@ let g:swap#key_layout_discreet = [
       \   {'input': "\<Esc>", 'output': "\<Plug>(swap-mode-Esc)"},
       \ ]
 "}}}
+
 " key layout - impatient  "{{{
 let g:swap#key_layout_impatient = [
       \   {'input': '1', 'output': "\<Plug>(swap-mode-1)\<Plug>(swap-mode-fix-nr)"},
@@ -315,6 +335,7 @@ let g:swap#key_layout_impatient = [
       \   {'input': "\<Esc>", 'output': "\<Plug>(swap-mode-Esc)"},
       \ ]
 "}}}
+
 let g:swap#default_keymappings = g:swap#key_layout_impatient
 
 " vim:set foldmethod=marker:

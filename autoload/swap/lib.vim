@@ -9,21 +9,17 @@ else
   let s:has_patch_7_4_358 = v:version == 704 && has('patch358')
 endif
 
-function! swap#lib#import(...) abort "{{{
-  if a:0 >= 1
-    let lib = s:lib
-    if a:0 >= 2
-      let lib = filter(deepcopy(s:lib), 'count(a:2, v:key) > 0')
-      lockvar! lib
-    endif
-    call extend(a:1, lib)
-  endif
+
+function! swap#lib#import() abort "{{{
   return s:lib
 endfunction "}}}
+
 
 function! s:get_buf_length(region) abort  "{{{
   return s:buf_byte_len(a:region.head, a:region.tail) + 1
 endfunction "}}}
+
+
 function! s:buf_byte_len(start, end) abort "{{{
   let buf_byte_len = 0
   if a:end[1] == a:start[1]
@@ -38,9 +34,13 @@ function! s:buf_byte_len(start, end) abort "{{{
   endif
   return buf_byte_len
 endfunction "}}}
+
+
 function! s:c2p(coord) abort  "{{{
   return [0] + a:coord + [0]
 endfunction "}}}
+
+
 " function! s:sort(list, func, ...) abort  "{{{
 if s:has_patch_7_4_358
   function! s:sort(list, func, ...) abort
@@ -71,41 +71,58 @@ else
   endfunction
 endif
 "}}}
+
+
 function! s:is_valid_region(region) abort "{{{
   return a:region.head != s:NULLPOS && a:region.tail != s:NULLPOS
         \ && (a:region.type ==# 'line' || s:is_ahead(a:region.tail, a:region.head))
 endfunction "}}}
+
+
 function! s:is_ahead(pos1, pos2) abort  "{{{
   return a:pos1[1] > a:pos2[1] || (a:pos1[1] == a:pos2[1] && a:pos1[2] > a:pos2[2])
 endfunction "}}}
+
+
 function! s:is_in_between(pos, head, tail) abort  "{{{
   return (a:pos != s:NULLPOS) && (a:head != s:NULLPOS) && (a:tail != s:NULLPOS)
     \  && ((a:pos[1] > a:head[1]) || ((a:pos[1] == a:head[1]) && (a:pos[2] >= a:head[2])))
     \  && ((a:pos[1] < a:tail[1]) || ((a:pos[1] == a:tail[1]) && (a:pos[2] <= a:tail[2])))
 endfunction "}}}
+
+
 function! s:escape(string) abort  "{{{
   return escape(a:string, '~"\.^$[]*')
 endfunction "}}}
+
+
 function! s:virtcol2col(lnum, virtcol) abort  "{{{
   call cursor(a:lnum, 1)
   execute printf('normal! %d|', a:virtcol)
   return col('.')
 endfunction "}}}
+
+
 function! s:motionwise2visualkey(motionwise) abort  "{{{
   return a:motionwise ==# 'line'  ? 'V'
      \ : a:motionwise ==# 'block' ? "\<C-v>"
      \ : 'v'
 endfunction "}}}
+
+
 function! s:get_left_pos(pos, ...) abort  "{{{
   call setpos('.', a:pos)
   execute printf('normal! %dh', get(a:000, 0, 1))
   return getpos('.')
 endfunction "}}}
+
+
 function! s:get_right_pos(pos, ...) abort  "{{{
   call setpos('.', a:pos)
   execute printf('normal! %dl', get(a:000, 0, 1))
   return getpos('.')
 endfunction "}}}
+
 
 let s:lib = {}
 let s:lib.get_buf_length = function('s:get_buf_length')
@@ -120,6 +137,8 @@ let s:lib.virtcol2col = function('s:virtcol2col')
 let s:lib.motionwise2visualkey = function('s:motionwise2visualkey')
 let s:lib.get_left_pos = function('s:get_left_pos')
 let s:lib.get_right_pos = function('s:get_right_pos')
+lockvar! s:lib
+
 
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:

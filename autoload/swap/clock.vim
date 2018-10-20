@@ -3,9 +3,11 @@
 " features
 let s:has_reltime_and_float = has('reltime') && has('float')
 
+
 function! swap#clock#new() abort  "{{{
   return deepcopy(s:clock_prototype)
 endfunction "}}}
+
 
 let s:clock_prototype = {
       \   'started' : 0,
@@ -14,6 +16,8 @@ let s:clock_prototype = {
       \   'zerotime': reltime(),
       \   'pause_at': reltime(),
       \ }
+
+
 function! s:clock_prototype.start() dict abort  "{{{
   if self.started
     if self.paused
@@ -27,10 +31,14 @@ function! s:clock_prototype.start() dict abort  "{{{
     endif
   endif
 endfunction "}}}
+
+
 function! s:clock_prototype.pause() dict abort "{{{
   let self.pause_at = reltime()
   let self.paused   = 1
 endfunction "}}}
+
+
 function! s:clock_prototype.elapsed() dict abort "{{{
   if self.started
     let total = str2float(reltimestr(reltime(self.zerotime)))
@@ -39,11 +47,14 @@ function! s:clock_prototype.elapsed() dict abort "{{{
     return 0
   endif
 endfunction "}}}
+
+
 function! s:clock_prototype.stop() dict abort  "{{{
   let self.started  = 0
   let self.paused   = 0
   let self.losstime = 0
 endfunction "}}}
+
 
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:

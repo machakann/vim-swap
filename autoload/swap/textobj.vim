@@ -1,5 +1,8 @@
 " textobj object - Select an item.
 
+" The key mapping interface function. Use like this:
+"   noremap <silent> i, :<C-u>call swap#textobj#select('i')<CR>
+"   noremap <silent> a, :<C-u>call swap#textobj#select('a')<CR>
 function! swap#textobj#select(type) abort "{{{
   let l:count = v:count1
   let TEXTOBJ = !!1
@@ -25,6 +28,7 @@ function! swap#textobj#select(type) abort "{{{
   endif
 endfunction "}}}
 
+
 function! s:get_target_i(buffer, count) abort "{{{
   let cursoritemidx = a:buffer.symbols['#'] - 1
   let cursoritem = a:buffer.items[cursoritemidx]
@@ -33,6 +37,8 @@ function! s:get_target_i(buffer, count) abort "{{{
   let enditem = a:buffer.items[enditemidx]
   return [cursoritem, enditem]
 endfunction "}}}
+
+
 function! s:get_target_a(buffer, count) abort "{{{
   let [cursoritem, enditem] = s:get_target_i(a:buffer, a:count)
   let conj_delimiter = s:get_preconjugate_delimiter(a:buffer, cursoritem)
@@ -46,6 +52,8 @@ function! s:get_target_a(buffer, count) abort "{{{
   endif
   return [cursoritem, enditem]
 endfunction "}}}
+
+
 function! s:get_preconjugate_delimiter(buffer, cursoritem) abort "{{{
   if a:cursoritem.idx < 0
     return {}
@@ -60,6 +68,8 @@ function! s:get_preconjugate_delimiter(buffer, cursoritem) abort "{{{
   endif
   return {}
 endfunction "}}}
+
+
 function! s:get_postconjugate_delimiter(buffer, enditem) abort "{{{
   if a:enditem.idx < 0
     return {}
@@ -74,6 +84,7 @@ function! s:get_postconjugate_delimiter(buffer, enditem) abort "{{{
   endif
   return {}
 endfunction "}}}
+
 
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:

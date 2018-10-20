@@ -1,7 +1,7 @@
 " interface object - Interactive order determination, "swap mode".
 
 call swap#constant#import(s:, ['TYPESTR', 'TYPENUM'])
-call swap#lib#import(s:, ['is_ahead', 'is_in_between'])
+let s:lib = swap#lib#import()
 
 " patches
 if v:version > 704 || (v:version == 704 && has('patch237'))
@@ -10,10 +10,12 @@ else
   let s:has_patch_7_4_311 = v:version == 704 && has('patch311')
 endif
 
+
 function! swap#interface#new() abort  "{{{
   let s:interface = deepcopy(s:interface_prototype)
   return s:interface
 endfunction "}}}
+
 
 let s:interface_prototype = {
       \   'phase': 0,
@@ -29,6 +31,9 @@ let s:interface_prototype = {
       \   'history': [],
       \   'undolevel': 0,
       \ }
+
+
+" This function asks user to input an key and return the order
 function! s:interface_prototype.query(buffer) dict abort "{{{
   if empty(a:buffer)
     return []
@@ -71,6 +76,8 @@ function! s:interface_prototype.query(buffer) dict abort "{{{
   echo ''
   return self.order
 endfunction "}}}
+
+
 function! s:interface_prototype.echo() dict abort "{{{
   if self.phase == 0 || self.phase == 1
     let max_len = &columns - 25
@@ -126,12 +133,16 @@ function! s:interface_prototype.echo() dict abort "{{{
     endfor
   endif
 endfunction "}}}
+
+
 function! s:interface_prototype.echon(str, ...) dict abort "{{{
   let hl = get(a:000, 0, 'NONE')
   execute 'echohl ' . hl
   echon a:str
   echohl NONE
 endfunction "}}}
+
+
 function! s:interface_prototype.normal(key) dict abort "{{{
   if has_key(a:key, 'noremap') && a:key.noremap
     execute 'noautocmd normal! ' . a:key.output
@@ -139,11 +150,13 @@ function! s:interface_prototype.normal(key) dict abort "{{{
     execute 'noautocmd normal ' . a:key.output
   endif
 endfunction "}}}
+
+
 function! s:interface_prototype.revise_cursor_pos() dict abort  "{{{
   let curpos = getpos('.')
   if self.idx.is_valid(self.idx.current)
     let item = self.buffer.items[self.idx.current]
-    if s:is_in_between(curpos, item.region.head, item.region.tail) && curpos != item.region.tail
+    if s:lib.is_in_between(curpos, item.region.head, item.region.tail) && curpos != item.region.tail
       " no problem!
       return
     endif
@@ -152,9 +165,9 @@ function! s:interface_prototype.revise_cursor_pos() dict abort  "{{{
   let head = self.buffer.items[0].region.head
   let tail = self.buffer.items[self.idx.end].region.tail
   let self.idx.last_current = self.idx.current
-  if s:is_ahead(head, curpos)
+  if s:lib.is_ahead(head, curpos)
     let self.idx.current = -1
-  elseif curpos == tail || s:is_ahead(curpos, tail)
+  elseif curpos == tail || s:lib.is_ahead(curpos, tail)
     let self.idx.current = self.idx.end + 1
   else
     let sharp = self.buffer.update_sharp(curpos)
@@ -162,11 +175,15 @@ function! s:interface_prototype.revise_cursor_pos() dict abort  "{{{
   endif
   call self.update_highlight()
 endfunction "}}}
+
+
 function! s:interface_prototype.add_history() dict abort  "{{{
   call self.truncate_history()
   call add(self.history, self.order)
   return self.history
 endfunction "}}}
+
+
 function! s:interface_prototype.truncate_history() dict abort  "{{{
   if self.undolevel
     let endidx = -1*self.undolevel
@@ -175,6 +192,8 @@ function! s:interface_prototype.truncate_history() dict abort  "{{{
   endif
   return self.history
 endfunction "}}}
+
+
 function! s:interface_prototype.set_current(idx) dict abort "{{{
   call self.buffer.items[a:idx].cursor()
 
@@ -187,6 +206,8 @@ function! s:interface_prototype.set_current(idx) dict abort "{{{
   let self.idx.last_current = self.idx.current
   let self.idx.current = a:idx
 endfunction "}}}
+
+
 function! s:interface_prototype.highlight() dict abort "{{{
   if !g:swap#highlight
     return
@@ -202,9 +223,13 @@ function! s:interface_prototype.highlight() dict abort "{{{
     let idx += 1
   endfor
 endfunction "}}}
+
+
 function! s:interface_prototype.clear_highlight() dict abort  "{{{
   call self.buffer.clear_highlight('items')
 endfunction "}}}
+
+
 function! s:interface_prototype.update_highlight() dict abort  "{{{
   if !g:swap#highlight
     return
@@ -224,6 +249,8 @@ function! s:interface_prototype.update_highlight() dict abort  "{{{
     call items[self.idx.current].highlight('SwapCurrentItem')
   endif
 endfunction "}}}
+
+
 function! s:interface_prototype.goto_phase(phase) dict abort "{{{
   " NOTE: If a negative value n is given, this func proceed phase to abs(n)
   "       without operating side-processes.
@@ -235,16 +262,24 @@ function! s:interface_prototype.goto_phase(phase) dict abort "{{{
     call self.add_history()
   endif
 endfunction "}}}
+
+
 function! s:interface_prototype.exit() dict abort  "{{{
   call self.goto_phase(-2)
 endfunction "}}}
+
+
 function! s:interface_prototype.undo_order() dict abort  "{{{
   let prev_order = self.history[-1*(self.undolevel+1)]
   return [prev_order[1], prev_order[0]]
 endfunction "}}}
+
+
 function! s:interface_prototype.redo_order() dict abort  "{{{
   return copy(self.history[-1*self.undolevel])
 endfunction "}}}
+
+
 function! s:interface_prototype.idx.is_valid(idx) dict abort  "{{{
   if type(a:idx) == s:TYPENUM
     return a:idx >= 0 && a:idx <= self.end
@@ -254,6 +289,7 @@ function! s:interface_prototype.idx.is_valid(idx) dict abort  "{{{
     return 0
   endif
 endfunction "}}}
+
 
 function! s:query(key_map) abort "{{{
   let key_map = insert(a:key_map, {'input': "\<Esc>", 'output': "\<Plug>(swap-mode-Esc)"})   " for safety
@@ -306,6 +342,8 @@ function! s:query(key_map) abort "{{{
   endif
   return key_seq
 endfunction "}}}
+
+
 function! s:is_input_matched(candidate, input, flag) abort "{{{
   if !has_key(a:candidate, 'output') || !has_key(a:candidate, 'input')
     return 0
@@ -323,6 +361,8 @@ function! s:is_input_matched(candidate, input, flag) abort "{{{
     return a:input ==# a:candidate.input[: idx]
   endif
 endfunction "}}}
+
+
 function! s:move_prev_skipping_blank(items, current) abort  "{{{
   " skip empty items
   let idx = a:current - 1
@@ -334,6 +374,8 @@ function! s:move_prev_skipping_blank(items, current) abort  "{{{
   endwhile
   return idx < 0 ? a:current : idx
 endfunction "}}}
+
+
 function! s:move_next_skipping_blank(items, current) abort  "{{{
   " skip empty items
   let idx = a:current + 1
@@ -346,6 +388,7 @@ function! s:move_next_skipping_blank(items, current) abort  "{{{
   endwhile
   return idx > end ? a:current : idx
 endfunction "}}}
+
 
 " NOTE: Function list
 "    {0~9} : Input {0~9} to specify an item.
@@ -364,6 +407,8 @@ function! s:interface_prototype.key_nr(nr) dict abort  "{{{
     call self.echo()
   endif
 endfunction "}}}
+
+
 function! s:interface_prototype.key_CR() dict abort  "{{{
   if get(self.order, self.phase, '') ==# ''
     call self.key_current()
@@ -371,6 +416,8 @@ function! s:interface_prototype.key_CR() dict abort  "{{{
     call self.key_fix_nr()
   endif
 endfunction "}}}
+
+
 function! s:interface_prototype.key_BS() dict abort  "{{{
   if self.phase == 0
     if self.order[0] !=# ''
@@ -389,6 +436,8 @@ function! s:interface_prototype.key_BS() dict abort  "{{{
     call self.echo()
   endif
 endfunction "}}}
+
+
 function! s:interface_prototype.key_undo() dict abort "{{{
   if self.phase == 0 || self.phase == 1
     if len(self.history) > self.undolevel
@@ -398,6 +447,8 @@ function! s:interface_prototype.key_undo() dict abort "{{{
     endif
   endif
 endfunction "}}}
+
+
 function! s:interface_prototype.key_redo() dict abort "{{{
   if self.phase == 0 || self.phase == 1
     if self.undolevel
@@ -407,6 +458,8 @@ function! s:interface_prototype.key_redo() dict abort "{{{
     endif
   endif
 endfunction "}}}
+
+
 function! s:interface_prototype.key_current() dict abort "{{{
   if self.phase == 0
     let self.order[0] = string(self.idx.current) + 1
@@ -416,6 +469,8 @@ function! s:interface_prototype.key_current() dict abort "{{{
     call self.goto_phase(2)
   endif
 endfunction "}}}
+
+
 function! s:interface_prototype.key_fix_nr() dict abort "{{{
   if self.phase == 0
     let idx = str2nr(self.order[self.phase]) - 1
@@ -433,6 +488,8 @@ function! s:interface_prototype.key_fix_nr() dict abort "{{{
     endif
   endif
 endfunction "}}}
+
+
 function! s:interface_prototype.key_move_prev() dict abort  "{{{
   if self.phase == 0 || self.phase == 1
     if self.idx.current > 0
@@ -442,6 +499,8 @@ function! s:interface_prototype.key_move_prev() dict abort  "{{{
     endif
   endif
 endfunction "}}}
+
+
 function! s:interface_prototype.key_move_next() dict abort  "{{{
   if self.phase == 0 || self.phase == 1
     if self.idx.current < self.idx.end
@@ -451,6 +510,8 @@ function! s:interface_prototype.key_move_next() dict abort  "{{{
     endif
   endif
 endfunction "}}}
+
+
 function! s:interface_prototype.key_swap_prev() dict abort  "{{{
   if self.phase == 0 || self.phase == 1
     if self.idx.current > 0 && self.idx.current <= self.idx.end
@@ -459,6 +520,8 @@ function! s:interface_prototype.key_swap_prev() dict abort  "{{{
     endif
   endif
 endfunction "}}}
+
+
 function! s:interface_prototype.key_swap_next() dict abort  "{{{
   if self.phase == 0 || self.phase == 1
     if self.idx.current >= 0 && self.idx.current < self.idx.end
@@ -468,72 +531,99 @@ function! s:interface_prototype.key_swap_next() dict abort  "{{{
   endif
 endfunction "}}}
 
+
+
 function! swap#interface#swapmode_key_nr(nr) abort  "{{{
   if exists('s:interface')
     call s:interface.key_nr(a:nr)
   endif
 endfunction "}}}
+
+
 function! swap#interface#swapmode_key_CR() abort  "{{{
   if exists('s:interface')
     call s:interface.key_CR()
   endif
 endfunction "}}}
+
+
 function! swap#interface#swapmode_key_BS() abort  "{{{
   if exists('s:interface')
     call s:interface.key_BS()
   endif
 endfunction "}}}
+
+
 function! swap#interface#swapmode_key_undo() abort  "{{{
   if exists('s:interface')
     call s:interface.key_undo()
   endif
 endfunction "}}}
+
+
 function! swap#interface#swapmode_key_redo() abort  "{{{
   if exists('s:interface')
     call s:interface.key_redo()
   endif
 endfunction "}}}
+
+
 function! swap#interface#swapmode_key_current() abort  "{{{
   if exists('s:interface')
     call s:interface.key_current()
   endif
 endfunction "}}}
+
+
 function! swap#interface#swapmode_key_fix_nr() abort  "{{{
   if exists('s:interface')
     call s:interface.key_fix_nr()
   endif
 endfunction "}}}
+
+
 function! swap#interface#swapmode_key_move_prev() abort  "{{{
   if exists('s:interface')
     call s:interface.key_move_prev()
   endif
 endfunction "}}}
+
+
 function! swap#interface#swapmode_key_move_next() abort  "{{{
   if exists('s:interface')
     call s:interface.key_move_next()
   endif
 endfunction "}}}
+
+
 function! swap#interface#swapmode_key_swap_prev() abort  "{{{
   if exists('s:interface')
     call s:interface.key_swap_prev()
   endif
 endfunction "}}}
+
+
 function! swap#interface#swapmode_key_swap_next() abort  "{{{
   if exists('s:interface')
     call s:interface.key_swap_next()
   endif
 endfunction "}}}
+
+
 function! swap#interface#swapmode_key_echo() abort  "{{{
   if exists('s:interface')
     call s:interface.echo()
   endif
 endfunction "}}}
+
+
 function! swap#interface#swapmode_key_ESC() abort  "{{{
   if exists('s:interface')
     call s:interface.echo()
     let s:interface.escaped = 1
   endif
 endfunction "}}}
+
 
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:

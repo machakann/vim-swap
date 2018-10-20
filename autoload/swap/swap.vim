@@ -1,8 +1,8 @@
 " swap object - Managing a whole action.
 
 call swap#constant#import(s:, ['TYPESTR', 'TYPENUM', 'NULLREGION'])
-call swap#lib#import(s:, ['get_buf_length', 'sort', 'is_valid_region',
-                        \ 'escape', 'motionwise2visualkey'])
+let s:lib = swap#lib#import()
+
 
 function! swap#swap#new(mode, order_list) abort "{{{
   let swap = deepcopy(s:swap_prototype)
@@ -11,6 +11,7 @@ function! swap#swap#new(mode, order_list) abort "{{{
   let swap.rules = s:get_rules(a:mode)
   return swap
 endfunction "}}}
+
 
 let s:swap_prototype = {
       \   'dotrepeat': 0,
@@ -23,6 +24,8 @@ let s:swap_prototype = {
       \     'message': '',
       \   },
       \ }
+
+
 function! s:swap_prototype.execute(motionwise) dict abort "{{{
   if self.mode ==# 'n'
     call self._normal(a:motionwise)
@@ -31,11 +34,15 @@ function! s:swap_prototype.execute(motionwise) dict abort "{{{
   endif
   let self.dotrepeat = 1
 endfunction "}}}
+
+
 function! s:swap_prototype.scan(motionwise, ...) abort "{{{
   let rules = deepcopy(self.rules)
   let textobj = get(a:000, 0, 0)
   return s:scan(rules, a:motionwise, textobj)
 endfunction "}}}
+
+
 function! s:swap_prototype._normal(motionwise) dict abort  "{{{
   if self.dotrepeat
     let [buffer, _] = self.scan(a:motionwise)
@@ -48,6 +55,8 @@ function! s:swap_prototype._normal(motionwise) dict abort  "{{{
     endif
   endif
 endfunction "}}}
+
+
 function! s:swap_prototype._visual(motionwise) dict abort  "{{{
   let region = s:get_assigned_region(a:motionwise)
   let rules = deepcopy(self.rules)
@@ -60,6 +69,8 @@ function! s:swap_prototype._visual(motionwise) dict abort  "{{{
     let self.order_list = self._swap(buffer)
   endif
 endfunction "}}}
+
+
 function! s:swap_prototype._swap(buffer) dict abort "{{{
   if self.order_list != []
     return self._swap_sequential(a:buffer)
@@ -67,6 +78,8 @@ function! s:swap_prototype._swap(buffer) dict abort "{{{
     return self._swap_interactive(a:buffer)
   endif
 endfunction "}}}
+
+
 function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
   if a:buffer == {}
     return []
@@ -86,6 +99,8 @@ function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
   endtry
   return interface.history
 endfunction "}}}
+
+
 function! s:swap_prototype._swap_sequential(buffer) dict abort  "{{{
   if a:buffer != {}
     let self.undojoin = 0
@@ -95,6 +110,8 @@ function! s:swap_prototype._swap_sequential(buffer) dict abort  "{{{
   endif
   return self.order_list
 endfunction "}}}
+
+
 function! s:swap_prototype._swap_once(buffer, order) dict abort "{{{
   if a:order == []
     return
@@ -123,6 +140,8 @@ function! s:swap_prototype._swap_once(buffer, order) dict abort "{{{
   call a:buffer.swap(order, self.undojoin)
   let self.undojoin = 1
 endfunction "}}}
+
+
 function! s:swap_prototype.error.catch(msg, ...) dict abort  "{{{
     let self.catched = 1
     let self.message = a:msg
@@ -131,16 +150,19 @@ function! s:swap_prototype.error.catch(msg, ...) dict abort  "{{{
     endif
 endfunction "}}}
 
+
 function! s:get_rules(mode) abort  "{{{
   let rules = deepcopy(get(g:, 'swap#rules', g:swap#default_rules))
   call map(rules, 'extend(v:val, {"priority": 0}, "keep")')
-  call s:sort(reverse(rules), function('s:compare_priority'))
+  call s:lib.sort(reverse(rules), function('s:compare_priority'))
   call filter(rules, 's:filter_filetype(v:val) && s:filter_mode(v:val, a:mode)')
   if a:mode !=# 'x'
     call s:remove_duplicate_rules(rules)
   endif
   return map(rules, 'swap#rule#get(v:val)')
 endfunction "}}}
+
+
 function! s:filter_filetype(rule) abort  "{{{
   if !has_key(a:rule, 'filetype')
     return 1
@@ -153,6 +175,8 @@ function! s:filter_filetype(rule) abort  "{{{
   endif
   return filter(copy(a:rule['filetype']), filter) != []
 endfunction "}}}
+
+
 function! s:filter_mode(rule, mode) abort  "{{{
   if !has_key(a:rule, 'mode')
     return 1
@@ -160,6 +184,8 @@ function! s:filter_mode(rule, mode) abort  "{{{
     return stridx(a:rule.mode, a:mode) > -1
   endif
 endfunction "}}}
+
+
 function! s:remove_duplicate_rules(rules) abort "{{{
   let i = 0
   while i < len(a:rules)
@@ -186,14 +212,16 @@ function! s:remove_duplicate_rules(rules) abort "{{{
     let i += 1
   endwhile
 endfunction "}}}
+
+
 function! s:get_assigned_region(motionwise) abort "{{{
   let region = deepcopy(s:NULLREGION)
   let region.head = getpos("'[")
   let region.tail = getpos("']")
   let region.type = a:motionwise
-  let region.visualkey = s:motionwise2visualkey(a:motionwise)
+  let region.visualkey = s:lib.motionwise2visualkey(a:motionwise)
 
-  if !s:is_valid_region(region)
+  if !s:lib.is_valid_region(region)
     return deepcopy(s:NULLREGION)
   endif
 
@@ -207,13 +235,15 @@ function! s:get_assigned_region(motionwise) abort "{{{
     endif
   endif
 
-  if !s:is_valid_region(region)
+  if !s:lib.is_valid_region(region)
     return deepcopy(s:NULLREGION)
   endif
 
-  let region.len = s:get_buf_length(region)
+  let region.len = s:lib.get_buf_length(region)
   return region
 endfunction "}}}
+
+
 function! s:get_priority_group(rules) abort "{{{
   " NOTE: This function move items in a:rules to priority_group.
   "       Thus it makes changes to a:rules also.
@@ -228,6 +258,8 @@ function! s:get_priority_group(rules) abort "{{{
   endwhile
   return priority_group
 endfunction "}}}
+
+
 function! s:scan(rules, motionwise, ...) abort "{{{
   let view = winsaveview()
   let textobj = get(a:000, 0, 0)
@@ -249,14 +281,16 @@ function! s:scan(rules, motionwise, ...) abort "{{{
   call winrestview(view)
   return buffer != {} ? [buffer, rule] : [{}, {}]
 endfunction "}}}
+
+
 function! s:scan_group(priority_group, curpos, motionwise, ...) abort "{{{
   let textobj = get(a:000, 0, 0)
   while a:priority_group != []
     for rule in a:priority_group
       call rule.search(a:curpos, a:motionwise)
     endfor
-    call filter(a:priority_group, 's:is_valid_region(v:val.region)')
-    call s:sort(a:priority_group, function('s:compare_len'))
+    call filter(a:priority_group, 's:lib.is_valid_region(v:val.region)')
+    call s:lib.sort(a:priority_group, function('s:compare_len'))
 
     for rule in a:priority_group
       let region = rule.region
@@ -268,6 +302,8 @@ function! s:scan_group(priority_group, curpos, motionwise, ...) abort "{{{
   endwhile
   return [{}, {}]
 endfunction "}}}
+
+
 function! s:check(region, rules) abort  "{{{
   if a:region == s:NULLREGION
     return [{}, {}]
@@ -286,6 +322,8 @@ function! s:check(region, rules) abort  "{{{
   call winrestview(view)
   return buffer != {} ? [buffer, rule] : [{}, {}]
 endfunction "}}}
+
+
 function! s:check_group(region, priority_group, curpos) abort "{{{
   for rule in a:priority_group
     if rule.check(a:region)
@@ -297,6 +335,8 @@ function! s:check_group(region, priority_group, curpos) abort "{{{
   endfor
   return [{}, {}]
 endfunction "}}}
+
+
 function! s:compare_priority(r1, r2) abort "{{{
   let priority_r1 = get(a:r1, 'priority', 0)
   let priority_r2 = get(a:r2, 'priority', 0)
@@ -308,11 +348,15 @@ function! s:compare_priority(r1, r2) abort "{{{
     return 0
   endif
 endfunction "}}}
+
+
 function! s:compare_len(r1, r2) abort "{{{
   return a:r1.region.len - a:r2.region.len
 endfunction "}}}
+
+
 function! s:substitute_symbol(order, symbol, symbol_idx) abort "{{{
-  let symbol = s:escape(a:symbol)
+  let symbol = s:lib.escape(a:symbol)
   return map(a:order, 'type(v:val) == s:TYPESTR ? substitute(v:val, symbol, a:symbol_idx, "") : v:val')
 endfunction "}}}
 

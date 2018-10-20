@@ -1,11 +1,13 @@
 " parser - Parse a text to give a buffer object.
 
 call swap#constant#import(s:, ['NULLREGION'])
-call swap#lib#import(s:, ['sort', 'escape', 'is_ahead', 'virtcol2col'])
+let s:lib = swap#lib#import()
+
 
 function! swap#parser#parse(region, rule, curpos) abort "{{{
   return s:Buffer(a:region, a:rule, a:curpos)
 endfunction "}}}
+
 
 " Item object {{{
 let s:Item_prototype = {
@@ -25,6 +27,8 @@ function! s:Item_prototype.cursor(...) dict abort "{{{
     call setpos('.', self.region.head)
   endif
 endfunction "}}}
+
+
 function! s:Item_prototype.highlight(group) dict abort "{{{
   if self.region.len > 0
     let n = 0
@@ -61,12 +65,17 @@ function! s:Item_prototype.highlight(group) dict abort "{{{
     endfor
   endif
 endfunction "}}}
+
+
 function! s:Item_prototype.clear_highlight() dict abort  "{{{
   call filter(map(self.highlightid, 's:matchdelete(v:val)'), 'v:val > 0')
 endfunction "}}}
+
+
 function! s:Item(item) abort "{{{
   return extend(a:item, deepcopy(s:Item_prototype), 'keep')
 endfunction "}}}
+
 
 " function! s:matchaddpos(group, pos) abort "{{{
 if exists('*matchaddpos')
@@ -87,6 +96,8 @@ else
   endfunction
 endif
 "}}}
+
+
 function! s:matchdelete(id) abort "{{{
   if matchdelete(a:id) == -1
     return a:id
@@ -94,6 +105,8 @@ function! s:matchdelete(id) abort "{{{
   return 0
 endfunction "}}}
 "}}}
+
+
 " Buffer object {{{
 let s:Buffer_prototype = {
       \   'region': deepcopy(s:NULLREGION),
@@ -102,6 +115,8 @@ let s:Buffer_prototype = {
       \   'delimiters': [],
       \   'symbols': {'#': 0, '^': 0, '$': 0},
       \ }
+
+
 function! s:Buffer_prototype.clear_highlight(...) dict abort  "{{{
   " NOTE: This function itself does not redraw.
   if !g:swap#highlight
@@ -115,6 +130,8 @@ function! s:Buffer_prototype.clear_highlight(...) dict abort  "{{{
     endif
   endfor
 endfunction "}}}
+
+
 function! s:Buffer_prototype.swappable() dict abort  "{{{
   " Check whether the region matches with the conditions to treat as the target.
   " NOTE: The conditions are the following three.
@@ -126,9 +143,13 @@ function! s:Buffer_prototype.swappable() dict abort  "{{{
   let cond3 = filter(copy(self.all), 'v:val.attr ==# "delimiter"') != []
   return cond1 && cond2 && cond3 ? 1 : 0
 endfunction "}}}
+
+
 function! s:Buffer_prototype.selectable() dict abort  "{{{
   return filter(copy(self.items), 'v:val.string !=# ""') != []
 endfunction "}}}
+
+
 function! s:Buffer_prototype.swap(order, undojoin) dict abort  "{{{
   let idx1 = a:order[0] - 1
   let idx2 = a:order[1] - 1
@@ -157,15 +178,17 @@ function! s:Buffer_prototype.swap(order, undojoin) dict abort  "{{{
   call self.items[idx2].cursor()
   let self.symbols['#'] = a:order[1]
 endfunction "}}}
+
+
 function! s:Buffer_prototype.update_sharp(curpos) dict abort "{{{
   let sharp = 0
   if self.all != []
-    if s:is_ahead(self.all[0].region.head, a:curpos)
+    if s:lib.is_ahead(self.all[0].region.head, a:curpos)
       let sharp = 1
     else
       for text in self.items
         let sharp += 1
-        if s:is_ahead(text.region.tail, a:curpos)
+        if s:lib.is_ahead(text.region.tail, a:curpos)
           break
         endif
       endfor
@@ -177,6 +200,8 @@ function! s:Buffer_prototype.update_sharp(curpos) dict abort "{{{
   let self.symbols['#'] = sharp
   return sharp
 endfunction "}}}
+
+
 function! s:Buffer_prototype.update_hat() dict abort "{{{
   let hat = 0
   for text in self.items
@@ -188,11 +213,15 @@ function! s:Buffer_prototype.update_hat() dict abort "{{{
   let self.symbols['^'] = hat
   return hat
 endfunction "}}}
+
+
 function! s:Buffer_prototype.update_dollar() dict abort "{{{
   let dollar = len(self.items)
   let self.symbols['$'] = dollar
   return dollar
 endfunction "}}}
+
+
 function! s:Buffer(region, rule, curpos) abort "{{{
   " s:parse_{type}wise() functions return a list of dictionaries which have two keys at least, attr and string.
   "   attr   : 'item' or 'delimiter' or 'immutable'.
@@ -216,6 +245,7 @@ function! s:Buffer(region, rule, curpos) abort "{{{
   return buffer
 endfunction "}}}
 "}}}
+
 
 function! s:parse_charwise(text, rule) abort  "{{{
   let idx = 0
@@ -331,6 +361,8 @@ function! s:parse_charwise(text, rule) abort  "{{{
   endif
   return buffer
 endfunction "}}}
+
+
 function! s:parse_linewise(text, rule) abort  "{{{
   let buffer = []
   for text in split(a:text, "\n", 1)[0:-2]
@@ -339,6 +371,8 @@ function! s:parse_linewise(text, rule) abort  "{{{
   endfor
   return buffer
 endfunction "}}}
+
+
 function! s:parse_blockwise(text, rule) abort  "{{{
   let buffer = []
   for text in split(a:text, "\n", 1)
@@ -348,6 +382,8 @@ function! s:parse_blockwise(text, rule) abort  "{{{
   call remove(buffer, -1)
   return buffer
 endfunction "}}}
+
+
 function! s:address_charwise(buffer, region) abort  "{{{
   let pos = copy(a:region.head)
   for item in a:buffer
@@ -368,6 +404,8 @@ function! s:address_charwise(buffer, region) abort  "{{{
   endfor
   return a:buffer
 endfunction "}}}
+
+
 function! s:address_linewise(buffer, region) abort  "{{{
   let lnum = a:region.head[1]
   for item in a:buffer
@@ -385,13 +423,15 @@ function! s:address_linewise(buffer, region) abort  "{{{
   endfor
   return a:buffer
 endfunction "}}}
+
+
 function! s:address_blockwise(buffer, region) abort  "{{{
   let view = winsaveview()
   let lnum = a:region.head[1]
   let virtcol = a:region.head[2]
   for item in a:buffer
     if item.attr ==# 'item'
-      let col = s:virtcol2col(lnum, virtcol)
+      let col = s:lib.virtcol2col(lnum, virtcol)
       let len = strlen(item.string)
       let item.region.len  = len
       let item.region.head = [0, lnum, col, 0]
@@ -406,6 +446,8 @@ function! s:address_blockwise(buffer, region) abort  "{{{
   call winrestview(view)
   return a:buffer
 endfunction "}}}
+
+
 function! s:extractall(dict) abort "{{{
   " remove all keys and values of dictionary
   " return the copy of original dict
@@ -413,6 +455,8 @@ function! s:extractall(dict) abort "{{{
   call filter(a:dict, 1)
   return copy_dict
 endfunction "}}}
+
+
 function! s:get_buf_text(region) abort  "{{{
   " NOTE: Do *not* use operator+textobject in another textobject!
   "       For example, getting a text with the command is not appropriate.
@@ -438,6 +482,8 @@ function! s:get_buf_text(region) abort  "{{{
     return text
   endtry
 endfunction "}}}
+
+
 function! s:saveregisters() abort "{{{
   let registers = {}
   let registers['0'] = s:getregister('0')
@@ -459,18 +505,26 @@ function! s:saveregisters() abort "{{{
   endif
   return registers
 endfunction "}}}
+
+
 function! s:restoreregisters(registers) abort "{{{
   for [register, contains] in items(a:registers)
     call s:setregister(register, contains)
   endfor
 endfunction "}}}
+
+
 function! s:getregister(register) abort "{{{
   return [getreg(a:register), getregtype(a:register)]
 endfunction "}}}
+
+
 function! s:setregister(register, contains) abort "{{{
   let [value, options] = a:contains
   return setreg(a:register, value, options)
 endfunction "}}}
+
+
 function! s:assort(buffer) abort "{{{
   for idx in range(len(a:buffer.all))
     let item = a:buffer.all[idx]
@@ -485,6 +539,8 @@ function! s:assort(buffer) abort "{{{
   endfor
   return a:buffer
 endfunction "}}}
+
+
 function! s:click(text, target, idx) abort  "{{{
   let idx = a:target[0]
   if idx < a:idx
@@ -500,19 +556,25 @@ function! s:click(text, target, idx) abort  "{{{
   endif
   return a:target
 endfunction "}}}
+
+
 function! s:shift_to_something_start(text, targets, idx) abort  "{{{
   let result = [-1, '', 0, '']
   call map(a:targets, 's:click(a:text, v:val, a:idx)')
   call filter(a:targets, 'v:val[0] > -1')
   if a:targets != []
-    call s:sort(a:targets, function('s:compare_idx'), 1)
+    call s:lib.sort(a:targets, function('s:compare_idx'), 1)
     let result = a:targets[0]
   endif
   return result
 endfunction "}}}
+
+
 function! s:shift_to_delimiter_end(text, delimiter, idx, current_match) abort  "{{{
   return s:matchend(a:text, [0, a:delimiter, 0], a:idx, a:current_match)[0]
 endfunction "}}}
+
+
 function! s:shift_to_braket_end(text, pair, quotes, literal_quotes, idx) abort  "{{{
   let end = strlen(a:text)
   let idx = s:stridxend(a:text, a:pair[0], a:idx)
@@ -580,6 +642,8 @@ function! s:shift_to_braket_end(text, pair, quotes, literal_quotes, idx) abort  
   endwhile
   return idx
 endfunction "}}}
+
+
 function! s:shift_to_quote_end(text, pair, idx) abort  "{{{
   let idx = s:stridxend(a:text, a:pair[0], a:idx)
   let end = strlen(a:text)
@@ -598,7 +662,7 @@ function! s:shift_to_quote_end(text, pair, idx) abort  "{{{
     else
       let idx = quote
       if idx > 1 && idx <= end && stridx(&quoteescape, a:text[idx-2]) > -1
-        let n = strchars(matchstr(a:text[: idx-2], printf('%s\+$', s:escape(a:text[idx-2]))))
+        let n = strchars(matchstr(a:text[: idx-2], printf('%s\+$', s:lib.escape(a:text[idx-2]))))
         if n%2 == 1
           continue
         endif
@@ -608,6 +672,8 @@ function! s:shift_to_quote_end(text, pair, idx) abort  "{{{
   endwhile
   return idx
 endfunction "}}}
+
+
 function! s:shift_to_literal_quote_end(text, pair, idx) abort  "{{{
   let idx = s:stridxend(a:text, a:pair[0], a:idx)
   let literal_quote = s:stridxend(a:text, a:pair[1], idx)
@@ -616,10 +682,14 @@ function! s:shift_to_literal_quote_end(text, pair, idx) abort  "{{{
   endif
   return literal_quote
 endfunction "}}}
+
+
 function! s:shift_to_immutable_end(text, immutable, idx) abort  "{{{
   " NOTE: Zero-width immutable would not be considered.
   return s:matchend(a:text, [0, a:immutable, 0], a:idx, 0)[0]
 endfunction "}}}
+
+
 function! s:add_buffer_text(buffer, attr, text, head, next_head) abort  "{{{
   " NOTE: Zero-width 'item', 'delimiter' and 'immutable' should be possible.
   "       If it is not favolable, I should control outside of this function.
@@ -634,9 +704,13 @@ function! s:add_buffer_text(buffer, attr, text, head, next_head) abort  "{{{
     call s:add_an_item(a:buffer, a:attr, string)
   endif
 endfunction "}}}
+
+
 function! s:add_an_item(buffer, attr, string) abort "{{{
   return add(a:buffer, {'attr': a:attr, 'string': a:string})
 endfunction "}}}
+
+
 function! s:match(string, target, idx, ...) abort "{{{
   " NOTE: current_match is like 'c' flag in search()
   let current_match = get(a:000, 0, 1)
@@ -649,6 +723,8 @@ function! s:match(string, target, idx, ...) abort "{{{
     return s:match_by_idx(a:string, a:target, a:idx, current_match)
   endif
 endfunction "}}}
+
+
 function! s:match_by_idx(string, target, idx, current_match) abort  "{{{
   let [idx, pattern, occurrence] = a:target
   let idx = match(a:string, pattern, a:idx)
@@ -657,6 +733,8 @@ function! s:match_by_idx(string, target, idx, current_match) abort  "{{{
   endif
   return [idx, pattern, occurrence]
 endfunction "}}}
+
+
 function! s:match_by_occurence(string, target, idx, current_match) abort  "{{{
   let [idx, pattern, occurrence] = a:target
   if a:idx < idx
@@ -674,6 +752,8 @@ function! s:match_by_occurence(string, target, idx, current_match) abort  "{{{
   endwhile
   return [idx, pattern, occurrence]
 endfunction "}}}
+
+
 function! s:matchend(string, target, idx, ...) abort "{{{
   " NOTE: current_match is like 'c' flag in search()
   let current_match = get(a:000, 0, 1)
@@ -686,6 +766,8 @@ function! s:matchend(string, target, idx, ...) abort "{{{
     return s:matchend_by_idx(a:string, a:target, a:idx, current_match)
   endif
 endfunction "}}}
+
+
 function! s:matchend_by_occurence(string, target, idx, current_match) abort "{{{
   let [idx, pattern, occurrence] = a:target
   if a:idx < idx
@@ -703,6 +785,8 @@ function! s:matchend_by_occurence(string, target, idx, current_match) abort "{{{
   endwhile
   return [idx, pattern, occurrence]
 endfunction "}}}
+
+
 function! s:matchend_by_idx(string, target, idx, current_match) abort "{{{
   let [idx, pattern, occurrence] = a:target
   let idx = matchend(a:string, pattern, a:idx)
@@ -711,14 +795,19 @@ function! s:matchend_by_idx(string, target, idx, current_match) abort "{{{
   endif
   return [idx, pattern, occurrence]
 endfunction "}}}
+
+
 function! s:stridxend(heystack, needle, ...) abort  "{{{
   let start = get(a:000, 0, 0)
   let idx = stridx(a:heystack, a:needle, start)
   return idx >= 0 ? idx + strlen(a:needle) : idx
 endfunction "}}}
+
+
 function! s:compare_idx(i1, i2) abort "{{{
   return a:i1[0] - a:i2[0]
 endfunction "}}}
+
 
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:
