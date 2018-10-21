@@ -1,5 +1,5 @@
 *swap.txt*	いれかえたりする。
-						Last change:17-Nov-2017.
+						Last change:21-Oct-2018.
 
 書いた人   : machakann <mckn{at}outlook.jp>
 ライセンス : NYSL ライセンス
@@ -134,29 +134,19 @@ g:swap_no_default_key_mappings を vimrc で定義してください。
 swap mode における操作~
 
 `h`/`l`
-	選択中の要素と隣接する要素を入れ替えます。この機能は次のキーマッピング
-	として定義されています。
-	<Plug>(swap-mode-swap-prev)/<Plug>(swap-mode-swap-next)
+	選択中の要素と隣接する要素を入れ替えます。
 
 `j`/`k`
-	隣接する要素へ選択を移します。この機能は次のキーマッピングとして定義さ
-	れています。
-	<Plug>(swap-mode-move-prev)/<Plug>(swap-mode-move-next)
+	隣接する要素へ選択を移します。
 
 `1` から `9` の数字キー
-	`n` 番目の要素へ選択状態を移します。この機能は次のキーマッピングとして
-	定義されています。
-	<Plug>(swap-mode-1) から <Plug>(swap-mode-9)
+	`n` 番目の要素へ選択状態を移します。
 
 `u`/`<C-r>`
-	単純な undo/redo 機能を提供します。この機能は次のキーマッピングとして
-	定義されています。
-	<Plug>(swap-mode-undo)/<Plug>(swap-mode-redo)
+	単純な undo/redo 機能を提供します。
 
 `<Esc>`
-	Swap mode を終了しノーマルモードへ戻ります。この機能は次のキーマッピン
-	グとして定義されています。
-	<Plug>(swap-mode-Esc)
+	Swap mode を終了しノーマルモードへ戻ります。
 
 
 
@@ -169,26 +159,10 @@ swap mode における操作~
 
 `<CR>`
 	入力中の数字を決定します。なにも入力されていないと、現在選択中の要素に
-	決定されます。この機能は次のキーマッピングとして定義されています。
-	<Plug>(swap-mode-CR)
+	決定されます。
 
 `<BS>`
-	入力中の数値を一文字修正します。この機能は次のキーマッピングとして定義
-	されています。
-	<Plug>(swap-mode-BS)
-
-
-
-以上のキーマッピングに加え、以下の補助的な機能も提供されます。
-
-<Plug>(swap-mode-fix-nr)
-	入力中の数字を決定し、入れ替えの対象の一つとします。
-
-<Plug>(swap-mode-current)
-	現在選択中の要素を入れ替えの対象の一つとして決定します。
-
-<Plug>(swap-mode-echo)
-	コマンドラインの表示を更新します。
+	入力中の数値を一文字修正します。
 
 
 
@@ -196,91 +170,6 @@ swap mode における操作~
 >
 	let g:swap#keymappings = g:swap#key_layout_impatient
 <
-g:swap#key_layout_impatient の詳細な内訳を以下に示します。
->
-	lhs	rhs
- -----------------------------------------------------------
-	1	<Plug>(swap-mode-1)<Plug>(swap-mode-fix-nr)
-	2	<Plug>(swap-mode-2)<Plug>(swap-mode-fix-nr)
-	3	<Plug>(swap-mode-3)<Plug>(swap-mode-fix-nr)
-	4	<Plug>(swap-mode-4)<Plug>(swap-mode-fix-nr)
-	5	<Plug>(swap-mode-5)<Plug>(swap-mode-fix-nr)
-	6	<Plug>(swap-mode-6)<Plug>(swap-mode-fix-nr)
-	7	<Plug>(swap-mode-7)<Plug>(swap-mode-fix-nr)
-	8	<Plug>(swap-mode-8)<Plug>(swap-mode-fix-nr)
-	9	<Plug>(swap-mode-9)<Plug>(swap-mode-fix-nr)
-	<CR>	<Plug>(swap-mode-CR)
-	<BS>	<Plug>(swap-mode-BS)
-	<C-h>	<Plug>(swap-mode-BS)
-	u	<Plug>(swap-mode-undo)
-	<C-r>	<Plug>(swap-mode-redo)
-	<Esc>	<Plug>(swap-mode-Esc)
-	h	<Plug>(swap-mode-swap-prev)
-	l	<Plug>(swap-mode-swap-next)
-	k	<Plug>(swap-mode-move-prev)
-	j	<Plug>(swap-mode-move-next)
-	<Left>	<Plug>(swap-mode-swap-prev)
-	<Right>	<Plug>(swap-mode-swap-next)
-	<Up>	<Plug>(swap-mode-move-prev)
-	<Down>	<Plug>(swap-mode-move-next)
- -----------------------------------------------------------
-<
-
-同じように g:swap#key_layout_discreet の詳細な内訳を以下に示します。
->
-	lhs	rhs
- -----------------------------------------------------------
-	0	<Plug>(swap-mode-0)
-	1	<Plug>(swap-mode-1)
-	2	<Plug>(swap-mode-2)
-	3	<Plug>(swap-mode-3)
-	4	<Plug>(swap-mode-4)
-	5	<Plug>(swap-mode-5)
-	6	<Plug>(swap-mode-6)
-	7	<Plug>(swap-mode-7)
-	8	<Plug>(swap-mode-8)
-	9	<Plug>(swap-mode-9)
-	<CR>	<Plug>(swap-mode-CR)
-	<BS>	<Plug>(swap-mode-BS)
-	<C-h>	<Plug>(swap-mode-BS)
-	u	<Plug>(swap-mode-undo)
-	<C-r>	<Plug>(swap-mode-redo)
-	<Esc>	<Plug>(swap-mode-Esc)
-	h	<Plug>(swap-mode-swap-prev)
-	l	<Plug>(swap-mode-swap-next)
-	k	<Plug>(swap-mode-move-prev)
-	j	<Plug>(swap-mode-move-next)
-	<Left>	<Plug>(swap-mode-swap-prev)
-	<Right>	<Plug>(swap-mode-swap-next)
-	<Up>	<Plug>(swap-mode-move-prev)
-	<Down>	<Plug>(swap-mode-move-next)
- -----------------------------------------------------------
-<
-
-
-swap#map({lhs}, {rhs})			*swap#map()*
-swap#noremap({lhs}, {rhs})		*swap#noremap()*
-	ノーマルモードコマンドを swap mode におけるキーマッピングとして定義し
-	ます。ノーマルモードコマンドのキー入力を {rhs} に与えると swap mode で
-	{lhs} に与えたキー入力で呼び出すことができます。
-
-ユーザーが事前に宣言していれば、 swap mode でノーマルモードコマンドを使用でき
-ます。 |swap#map()| あるいは |swap#noremap()| をご使用ください。
->
-	call swap#noremap('zs', 'zs')
-<
-<Space> などのような |<>| 表記は自動的に変換されません。特殊キーはエスケープシ
-ーケンスを用いて渡してください。
->
-	call swap#noreamp("\<space>", 'z.')
-<
-|swap#map()| はキーマップを展開します。カスタムキーマッピングなど、展開する必
-要のあるものに使用してください。
->
-	call swap#map("\<CR>", "\<Plug>(swap-mode-fix-nr)")
-<
-NOTE: もし swap mode 内でバッファが変更された場合、必ずしも期待した通りの結果
-      にならないかもしれません。
 
 ==============================================================================
 CUSTOMIZATION				*swap-customization*

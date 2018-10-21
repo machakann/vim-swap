@@ -22,10 +22,6 @@ let s:swap_prototype = {
       \   'undojoin': 0,
       \   'rules': [],
       \   'order_list': [],
-      \   'error': {
-      \     'catched': 0,
-      \     'message': '',
-      \   },
       \ }
 
 

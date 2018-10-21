@@ -54,19 +54,16 @@ function! s:interface_prototype.query(buffer) dict abort "{{{
     let idx = s:move_next_skipping_blank(self.buffer.items, idx)
   endif
 
+  let phase = 0
+  let key_map = deepcopy(get(g:, 'swap#keymappings', g:swap#default_keymappings))
   call self.set_current(idx)
   call self.highlight()
   call self.echo()
   redraw
   while self.phase < 2
     let self.escaped = 0
-    let key_map = deepcopy(get(g:, 'swap#keymappings', g:swap#default_keymappings))
-    let key = s:query(key_map)
-    if has_key(key, 'output')
-      call self.normal(key)
-      call self.revise_cursor_pos()
-      redraw
-    endif
+    let funclist = s:query(key_map)
+    let phase = self.call(funclist, phase)
     if self.escaped
       let self.order = []
       break
@@ -147,15 +144,6 @@ function! s:interface_prototype.echon(str, ...) dict abort "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.normal(key) dict abort "{{{
-  if has_key(a:key, 'noremap') && a:key.noremap
-    execute 'noautocmd normal! ' . a:key.output
-  else
-    execute 'noautocmd normal ' . a:key.output
-  endif
-endfunction "}}}
-
-
 function! s:interface_prototype.revise_cursor_pos() dict abort  "{{{
   let curpos = getpos('.')
   if self.idx.is_valid(self.idx.current)
@@ -178,6 +166,20 @@ function! s:interface_prototype.revise_cursor_pos() dict abort  "{{{
     let self.idx.current = sharp - 1
   endif
   call self.update_highlight()
+endfunction "}}}
+
+
+function! s:interface_prototype.call(funclist, phase) abort "{{{
+  let i = 0
+  let n = len(a:funclist)
+  while self.phase < 2 && i < n
+    let fname = 'swapmode_' . a:funclist[i]
+    let phase = self[fname]()
+    let i += 1
+  endwhile
+  call self.revise_cursor_pos()
+  redraw
+  return phase
 endfunction "}}}
 
 
@@ -295,7 +297,7 @@ endfunction "}}}
 
 
 function! s:query(key_map) abort "{{{
-  let key_map = insert(a:key_map, {'input': "\<Esc>", 'output': "\<Plug>(swap-mode-Esc)"})   " for safety
+  let key_map = insert(copy(a:key_map), {'input': "\<Esc>", 'output': ['Esc']})   " for safety
   let clock = swap#clock#new()
   let timeoutlen = g:swap#timeoutlen
 
@@ -339,11 +341,11 @@ function! s:query(key_map) abort "{{{
   call clock.stop()
 
   if filter(key_map, 's:is_input_matched(v:val, input, 1)') != []
-    let key_seq = key_map[-1]
+    let key = key_map[-1]
   else
-    let key_seq = {}
+    let key = {}
   endif
-  return key_seq
+  return get(key, 'output', '')
 endfunction "}}}
 
 
@@ -393,7 +395,7 @@ function! s:move_next_skipping_blank(items, current) abort  "{{{
 endfunction "}}}
 
 
-" NOTE: Function list
+" NOTE: Key function list
 "    {0~9} : Input {0~9} to specify an item.
 "    CR    : Fix the input number. If nothing has been input, fix to the item under the cursor.
 "    BS    : Erase the previous input.
@@ -404,7 +406,7 @@ endfunction "}}}
 "    move_next : Move to the next item.
 "    swap_prev : Swap the current item with the previous item.
 "    swap_next : Swap the current item with the next item.
-function! s:interface_prototype.key_nr(nr) dict abort  "{{{
+function! s:interface_prototype.swapmode_nr(nr) dict abort  "{{{
   if self.phase != 0 && self.phase != 1
     return
   endif
@@ -412,9 +414,39 @@ function! s:interface_prototype.key_nr(nr) dict abort  "{{{
   let self.order[self.phase] .= a:nr
   call self.echo()
 endfunction "}}}
+function! s:interface_prototype.swapmode_0() abort "{{{
+  return self.swapmode_nr(0)
+endfunction "}}}
+function! s:interface_prototype.swapmode_1() abort "{{{
+  return self.swapmode_nr(1)
+endfunction "}}}
+function! s:interface_prototype.swapmode_2() abort "{{{
+  return self.swapmode_nr(2)
+endfunction "}}}
+function! s:interface_prototype.swapmode_3() abort "{{{
+  return self.swapmode_nr(3)
+endfunction "}}}
+function! s:interface_prototype.swapmode_4() abort "{{{
+  return self.swapmode_nr(4)
+endfunction "}}}
+function! s:interface_prototype.swapmode_5() abort "{{{
+  return self.swapmode_nr(5)
+endfunction "}}}
+function! s:interface_prototype.swapmode_6() abort "{{{
+  return self.swapmode_nr(6)
+endfunction "}}}
+function! s:interface_prototype.swapmode_7() abort "{{{
+  return self.swapmode_nr(7)
+endfunction "}}}
+function! s:interface_prototype.swapmode_8() abort "{{{
+  return self.swapmode_nr(8)
+endfunction "}}}
+function! s:interface_prototype.swapmode_9() abort "{{{
+  return self.swapmode_nr(9)
+endfunction "}}}
 
 
-function! s:interface_prototype.key_CR() dict abort  "{{{
+function! s:interface_prototype.swapmode_CR() dict abort  "{{{
   if get(self.order, self.phase, '') ==# ''
     call self.key_current()
   else
@@ -423,7 +455,7 @@ function! s:interface_prototype.key_CR() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.key_BS() dict abort  "{{{
+function! s:interface_prototype.swapmode_BS() dict abort  "{{{
   if self.phase == 0
     if self.order[0] !=# ''
       let self.order[0] = self.order[0][0:-2]
@@ -443,7 +475,7 @@ function! s:interface_prototype.key_BS() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.key_undo() dict abort "{{{
+function! s:interface_prototype.swapmode_undo() dict abort "{{{
   if self.phase != 0 && self.phase != 1
     return
   endif
@@ -458,7 +490,7 @@ function! s:interface_prototype.key_undo() dict abort "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.key_redo() dict abort "{{{
+function! s:interface_prototype.swapmode_redo() dict abort "{{{
   if self.phase != 0 && self.phase != 1
     return
   endif
@@ -473,7 +505,7 @@ function! s:interface_prototype.key_redo() dict abort "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.key_current() dict abort "{{{
+function! s:interface_prototype.swapmode_current() dict abort "{{{
   if self.phase == 0
     let self.order[0] = string(self.idx.current) + 1
     call self.goto_phase(1)
@@ -484,7 +516,7 @@ function! s:interface_prototype.key_current() dict abort "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.key_fix_nr() dict abort "{{{
+function! s:interface_prototype.swapmode_fix_nr() dict abort "{{{
   if self.phase == 0
     let idx = str2nr(self.order[self.phase]) - 1
     if self.idx.is_valid(idx)
@@ -503,7 +535,7 @@ function! s:interface_prototype.key_fix_nr() dict abort "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.key_move_prev() dict abort  "{{{
+function! s:interface_prototype.swapmode_move_prev() dict abort  "{{{
   if self.phase != 0 && self.phase != 1
     return
   endif
@@ -520,7 +552,7 @@ function! s:interface_prototype.key_move_prev() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.key_move_next() dict abort  "{{{
+function! s:interface_prototype.swapmode_move_next() dict abort  "{{{
   if self.phase != 0 && self.phase != 1
     return
   endif
@@ -537,7 +569,7 @@ function! s:interface_prototype.key_move_next() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.key_swap_prev() dict abort  "{{{
+function! s:interface_prototype.swapmode_swap_prev() dict abort  "{{{
   if self.phase != 0 && self.phase != 1
     return
   endif
@@ -551,7 +583,7 @@ function! s:interface_prototype.key_swap_prev() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.key_swap_next() dict abort  "{{{
+function! s:interface_prototype.swapmode_swap_next() dict abort  "{{{
   if self.phase != 0 && self.phase != 1
     return
   endif
@@ -565,109 +597,17 @@ function! s:interface_prototype.key_swap_next() dict abort  "{{{
 endfunction "}}}
 
 
-
-function! swap#interface#swapmode_key_nr(nr) abort  "{{{
-  if !exists('s:interface')
+function! s:interface_prototype.swapmode_Esc() dict abort  "{{{
+  if self.phase != 0 && self.phase != 1
     return
   endif
-  call s:interface.key_nr(a:nr)
-endfunction "}}}
 
-
-function! swap#interface#swapmode_key_CR() abort  "{{{
-  if !exists('s:interface')
+  if self.idx.current < 0 && self.idx.current >= self.idx.end
     return
   endif
-  call s:interface.key_CR()
-endfunction "}}}
 
-
-function! swap#interface#swapmode_key_BS() abort  "{{{
-  if !exists('s:interface')
-    return
-  endif
-  call s:interface.key_BS()
-endfunction "}}}
-
-
-function! swap#interface#swapmode_key_undo() abort  "{{{
-  if !exists('s:interface')
-    return
-  endif
-  call s:interface.key_undo()
-endfunction "}}}
-
-
-function! swap#interface#swapmode_key_redo() abort  "{{{
-  if !exists('s:interface')
-    return
-  endif
-  call s:interface.key_redo()
-endfunction "}}}
-
-
-function! swap#interface#swapmode_key_current() abort  "{{{
-  if !exists('s:interface')
-    return
-  endif
-  call s:interface.key_current()
-endfunction "}}}
-
-
-function! swap#interface#swapmode_key_fix_nr() abort  "{{{
-  if !exists('s:interface')
-    return
-  endif
-  call s:interface.key_fix_nr()
-endfunction "}}}
-
-
-function! swap#interface#swapmode_key_move_prev() abort  "{{{
-  if !exists('s:interface')
-    return
-  endif
-  call s:interface.key_move_prev()
-endfunction "}}}
-
-
-function! swap#interface#swapmode_key_move_next() abort  "{{{
-  if !exists('s:interface')
-    return
-  endif
-  call s:interface.key_move_next()
-endfunction "}}}
-
-
-function! swap#interface#swapmode_key_swap_prev() abort  "{{{
-  if !exists('s:interface')
-    return
-  endif
-  call s:interface.key_swap_prev()
-endfunction "}}}
-
-
-function! swap#interface#swapmode_key_swap_next() abort  "{{{
-  if !exists('s:interface')
-    return
-  endif
-  call s:interface.key_swap_next()
-endfunction "}}}
-
-
-function! swap#interface#swapmode_key_echo() abort  "{{{
-  if !exists('s:interface')
-    return
-  endif
-  call s:interface.echo()
-endfunction "}}}
-
-
-function! swap#interface#swapmode_key_ESC() abort  "{{{
-  if !exists('s:interface')
-    return
-  endif
-  call s:interface.echo()
-  let s:interface.escaped = 1
+  call self.echo()
+  let self.escaped = 1
 endfunction "}}}
 
 

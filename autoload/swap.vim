@@ -194,34 +194,12 @@ endfunction "}}}
 
 " The operator function
 function! swap#operatorfunc(motionwise) abort "{{{
-  let view = winsaveview()
-  let dotrepeat = g:swap.dotrepeat
-  let err = g:swap.error
   let options = s:displace_options()
   try
     call g:swap.execute(a:motionwise)
-  catch /^SwapModeErr/
   finally
     call s:restore_options(options)
-
-    if err.catched
-      if !dotrepeat
-        unlet! g:swap
-      endif
-      call winrestview(view)
-      echoerr err.message
-    endif
   endtry
-endfunction "}}}
-
-
-function! swap#map(lhs, rhs) abort "{{{
-  call s:keymap(0, a:lhs, a:rhs)
-endfunction "}}}
-
-
-function! swap#noremap(lhs, rhs) abort "{{{
-  call s:keymap(1, a:lhs, a:rhs)
 endfunction "}}}
 
 
@@ -258,93 +236,61 @@ function! s:restore_options(options) abort "{{{
 endfunction "}}}
 
 
-function! s:keymap(noremap, lhs, rhs) abort  "{{{
-  let g:swap#keymappings = get(g:, 'swap#keymappings', g:swap#default_keymappings)
-  let keymap = {'noremap': a:noremap, 'input': a:lhs, 'output': a:rhs}
-  let g:swap#keymappings += [keymap]
-endfunction "}}}
-
-
 " key layout in swap mode
-" swap mode mappings{{{
-nnoremap <silent> <Plug>(swap-mode-0) :<C-u>call swap#interface#swapmode_key_nr('0')<CR>
-nnoremap <silent> <Plug>(swap-mode-1) :<C-u>call swap#interface#swapmode_key_nr('1')<CR>
-nnoremap <silent> <Plug>(swap-mode-2) :<C-u>call swap#interface#swapmode_key_nr('2')<CR>
-nnoremap <silent> <Plug>(swap-mode-3) :<C-u>call swap#interface#swapmode_key_nr('3')<CR>
-nnoremap <silent> <Plug>(swap-mode-4) :<C-u>call swap#interface#swapmode_key_nr('4')<CR>
-nnoremap <silent> <Plug>(swap-mode-5) :<C-u>call swap#interface#swapmode_key_nr('5')<CR>
-nnoremap <silent> <Plug>(swap-mode-6) :<C-u>call swap#interface#swapmode_key_nr('6')<CR>
-nnoremap <silent> <Plug>(swap-mode-7) :<C-u>call swap#interface#swapmode_key_nr('7')<CR>
-nnoremap <silent> <Plug>(swap-mode-8) :<C-u>call swap#interface#swapmode_key_nr('8')<CR>
-nnoremap <silent> <Plug>(swap-mode-9) :<C-u>call swap#interface#swapmode_key_nr('9')<CR>
-nnoremap <silent> <Plug>(swap-mode-CR) :<C-u>call swap#interface#swapmode_key_CR()<CR>
-nnoremap <silent> <Plug>(swap-mode-BS) :<C-u>call swap#interface#swapmode_key_BS()<CR>
-nnoremap <silent> <Plug>(swap-mode-undo) :<C-u>call swap#interface#swapmode_key_undo()<CR>
-nnoremap <silent> <Plug>(swap-mode-redo) :<C-u>call swap#interface#swapmode_key_redo()<CR>
-nnoremap <silent> <Plug>(swap-mode-current) :<C-u>call swap#interface#swapmode_key_current()<CR>
-nnoremap <silent> <Plug>(swap-mode-fix-nr) :<C-u>call swap#interface#swapmode_key_fix_nr()<CR>
-nnoremap <silent> <Plug>(swap-mode-move-prev) :<C-u>call swap#interface#swapmode_key_move_prev()<CR>
-nnoremap <silent> <Plug>(swap-mode-move-next) :<C-u>call swap#interface#swapmode_key_move_next()<CR>
-nnoremap <silent> <Plug>(swap-mode-swap-prev) :<C-u>call swap#interface#swapmode_key_swap_prev()<CR>
-nnoremap <silent> <Plug>(swap-mode-swap-next) :<C-u>call swap#interface#swapmode_key_swap_next()<CR>
-nnoremap <silent> <Plug>(swap-mode-echo) :<C-u>call swap#interface#swapmode_key_echo()<CR>
-nnoremap <silent> <Plug>(swap-mode-Esc) :<C-u>call swap#interface#swapmode_key_ESC()<CR>
-"}}}
-
 " key layout - discreet "{{{
 let g:swap#key_layout_discreet = [
-      \   {'input': '0', 'output': "\<Plug>(swap-mode-0)"},
-      \   {'input': '1', 'output': "\<Plug>(swap-mode-1)"},
-      \   {'input': '2', 'output': "\<Plug>(swap-mode-2)"},
-      \   {'input': '3', 'output': "\<Plug>(swap-mode-3)"},
-      \   {'input': '4', 'output': "\<Plug>(swap-mode-4)"},
-      \   {'input': '5', 'output': "\<Plug>(swap-mode-5)"},
-      \   {'input': '6', 'output': "\<Plug>(swap-mode-6)"},
-      \   {'input': '7', 'output': "\<Plug>(swap-mode-7)"},
-      \   {'input': '8', 'output': "\<Plug>(swap-mode-8)"},
-      \   {'input': '9', 'output': "\<Plug>(swap-mode-9)"},
-      \   {'input': "\<CR>",  'output': "\<Plug>(swap-mode-CR)"},
-      \   {'input': "\<BS>",  'output': "\<Plug>(swap-mode-BS)"},
-      \   {'input': "\<C-h>", 'output': "\<Plug>(swap-mode-BS)"},
-      \   {'input': 'u',      'output': "\<Plug>(swap-mode-undo)"},
-      \   {'input': "\<C-r>", 'output': "\<Plug>(swap-mode-redo)"},
-      \   {'input': 'h', 'output': "\<Plug>(swap-mode-swap-prev)"},
-      \   {'input': 'l', 'output': "\<Plug>(swap-mode-swap-next)"},
-      \   {'input': 'k', 'output': "\<Plug>(swap-mode-move-prev)"},
-      \   {'input': 'j', 'output': "\<Plug>(swap-mode-move-next)"},
-      \   {'input': "\<Left>",  'output': "\<Plug>(swap-mode-swap-prev)"},
-      \   {'input': "\<Right>", 'output': "\<Plug>(swap-mode-swap-next)"},
-      \   {'input': "\<Up>",    'output': "\<Plug>(swap-mode-move-prev)"},
-      \   {'input': "\<Down>",  'output': "\<Plug>(swap-mode-move-next)"},
-      \   {'input': "\<Esc>", 'output': "\<Plug>(swap-mode-Esc)"},
+      \   {'input': '0', 'output': ['0']},
+      \   {'input': '1', 'output': ['1']},
+      \   {'input': '2', 'output': ['2']},
+      \   {'input': '3', 'output': ['3']},
+      \   {'input': '4', 'output': ['4']},
+      \   {'input': '5', 'output': ['5']},
+      \   {'input': '6', 'output': ['6']},
+      \   {'input': '7', 'output': ['7']},
+      \   {'input': '8', 'output': ['8']},
+      \   {'input': '9', 'output': ['9']},
+      \   {'input': "\<CR>",  'output': ['CR']},
+      \   {'input': "\<BS>",  'output': ['BS']},
+      \   {'input': "\<C-h>", 'output': ['BS']},
+      \   {'input': 'u',      'output': ['undo']},
+      \   {'input': "\<C-r>", 'output': ['redo']},
+      \   {'input': 'h', 'output': ['swap_prev']},
+      \   {'input': 'l', 'output': ['swap_next']},
+      \   {'input': 'k', 'output': ['move_prev']},
+      \   {'input': 'j', 'output': ['move_next']},
+      \   {'input': "\<Left>",  'output': ['swap_prev']},
+      \   {'input': "\<Right>", 'output': ['swap_next']},
+      \   {'input': "\<Up>",    'output': ['move_prev']},
+      \   {'input': "\<Down>",  'output': ['move_next']},
+      \   {'input': "\<Esc>", 'output': ['Esc']},
       \ ]
 "}}}
 
 " key layout - impatient  "{{{
 let g:swap#key_layout_impatient = [
-      \   {'input': '1', 'output': "\<Plug>(swap-mode-1)\<Plug>(swap-mode-fix-nr)"},
-      \   {'input': '2', 'output': "\<Plug>(swap-mode-2)\<Plug>(swap-mode-fix-nr)"},
-      \   {'input': '3', 'output': "\<Plug>(swap-mode-3)\<Plug>(swap-mode-fix-nr)"},
-      \   {'input': '4', 'output': "\<Plug>(swap-mode-4)\<Plug>(swap-mode-fix-nr)"},
-      \   {'input': '5', 'output': "\<Plug>(swap-mode-5)\<Plug>(swap-mode-fix-nr)"},
-      \   {'input': '6', 'output': "\<Plug>(swap-mode-6)\<Plug>(swap-mode-fix-nr)"},
-      \   {'input': '7', 'output': "\<Plug>(swap-mode-7)\<Plug>(swap-mode-fix-nr)"},
-      \   {'input': '8', 'output': "\<Plug>(swap-mode-8)\<Plug>(swap-mode-fix-nr)"},
-      \   {'input': '9', 'output': "\<Plug>(swap-mode-9)\<Plug>(swap-mode-fix-nr)"},
-      \   {'input': "\<CR>",  'output': "\<Plug>(swap-mode-CR)"},
-      \   {'input': "\<BS>",  'output': "\<Plug>(swap-mode-BS)"},
-      \   {'input': "\<C-h>", 'output': "\<Plug>(swap-mode-BS)"},
-      \   {'input': 'u',      'output': "\<Plug>(swap-mode-undo)"},
-      \   {'input': "\<C-r>", 'output': "\<Plug>(swap-mode-redo)"},
-      \   {'input': 'h', 'output': "\<Plug>(swap-mode-swap-prev)"},
-      \   {'input': 'l', 'output': "\<Plug>(swap-mode-swap-next)"},
-      \   {'input': 'k', 'output': "\<Plug>(swap-mode-move-prev)"},
-      \   {'input': 'j', 'output': "\<Plug>(swap-mode-move-next)"},
-      \   {'input': "\<Left>",  'output': "\<Plug>(swap-mode-swap-prev)"},
-      \   {'input': "\<Right>", 'output': "\<Plug>(swap-mode-swap-next)"},
-      \   {'input': "\<Up>",    'output': "\<Plug>(swap-mode-move-prev)"},
-      \   {'input': "\<Down>",  'output': "\<Plug>(swap-mode-move-next)"},
-      \   {'input': "\<Esc>", 'output': "\<Plug>(swap-mode-Esc)"},
+      \   {'input': '1', 'output': ['1', 'fix_nr']},
+      \   {'input': '2', 'output': ['2', 'fix_nr']},
+      \   {'input': '3', 'output': ['3', 'fix_nr']},
+      \   {'input': '4', 'output': ['4', 'fix_nr']},
+      \   {'input': '5', 'output': ['5', 'fix_nr']},
+      \   {'input': '6', 'output': ['6', 'fix_nr']},
+      \   {'input': '7', 'output': ['7', 'fix_nr']},
+      \   {'input': '8', 'output': ['8', 'fix_nr']},
+      \   {'input': '9', 'output': ['9', 'fix_nr']},
+      \   {'input': "\<CR>",  'output': ['CR']},
+      \   {'input': "\<BS>",  'output': ['BS']},
+      \   {'input': "\<C-h>", 'output': ['BS']},
+      \   {'input': 'u',      'output': ['undo']},
+      \   {'input': "\<C-r>", 'output': ['redo']},
+      \   {'input': 'h', 'output': ['swap_prev']},
+      \   {'input': 'l', 'output': ['swap_next']},
+      \   {'input': 'k', 'output': ['move_prev']},
+      \   {'input': 'j', 'output': ['move_next']},
+      \   {'input': "\<Left>",  'output': ['swap_prev']},
+      \   {'input': "\<Right>", 'output': ['swap_next']},
+      \   {'input': "\<Up>",    'output': ['move_prev']},
+      \   {'input': "\<Down>",  'output': ['move_next']},
+      \   {'input': "\<Esc>", 'output': ['Esc']},
       \ ]
 "}}}
 

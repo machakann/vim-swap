@@ -1,5 +1,5 @@
 *swap.txt*	Reorder delimited items.
-						Last change:17-Nov-2017.
+						Last change:21-Oct-2018.
 
 Author  : machakann <mckn{at}outlook.jp>
 License : NYSL license
@@ -139,25 +139,18 @@ operation in swap mode~
 
 `h`/`l`
 	Swap the current item with a neighbor.
-	These functions are defined as keymappings,
-	<Plug>(swap-mode-swap-prev)/<Plug>(swap-mode-swap-next).
 
 `j`/`k`
 	Change the current item to a neighbor.
-	These functions are defined as keymappings,
-	<Plug>(swap-mode-move-prev)/<Plug>(swap-mode-move-next).
 
 Numbers `1` to `9`
-	Set `n`th item as the current. These functions are defined as
-	keymappings, <Plug>(swap-mode-1) to <Plug>(swap-mode-9).
+	Set `n`th item as the current.
 
 `u`/`<C-r>`
-	Simple undo/redo functions. These functions are defined as
-	keymappings, <Plug>(swap-mode-undo)/<Plug>(swap-mode-redo).
+	Simple undo/redo functions.
 
 `<Esc>`
-	Exit from swap mode to normal mode. The function is defined as
-	keymapping, <Plug>(swap-mode-Esc).
+	Exit from swap mode to normal mode.
 
 
 
@@ -170,26 +163,10 @@ Then numbers would not be fixed immediately, use `<CR>` to fix the number and
 
 `<CR>`
 	Fix the inputting number. If nothing has been input, then fix to the
-	current item. The function is defined as keymapping,
-	<Plug>(swap-mode-CR).
+	current item.
 
 `<BS>`
-	Correct the last input. The function is defined as keymapping,
-	<Plug>(swap-mode-BS).
-
-
-
-In addition to the aboves, the following supplementary keymappings are
-available.
-
-<Plug>(swap-mode-fix-nr)
-	Simply fix the inputting number.
-
-<Plug>(swap-mode-current)
-	Simply fix to the current item.
-
-<Plug>(swap-mode-echo)
-	Update cmd-line echoing.
+	Correct the last input.
 
 
 
@@ -197,89 +174,6 @@ The default layout is available with g:swap#key_layout_impatient again.
 >
 	let g:swap#keymappings = g:swap#key_layout_impatient
 <
-The detailed statement of g:swap#key_layout_impatient is:
->
-	lhs	rhs
- -----------------------------------------------------------
-	1	<Plug>(swap-mode-1)<Plug>(swap-mode-fix-nr)
-	2	<Plug>(swap-mode-2)<Plug>(swap-mode-fix-nr)
-	3	<Plug>(swap-mode-3)<Plug>(swap-mode-fix-nr)
-	4	<Plug>(swap-mode-4)<Plug>(swap-mode-fix-nr)
-	5	<Plug>(swap-mode-5)<Plug>(swap-mode-fix-nr)
-	6	<Plug>(swap-mode-6)<Plug>(swap-mode-fix-nr)
-	7	<Plug>(swap-mode-7)<Plug>(swap-mode-fix-nr)
-	8	<Plug>(swap-mode-8)<Plug>(swap-mode-fix-nr)
-	9	<Plug>(swap-mode-9)<Plug>(swap-mode-fix-nr)
-	<CR>	<Plug>(swap-mode-CR)
-	<BS>	<Plug>(swap-mode-BS)
-	<C-h>	<Plug>(swap-mode-BS)
-	u	<Plug>(swap-mode-undo)
-	<C-r>	<Plug>(swap-mode-redo)
-	<Esc>	<Plug>(swap-mode-Esc)
-	h	<Plug>(swap-mode-swap-prev)
-	l	<Plug>(swap-mode-swap-next)
-	k	<Plug>(swap-mode-move-prev)
-	j	<Plug>(swap-mode-move-next)
-	<Left>	<Plug>(swap-mode-swap-prev)
-	<Right>	<Plug>(swap-mode-swap-next)
-	<Up>	<Plug>(swap-mode-move-prev)
-	<Down>	<Plug>(swap-mode-move-next)
- -----------------------------------------------------------
-<
-
-The detailed statement of g:swap#key_layout_discreet is:
->
-	lhs	rhs
- -----------------------------------------------------------
-	0	<Plug>(swap-mode-0)
-	1	<Plug>(swap-mode-1)
-	2	<Plug>(swap-mode-2)
-	3	<Plug>(swap-mode-3)
-	4	<Plug>(swap-mode-4)
-	5	<Plug>(swap-mode-5)
-	6	<Plug>(swap-mode-6)
-	7	<Plug>(swap-mode-7)
-	8	<Plug>(swap-mode-8)
-	9	<Plug>(swap-mode-9)
-	<CR>	<Plug>(swap-mode-CR)
-	<BS>	<Plug>(swap-mode-BS)
-	<C-h>	<Plug>(swap-mode-BS)
-	u	<Plug>(swap-mode-undo)
-	<C-r>	<Plug>(swap-mode-redo)
-	<Esc>	<Plug>(swap-mode-Esc)
-	h	<Plug>(swap-mode-swap-prev)
-	l	<Plug>(swap-mode-swap-next)
-	k	<Plug>(swap-mode-move-prev)
-	j	<Plug>(swap-mode-move-next)
-	<Left>	<Plug>(swap-mode-swap-prev)
-	<Right>	<Plug>(swap-mode-swap-next)
-	<Up>	<Plug>(swap-mode-move-prev)
-	<Down>	<Plug>(swap-mode-move-next)
- -----------------------------------------------------------
-<
-
-
-swap#map({lhs}, {rhs})		*swap#map()*
-swap#noremap({lhs}, {rhs})	*swap#noremap()*
-	Define normal mode commands as swap mode keymappings. Give a normal
-	mode command sequence to {rhs} then call it via the key sequence
-	declared via {lhs} in swap mode.
-
-Normal mode commands could be available in swap mode if user declared. Use
-|swap#map()| or |swap#noremap()| in your vimrc.
->
-	call swap#noremap('zs', 'zs')
-<
-The |<>| description like <Space> would not be converted automatically. Use
-escape sequence to pass these special keys.
->
-	call swap#noreamp("\<space>", 'z.')
-<
-|swap#map()| expands mappings. Use it for custom mappings.
->
-	call swap#map("\<CR>", "\<Plug>(swap-mode-fix-nr)")
-<
-NOTE if the buffer was changed, swapped result might not be as you expected.
 
 ==============================================================================
 CUSTOMIZATION				*swap-customization*
