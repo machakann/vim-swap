@@ -1,9 +1,18 @@
 " interface object - Interactive order determination, "swap mode".
 
 let s:const = swap#constant#import()
+let s:lib = swap#lib#import()
+
+let s:TRUE = 1
+let s:FALSE = 0
 let s:TYPENUM = s:const.TYPENUM
 let s:TYPESTR = s:const.TYPESTR
-let s:lib = swap#lib#import()
+
+" phase enum
+let s:FIRST = 0       " in the first target determination
+let s:SECOND = 1      " in the second target determination
+let s:DONE = 2        " Both the targets have been determined
+let s:CANCELLED = 3   " cancelled by Esc
 
 " patches
 if v:version > 704 || (v:version == 704 && has('patch237'))
@@ -19,30 +28,94 @@ function! swap#interface#new() abort  "{{{
 endfunction "}}}
 
 
+
+" operation object - representing an edit action
+" operation.kind is either 'swap', 'undo' or 'redo'.
+let s:operation_prototype = {
+  \   'kind': '',
+  \   'input': ['', ''],
+  \ }
+
+
+function! s:operation_prototype.set_input(phase, input) abort "{{{
+  let input = copy(self.input)
+  if a:phase is# s:FIRST
+    let input[0] = a:input
+  elseif a:phase is# s:SECOND
+    let input[1] = a:input
+  else
+    echoerr 'vim-swap: Invalid argument for operation.set_input()'
+  endif
+  return s:operation('swap', input)
+endfunction "}}}
+
+
+function! s:operation_prototype.append_input(phase, input) abort "{{{
+  let input = copy(self.input)
+  if a:phase is# s:FIRST
+    let input[0] .= a:input
+  elseif a:phase is# s:SECOND
+    let input[1] .= a:input
+  else
+    echoerr 'vim-swap: Invalid argument for operation.append_input()'
+  endif
+  return s:operation('swap', input)
+endfunction "}}}
+
+
+function! s:operation_prototype.truncate_input(phase) abort "{{{
+  let input = copy(self.input)
+  if a:phase is# s:FIRST
+    let input[0] = input[0][0:-2]
+  elseif a:phase is# s:SECOND
+    let input[1] = input[1][0:-2]
+  else
+    echoerr 'vim-swap: Invalid argument for operation.truncate_input()'
+  endif
+  return s:operation('swap', input)
+endfunction "}}}
+
+
+function! s:operation_prototype.get_input(phase) abort "{{{
+  if a:phase is# s:FIRST
+    return self.input[0]
+  elseif a:phase is# s:SECOND
+    return self.input[1]
+  endif
+  echoerr 'vim-swap: Invalid argument for operation.get_input()'
+endfunction "}}}
+
+
+function! s:operation(kind, input) abort "{{{
+  let op = deepcopy(s:operation_prototype)
+  let op.kind = a:kind
+  let op.input = a:input
+  return op
+endfunction "}}}
+
+
+
+" interface object - for interactive determination of swap actions
+" swap#interface#new() returns a instance of this object
 let s:interface_prototype = {
-      \   'phase': 0,
-      \   'order': ['', ''],
       \   'idx'  : {
       \     'current': -1,
-      \     'end'    : -1,
+      \     'end': -1,
       \     'last_current': -1,
       \     'selected': -1,
       \   },
-      \   'buffer' : {},
-      \   'escaped': 0,
+      \   'buffer': {},
       \   'history': [],
       \   'undolevel': 0,
       \ }
 
 
-" This function asks user to input an key and return the order
+" This function asks user to input keys to determine an operation
 function! s:interface_prototype.query(buffer) dict abort "{{{
   if empty(a:buffer)
     return []
   endif
 
-  let self.phase = 0
-  let self.order = ['', '']
   let self.buffer = a:buffer
   let self.idx.current = -1
   let self.idx.last_current = -1
@@ -50,62 +123,72 @@ function! s:interface_prototype.query(buffer) dict abort "{{{
   let self.idx.end = len(self.buffer.items) - 1
 
   let idx = self.buffer.symbols['#'] - 1
-  if self.buffer.items[idx].string ==# ''
+  if self.buffer.items[idx].string is# ''
     let idx = s:move_next_skipping_blank(self.buffer.items, idx)
   endif
 
   let phase = 0
+  let op = s:operation('swap', ['', ''])
   let key_map = deepcopy(get(g:, 'swap#keymappings', g:swap#default_keymappings))
   call self.set_current(idx)
+  call self.echo(phase, op)
   call self.highlight()
-  call self.echo()
   redraw
-  while self.phase < 2
-    let self.escaped = 0
-    let funclist = s:query(key_map)
-    let phase = self.call(funclist, phase)
-    if self.escaped
-      let self.order = []
-      break
-    endif
-  endwhile
-  call self.clear_highlight()
+  try
+    while phase < s:DONE
+      let funclist = s:query(key_map)
+      let [phase, op] = self.call(funclist, phase, op)
+    endwhile
+  finally
+    call self.clear_highlight()
+    " clear messages
+    echo ''
+  endtry
 
-  " clear messages
-  echo ''
-  return self.order
+  if phase is# s:CANCELLED
+    return []
+  endif
+
+  if op.kind is# 'swap'
+    call self.add_history(op)
+  endif
+  return op.input
 endfunction "}}}
 
 
-function! s:interface_prototype.echo() dict abort "{{{
-  if self.phase != 0 && self.phase != 1
+function! s:interface_prototype.echo(phase, op) dict abort "{{{
+  if a:phase >= s:DONE
     return
   endif
 
   let max_len = &columns - 25
   let message = []
 
-  for order in self.history[: -1*(self.undolevel+1)]
-    let message += [[order[0], g:swap#hl_itemnr]]
+  for op in self.history[: -1*(self.undolevel+1)]
+    let message += [[op.input[0], g:swap#hl_itemnr]]
     let message += [[g:swap#arrow, g:swap#hl_arrow]]
-    let message += [[order[1], g:swap#hl_itemnr]]
+    let message += [[op.input[1], g:swap#hl_itemnr]]
     let message += [[', ', 'NONE']]
   endfor
-  if self.phase == 0
-    if self.order[0] !=# ''
-      let message += [[self.order[0], self.idx.is_valid(self.order[0]) ? g:swap#hl_itemnr : 'ErrorMsg']]
+  if a:phase is# s:FIRST
+    if a:op.input[0] !=# ''
+      let higoup = self.idx.is_valid(a:op.input[0])
+               \ ? g:swap#hl_itemnr : 'ErrorMsg'
+      let message += [[a:op.input[0], higoup]]
     else
       if message != []
         call remove(message, -1)
       endif
     endif
-  elseif self.phase == 1
-    if self.order[1] !=# ''
-      let message += [[self.order[0], g:swap#hl_itemnr]]
+  elseif a:phase == 1
+    if a:op.input[1] !=# ''
+      let message += [[a:op.input[0], g:swap#hl_itemnr]]
       let message += [[g:swap#arrow, g:swap#hl_arrow]]
-      let message += [[self.order[1], self.idx.is_valid(self.order[1]) ? g:swap#hl_itemnr : 'ErrorMsg']]
+      let higoup = self.idx.is_valid(a:op.input[1])
+               \ ? g:swap#hl_itemnr : 'ErrorMsg'
+      let message += [[a:op.input[1], higoup]]
     else
-      let message += [[self.order[0], g:swap#hl_itemnr]]
+      let message += [[a:op.input[0], g:swap#hl_itemnr]]
       let message += [[g:swap#arrow, g:swap#hl_arrow]]
     endif
   endif
@@ -169,33 +252,35 @@ function! s:interface_prototype.revise_cursor_pos() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.call(funclist, phase) abort "{{{
-  let i = 0
-  let n = len(a:funclist)
-  while self.phase < 2 && i < n
-    let fname = 'swapmode_' . a:funclist[i]
-    let phase = self[fname]()
-    let i += 1
-  endwhile
+function! s:interface_prototype.call(funclist, phase, op) abort "{{{
+  let phase = a:phase
+  let op = a:op
+  for name in a:funclist
+    let fname = 'swapmode_' . name
+    let [phase, op] = self[fname](a:phase, op)
+    if phase is# s:DONE
+      break
+    endif
+  endfor
   call self.revise_cursor_pos()
   redraw
-  return phase
+  return [phase, op]
 endfunction "}}}
 
 
-function! s:interface_prototype.add_history() dict abort  "{{{
+function! s:interface_prototype.add_history(op) dict abort  "{{{
   call self.truncate_history()
-  call add(self.history, self.order)
-  return self.history
+  call add(self.history, a:op)
 endfunction "}}}
 
 
 function! s:interface_prototype.truncate_history() dict abort  "{{{
-  if self.undolevel
-    let endidx = -1*self.undolevel
-    call remove(self.history, endidx, -1)
-    let self.undolevel = 0
+  if self.undolevel == 0
+    return self.history
   endif
+  let endidx = -1*self.undolevel
+  call remove(self.history, endidx, -1)
+  let self.undolevel = 0
   return self.history
 endfunction "}}}
 
@@ -257,32 +342,10 @@ function! s:interface_prototype.update_highlight() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.goto_phase(phase) dict abort "{{{
-  " NOTE: If a negative value n is given, this func proceed phase to abs(n)
-  "       without operating side-processes.
-  let self.phase = abs(a:phase)
-  if a:phase == 1
-    let self.idx.selected = str2nr(self.order[0]) - 1
-    call self.echo()
-  elseif a:phase == 2
-    call self.add_history()
-  endif
-endfunction "}}}
+let s:NOTHING = 0
 
-
-function! s:interface_prototype.exit() dict abort  "{{{
-  call self.goto_phase(-2)
-endfunction "}}}
-
-
-function! s:interface_prototype.undo_order() dict abort  "{{{
-  let prev_order = self.history[-1*(self.undolevel+1)]
-  return [prev_order[1], prev_order[0]]
-endfunction "}}}
-
-
-function! s:interface_prototype.redo_order() dict abort  "{{{
-  return copy(self.history[-1*self.undolevel])
+function! s:interface_prototype.select(idxstr) abort "{{{
+  let self.idx.selected = str2nr(a:idxstr) - 1
 endfunction "}}}
 
 
@@ -395,219 +458,252 @@ function! s:move_next_skipping_blank(items, current) abort  "{{{
 endfunction "}}}
 
 
+function! s:flip(input) abort "{{{
+  return [a:input[1], a:input[0]]
+endfunction "}}}
+
+
 " NOTE: Key function list
 "    {0~9} : Input {0~9} to specify an item.
 "    CR    : Fix the input number. If nothing has been input, fix to the item under the cursor.
 "    BS    : Erase the previous input.
-"    undo  : Undo the current order.
-"    redo  : Redo the previous order.
+"    undo  : Undo the current operation.
+"    redo  : Redo the previous operation.
 "    current : Fix to the item under the cursor.
 "    move_prev : Move to the previous item.
 "    move_next : Move to the next item.
 "    swap_prev : Swap the current item with the previous item.
 "    swap_next : Swap the current item with the next item.
-function! s:interface_prototype.swapmode_nr(nr) dict abort  "{{{
-  if self.phase != 0 && self.phase != 1
-    return
+function! s:interface_prototype.swapmode_nr(nr, phase, op) dict abort  "{{{
+  if a:phase >= s:DONE
+    return [a:phase, a:op]
   endif
 
-  let self.order[self.phase] .= a:nr
-  call self.echo()
+  let op = a:op.append_input(a:phase, a:nr)
+  call self.echo(a:phase, op)
+  return [a:phase, op]
 endfunction "}}}
-function! s:interface_prototype.swapmode_0() abort "{{{
-  return self.swapmode_nr(0)
+function! s:interface_prototype.swapmode_0(phase, op) abort "{{{
+  return self.swapmode_nr(0, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_1() abort "{{{
-  return self.swapmode_nr(1)
+function! s:interface_prototype.swapmode_1(phase, op) abort "{{{
+  return self.swapmode_nr(1, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_2() abort "{{{
-  return self.swapmode_nr(2)
+function! s:interface_prototype.swapmode_2(phase, op) abort "{{{
+  return self.swapmode_nr(2, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_3() abort "{{{
-  return self.swapmode_nr(3)
+function! s:interface_prototype.swapmode_3(phase, op) abort "{{{
+  return self.swapmode_nr(3, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_4() abort "{{{
-  return self.swapmode_nr(4)
+function! s:interface_prototype.swapmode_4(phase, op) abort "{{{
+  return self.swapmode_nr(4, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_5() abort "{{{
-  return self.swapmode_nr(5)
+function! s:interface_prototype.swapmode_5(phase, op) abort "{{{
+  return self.swapmode_nr(5, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_6() abort "{{{
-  return self.swapmode_nr(6)
+function! s:interface_prototype.swapmode_6(phase, op) abort "{{{
+  return self.swapmode_nr(6, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_7() abort "{{{
-  return self.swapmode_nr(7)
+function! s:interface_prototype.swapmode_7(phase, op) abort "{{{
+  return self.swapmode_nr(7, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_8() abort "{{{
-  return self.swapmode_nr(8)
+function! s:interface_prototype.swapmode_8(phase, op) abort "{{{
+  return self.swapmode_nr(8, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_9() abort "{{{
-  return self.swapmode_nr(9)
+function! s:interface_prototype.swapmode_9(phase, op) abort "{{{
+  return self.swapmode_nr(9, a:phase, a:op)
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_CR() dict abort  "{{{
-  if get(self.order, self.phase, '') ==# ''
-    call self.key_current()
-  else
-    call self.key_fix_nr()
+function! s:interface_prototype.swapmode_CR(phase, op) dict abort  "{{{
+  if a:phase >= s:DONE
+    return [a:phase, a:op]
   endif
+
+  let input = a:op.get_input(a:phase)
+  if input is# ''
+    return self.swapmode_current(a:phase, a:op)
+  endif
+  return self.key_fix_nr(a:phase, a:op)
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_BS() dict abort  "{{{
-  if self.phase == 0
-    if self.order[0] !=# ''
-      let self.order[0] = self.order[0][0:-2]
-      call self.echo()
+function! s:interface_prototype.swapmode_BS(phase, op) dict abort  "{{{
+  let phase = a:phase
+  let op = a:op
+  if phase is# s:FIRST
+    if a:op.get_input(s:FIRST) isnot# ''
+      let op = a:op.truncate_input(s:FIRST)
+      call self.echo(phase, op)
     endif
-  elseif self.phase == 1
-    if self.order[1] !=# ''
-      let self.order[1] = self.order[1][0:-2]
+  elseif phase is# s:SECOND
+    if a:op.get_input(s:SECOND) isnot# ''
+      let op = a:op.truncate_input(s:SECOND)
     else
-      let self.order[0] = self.order[0][0:-2]
-      call self.goto_phase(0)
-      let self.idx.selected = -1
+      let op = a:op.truncate_input(s:FIRST)
+      let phase = s:FIRST
+      call self.select(s:NOTHING)
       call self.update_highlight()
     endif
-    call self.echo()
+    call self.echo(phase, op)
   endif
+  return [phase, op]
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_undo() dict abort "{{{
-  if self.phase != 0 && self.phase != 1
-    return
+function! s:interface_prototype.swapmode_undo(phase, op) dict abort "{{{
+  if a:phase >= s:DONE
+    return [a:phase, a:op]
   endif
 
   if len(self.history) <= self.undolevel
-    return
+    return [a:phase, a:op]
   endif
 
-  let self.order = self.undo_order()
+  let phase = s:DONE
+  let prev = self.history[-1*(self.undolevel+1)]
+  let op = s:operation('undo', s:flip(prev.input))
   let self.undolevel += 1
-  call self.exit()
+  return [phase, op]
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_redo() dict abort "{{{
-  if self.phase != 0 && self.phase != 1
-    return
+function! s:interface_prototype.swapmode_redo(phase, op) dict abort "{{{
+  if a:phase >= s:DONE
+    return [a:phase, a:op]
   endif
 
   if self.undolevel == 0
-    return
+    return [a:phase, a:op]
   endif
 
-  let self.order = self.redo_order()
+  let phase = s:DONE
+  let next = self.history[-1*self.undolevel]
+  let op = s:operation('redo', next.input)
   let self.undolevel -= 1
-  call self.exit()
+  return [phase, op]
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_current() dict abort "{{{
-  if self.phase == 0
-    let self.order[0] = string(self.idx.current) + 1
-    call self.goto_phase(1)
-  elseif self.phase == 1
-    let self.order[1] = string(self.idx.current) + 1
-    call self.goto_phase(2)
+function! s:interface_prototype.swapmode_current(phase, op) dict abort "{{{
+  let phase = a:phase
+  let op = a:op.set_input(phase, string(self.idx.current) + 1)
+  if phase is# s:FIRST
+    let phase = s:SECOND
+    call self.select(op.input[0])
+    call self.echo(phase, op)
+  elseif phase is# s:SECOND
+    let phase = s:DONE
   endif
+  return [phase, op]
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_fix_nr() dict abort "{{{
-  if self.phase == 0
-    let idx = str2nr(self.order[self.phase]) - 1
+function! s:interface_prototype.swapmode_fix_nr(phase, op) dict abort "{{{
+  if a:op.kind isnot# 'swap'
+    return [a:phase, a:op]
+  endif
+
+  let phase = a:phase
+  if phase is# s:FIRST
+    let idx = str2nr(a:op.get_input(s:FIRST)) - 1
     if self.idx.is_valid(idx)
       call self.set_current(idx)
-      call self.goto_phase(1)
+      let phase = s:SECOND
+      call self.select(a:op.input[0])
+      call self.echo(phase, a:op)
       call self.update_highlight()
     endif
-  elseif self.phase == 1
-    let idx = str2nr(self.order[self.phase]) - 1
+  elseif phase is# s:SECOND
+    let idx = str2nr(a:op.get_input(s:SECOND)) - 1
     if self.idx.is_valid(idx)
-      call self.goto_phase(2)
+      let phase = s:DONE
     else
-      call self.echo()
+      call self.echo(phase, a:op)
     endif
   endif
+  return [phase, a:op]
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_move_prev() dict abort  "{{{
-  if self.phase != 0 && self.phase != 1
-    return
+function! s:interface_prototype.swapmode_move_prev(phase, op) dict abort  "{{{
+  if a:phase >= s:DONE
+    return [a:phase, a:op]
   endif
 
   if self.idx.current <= 0
-    return
+    return [a:phase, a:op]
   endif
 
   let idx = s:move_prev_skipping_blank(
-    \ self.buffer.items,
-    \ min([self.idx.current, self.idx.end+1]))
+    \ self.buffer.items, min([self.idx.current, self.idx.end+1]))
   call self.set_current(idx)
   call self.update_highlight()
+  return [a:phase, a:op]
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_move_next() dict abort  "{{{
-  if self.phase != 0 && self.phase != 1
-    return
+function! s:interface_prototype.swapmode_move_next(phase, op) dict abort  "{{{
+  if a:phase >= s:DONE
+    return [a:phase, a:op]
   endif
 
   if self.idx.current >= self.idx.end
-    return
+    return [a:phase, a:op]
   endif
 
   let idx = s:move_next_skipping_blank(
-    \ self.buffer.items,
-    \ max([-1, self.idx.current]))
+    \ self.buffer.items, max([-1, self.idx.current]))
   call self.set_current(idx)
   call self.update_highlight()
+  return [a:phase, a:op]
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_swap_prev() dict abort  "{{{
-  if self.phase != 0 && self.phase != 1
-    return
+function! s:interface_prototype.swapmode_swap_prev(phase, op) dict abort  "{{{
+  if a:phase >= s:DONE
+    return [a:phase, a:op]
   endif
 
   if self.idx.current <= 0 || self.idx.current > self.idx.end
-    return
+    return [a:phase, a:op]
   endif
 
-  let self.order = [self.idx.current+1, self.idx.current]
-  call self.goto_phase(2)
+  let input = [self.idx.current+1, self.idx.current]
+  let op = s:operation('swap', input)
+  let phase = s:DONE
+  return [phase, op]
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_swap_next() dict abort  "{{{
-  if self.phase != 0 && self.phase != 1
-    return
+function! s:interface_prototype.swapmode_swap_next(phase, op) dict abort  "{{{
+  if a:phase >= s:DONE
+    return [a:phase, a:op]
   endif
 
   if self.idx.current < 0 && self.idx.current >= self.idx.end
-    return
+    return [a:phase, a:op]
   endif
 
-  let self.order = [self.idx.current+1, self.idx.current+2]
-  call self.goto_phase(2)
+  let input = [self.idx.current+1, self.idx.current+2]
+  let op = s:operation('swap', input)
+  let phase = s:DONE
+  return [phase, op]
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_Esc() dict abort  "{{{
-  if self.phase != 0 && self.phase != 1
-    return
+function! s:interface_prototype.swapmode_Esc(phase, op) dict abort  "{{{
+  if a:phase >= s:DONE
+    return [a:phase, a:op]
   endif
 
   if self.idx.current < 0 && self.idx.current >= self.idx.end
-    return
+    return [a:phase, a:op]
   endif
 
-  call self.echo()
-  let self.escaped = 1
+  call self.echo(a:phase, a:op)
+  let phase = s:CANCELLED
+  return [phase, a:op]
 endfunction "}}}
 
 
