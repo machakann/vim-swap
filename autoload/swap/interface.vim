@@ -681,7 +681,7 @@ function! s:interface_prototype.swapmode_swap_next(phase, op) dict abort  "{{{
     return [a:phase, a:op]
   endif
 
-  if self.idx.current < 0 && self.idx.current >= self.idx.end
+  if self.idx.current < 0 || self.idx.current >= self.idx.end
     return [a:phase, a:op]
   endif
 
