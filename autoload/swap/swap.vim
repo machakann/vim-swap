@@ -51,7 +51,7 @@ function! s:swap_prototype._around_cursor() abort "{{{
     if self.order_list != []
       call self._swap_sequential(buffer)
     else
-      call self._swap_interactive(buffer)
+      let self.order_list = self._swap_interactive(buffer)
     endif
   endif
 endfunction "}}}
@@ -81,7 +81,7 @@ function! s:swap_prototype._region(start, end, type) abort "{{{
     if self.order_list != []
       call self._swap_sequential(buffer)
     else
-      call self._swap_interactive(buffer)
+      let self.order_list = self._swap_interactive(buffer)
     endif
   endif
 endfunction "}}}
@@ -104,6 +104,7 @@ function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
     return []
   endif
 
+  let order_list = []
   let undojoin = s:FALSE
   let interface = swap#interface#new()
   try
@@ -111,12 +112,13 @@ function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
       let order = interface.query(a:buffer)
       if order == [] | break | endif
       let undojoin = self._swap_once(a:buffer, order, undojoin)
+      call add(order_list, order)
     endwhile
   catch /^Vim:Interrupt$/
   finally
     call a:buffer.clear_highlight()
   endtry
-  return interface.history
+  return order_list
 endfunction "}}}
 
 
