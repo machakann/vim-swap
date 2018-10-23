@@ -165,10 +165,6 @@ let g:swap#default_rules = [
       \ ]
 
 
-" features
-let s:has_gui_running = has('gui_running')
-
-
 " highlight group
 function! s:default_highlight() abort
   highlight default link SwapItem Underlined
@@ -194,45 +190,10 @@ endfunction "}}}
 
 " The operator function
 function! swap#operatorfunc(motionwise) abort "{{{
-  let options = s:displace_options()
-  try
-    call g:swap.execute(a:motionwise)
-  finally
-    call s:restore_options(options)
-  endtry
-endfunction "}}}
-
-
-function! s:displace_options() abort  "{{{
-  let options = {}
-  let options.virtualedit = &virtualedit
-  let options.whichwrap = &whichwrap
-  let options.selection = &selection
-  let [&virtualedit, &whichwrap, &selection] = ['onemore', 'h,l', 'inclusive']
-  if s:has_gui_running
-    let options.cursor = &guicursor
-    set guicursor+=n-o:block-NONE
-  else
-    let options.cursor = &t_ve
-    set t_ve=
+  if !exists('g:swap')
+    return
   endif
-  let options.cursorline = &l:cursorline
-  setlocal nocursorline
-  return options
-endfunction "}}}
-
-
-function! s:restore_options(options) abort "{{{
-  let &virtualedit = a:options.virtualedit
-  let &whichwrap = a:options.whichwrap
-  let &selection = a:options.selection
-  if s:has_gui_running
-    set guicursor&
-    let &guicursor = a:options.cursor
-  else
-    let &t_ve = a:options.cursor
-  endif
-  let &l:cursorline = a:options.cursorline
+  call g:swap.operatorfunc(a:motionwise)
 endfunction "}}}
 
 

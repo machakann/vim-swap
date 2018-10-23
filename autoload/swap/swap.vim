@@ -1,10 +1,14 @@
 " swap object - Managing a whole action.
 
 let s:const = swap#constant#import(s:, ['TYPESTR', 'TYPENUM', 'NULLREGION'])
+let s:lib = swap#lib#import()
+
+let s:TRUE = 1
+let s:FALSE = 0
 let s:TYPESTR = s:const.TYPESTR
 let s:TYPENUM = s:const.TYPENUM
 let s:NULLREGION = s:const.NULLREGION
-let s:lib = swap#lib#import()
+let s:GUI_RUNNING = has('gui_running')
 
 
 function! swap#swap#new(mode, order_list) abort "{{{
@@ -17,65 +21,81 @@ endfunction "}}}
 
 
 let s:swap_prototype = {
-      \   'dotrepeat': 0,
+      \   'dotrepeat': s:FALSE,
       \   'mode': '',
-      \   'undojoin': 0,
       \   'rules': [],
       \   'order_list': [],
       \ }
 
 
-function! s:swap_prototype.execute(motionwise) dict abort "{{{
-  if self.mode ==# 'n'
-    call self._normal(a:motionwise)
-  elseif self.mode ==# 'x'
-    call self._visual(a:motionwise)
-  endif
-  let self.dotrepeat = 1
+function! s:swap_prototype.around_cursor() abort "{{{
+  let options = s:displace_options()
+  try
+    call self._around_cursor()
+  finally
+    call s:restore_options(options)
+  endtry
 endfunction "}}}
 
 
-function! s:swap_prototype.scan(motionwise, ...) abort "{{{
+function! s:swap_prototype._around_cursor() abort "{{{
   let rules = deepcopy(self.rules)
-  let textobj = get(a:000, 0, 0)
-  return s:scan(rules, a:motionwise, textobj)
-endfunction "}}}
-
-
-function! s:swap_prototype._normal(motionwise) dict abort  "{{{
+  let [buffer, rule] = s:scan(rules, 'char')
   if self.dotrepeat
-    let [buffer, _] = self.scan(a:motionwise)
     call self._swap_sequential(buffer)
   else
-    let [buffer, rule] = self.scan(a:motionwise)
-    if has_key(rule, 'initialize')
-      let self.rules = [rule.initialize()]
-      let self.order_list = self._swap(buffer)
+    if empty(rule)
+      return
+    endif
+    let self.rules = [rule.initialize()]
+    if self.order_list != []
+      call self._swap_sequential(buffer)
+    else
+      call self._swap_interactive(buffer)
     endif
   endif
 endfunction "}}}
 
 
-function! s:swap_prototype._visual(motionwise) dict abort  "{{{
-  let region = s:get_assigned_region(a:motionwise)
+function! s:swap_prototype.region(start, end, type) abort "{{{
+  let options = s:displace_options()
+  try
+    call self._region(a:start, a:end, a:type)
+  finally
+    call s:restore_options(options)
+  endtry
+endfunction "}}}
+
+
+function! s:swap_prototype._region(start, end, type) abort "{{{
+  let region = s:get_region(a:start, a:end, a:type)
+  if region is# s:NULLREGION
+    return
+  endif
   let rules = deepcopy(self.rules)
+  let [buffer, rule] = s:check(region, rules)
   if self.dotrepeat
-    let [buffer, _] = s:check(region, rules)
     call self._swap_sequential(buffer)
   else
-    let [buffer, rule] = s:check(region, rules)
     let self.rules = [rule]
-    let self.order_list = self._swap(buffer)
+    if self.order_list != []
+      call self._swap_sequential(buffer)
+    else
+      call self._swap_interactive(buffer)
+    endif
   endif
 endfunction "}}}
 
 
-function! s:swap_prototype._swap(buffer) dict abort "{{{
-  if self.order_list != []
-    return self._swap_sequential(a:buffer)
-  else
-    return self._swap_interactive(a:buffer)
+function! s:swap_prototype.operatorfunc(type) dict abort "{{{
+  if self.mode ==# 'n'
+    call self.around_cursor()
+  elseif self.mode ==# 'x'
+    let start = getpos("'[")
+    let end = getpos("']")
+    call self.region(start, end, a:type)
   endif
+  let self.dotrepeat = s:TRUE
 endfunction "}}}
 
 
@@ -84,13 +104,13 @@ function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
     return []
   endif
 
-  let self.undojoin = 0
+  let undojoin = s:FALSE
   let interface = swap#interface#new()
   try
-    while 1
+    while s:TRUE
       let order = interface.query(a:buffer)
       if order == [] | break | endif
-      call self._swap_once(a:buffer, order)
+      let undojoin = self._swap_once(a:buffer, order, undojoin)
     endwhile
   catch /^Vim:Interrupt$/
   finally
@@ -105,17 +125,17 @@ function! s:swap_prototype._swap_sequential(buffer) dict abort  "{{{
     return
   endif
 
-  let self.undojoin = 0
+  let undojoin = s:FALSE
   for order in self.order_list
-    call self._swap_once(a:buffer, order)
+    let undojoin = self._swap_once(a:buffer, order, undojoin)
   endfor
   return self.order_list
 endfunction "}}}
 
 
-function! s:swap_prototype._swap_once(buffer, order) dict abort "{{{
+function! s:swap_prototype._swap_once(buffer, order, undojoin) dict abort "{{{
   if a:order == []
-    return
+    return a:undojoin
   endif
 
   let order = deepcopy(a:order)
@@ -134,12 +154,53 @@ function! s:swap_prototype._swap_once(buffer, order) dict abort "{{{
   if type(order[0]) != s:TYPENUM || type(order[1]) != s:TYPENUM
         \ || order[0] < 1 || order[0] > n || order[1] < 1 || order[1] > n
     " the index is out of range
-    return
+    return a:undojoin
   endif
 
   " swap items in buffer
-  call a:buffer.swap(order, self.undojoin)
-  let self.undojoin = 1
+  call a:buffer.swap(order, a:undojoin)
+  return s:TRUE
+endfunction "}}}
+
+
+" This method is mainly for textobjects
+function! s:swap_prototype.scan(motionwise, ...) abort "{{{
+  let rules = deepcopy(self.rules)
+  let textobj = get(a:000, 0, 0)
+  return s:scan(rules, a:motionwise, textobj)
+endfunction "}}}
+
+
+function! s:displace_options() abort  "{{{
+  let options = {}
+  let options.virtualedit = &virtualedit
+  let options.whichwrap = &whichwrap
+  let options.selection = &selection
+  let [&virtualedit, &whichwrap, &selection] = ['onemore', 'h,l', 'inclusive']
+  if s:GUI_RUNNING
+    let options.cursor = &guicursor
+    set guicursor+=n-o:block-NONE
+  else
+    let options.cursor = &t_ve
+    set t_ve=
+  endif
+  let options.cursorline = &l:cursorline
+  setlocal nocursorline
+  return options
+endfunction "}}}
+
+
+function! s:restore_options(options) abort "{{{
+  let &virtualedit = a:options.virtualedit
+  let &whichwrap = a:options.whichwrap
+  let &selection = a:options.selection
+  if s:GUI_RUNNING
+    set guicursor&
+    let &guicursor = a:options.cursor
+  else
+    let &t_ve = a:options.cursor
+  endif
+  let &l:cursorline = a:options.cursorline
 endfunction "}}}
 
 
@@ -157,7 +218,7 @@ endfunction "}}}
 
 function! s:filter_filetype(rule) abort  "{{{
   if !has_key(a:rule, 'filetype')
-    return 1
+    return s:TRUE
   endif
   let filetypes = split(&filetype, '\.')
   if filetypes == []
@@ -171,7 +232,7 @@ endfunction "}}}
 
 function! s:filter_mode(rule, mode) abort  "{{{
   if !has_key(a:rule, 'mode')
-    return 1
+    return s:TRUE
   endif
   return stridx(a:rule.mode, a:mode) > -1
 endfunction "}}}
@@ -205,29 +266,14 @@ function! s:remove_duplicate_rules(rules) abort "{{{
 endfunction "}}}
 
 
-function! s:get_assigned_region(motionwise) abort "{{{
+function! s:get_region(start, end, type) abort "{{{
   let region = deepcopy(s:NULLREGION)
-  let region.head = getpos("'[")
-  let region.tail = getpos("']")
-  let region.type = a:motionwise
-  let region.visualkey = s:lib.motionwise2visualkey(a:motionwise)
-
+  let region.head = a:start
+  let region.tail = a:end
+  let region.type = a:type
+  let region.visualkey = s:lib.motionwise2visualkey(a:type)
   if !s:lib.is_valid_region(region)
-    return deepcopy(s:NULLREGION)
-  endif
-
-  let endcol = col([region.tail[1], '$'])
-  if a:motionwise ==# 'V'
-    let region.head[2] = 1
-    let region.tail[2] = endcol
-  else
-    if region.tail[2] >= endcol
-      let region.tail[2] = endcol
-    endif
-  endif
-
-  if !s:lib.is_valid_region(region)
-    return deepcopy(s:NULLREGION)
+    return s:NULLREGION
   endif
 
   let region.len = s:lib.get_buf_length(region)
