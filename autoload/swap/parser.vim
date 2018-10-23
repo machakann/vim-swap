@@ -142,14 +142,14 @@ function! s:Buffer_prototype.swappable() dict abort  "{{{
   "       2. Not less than one of the item is not empty.
   "       3. Include one delimiter at least.
   let cond1 = len(self.items) >= 2
-  let cond2 = filter(copy(self.items), 'v:val.string !=# ""') != []
-  let cond3 = filter(copy(self.all), 'v:val.attr ==# "delimiter"') != []
+  let cond2 = filter(copy(self.items), 'v:val.string isnot# ""') != []
+  let cond3 = filter(copy(self.all), 'v:val.attr is# "delimiter"') != []
   return cond1 && cond2 && cond3 ? 1 : 0
 endfunction "}}}
 
 
 function! s:Buffer_prototype.selectable() dict abort  "{{{
-  return filter(copy(self.items), 'v:val.string !=# ""') != []
+  return filter(copy(self.items), 'v:val.string isnot# ""') != []
 endfunction "}}}
 
 
@@ -209,7 +209,7 @@ function! s:Buffer_prototype.update_hat() dict abort "{{{
   let hat = 0
   for text in self.items
     let hat += 1
-    if text.string !=# ''
+    if text.string isnot# ''
       break
     endif
   endfor
@@ -234,7 +234,7 @@ function! s:Buffer(region, rule, curpos) abort "{{{
   "   string : The value is the string as 'item' or 'delimiter' or 'immutable'.
   " For instance,
   "   'foo,bar' is parsed to [{'attr': 'item', 'string': 'foo'}, {'attr': 'delimiter', 'string': ','}, {'attr': 'item': 'string': 'bar'}]
-  " In case that motionwise ==# 'V' or "\<C-v>", delimiter string should be "\n".
+  " In case that motionwise is# 'V' or "\<C-v>", delimiter string should be "\n".
   let text = s:get_buf_text(a:region)
   let buffer = deepcopy(s:Buffer_prototype)
   let buffer.region = a:region
@@ -272,17 +272,17 @@ function! s:parse_charwise(text, rule) abort  "{{{
       call s:add_buffer_text(buffer, 'item', a:text, head, idx)
       break
     else
-      if kind ==# 'delimiter'
+      if kind is# 'delimiter'
         " a delimiter is found
         " NOTE: I would like to treat zero-width delimiter as possible.
         let last_elem = get(buffer, -1, {'attr': ''})
-        if idx == last_delimiter_tail && last_elem.attr ==# 'delimiter' && last_elem.string ==# ''
+        if idx == last_delimiter_tail && last_elem.attr is# 'delimiter' && last_elem.string ==# ''
           " zero-width delimiter is found
           let idx += 1
           continue
         endif
 
-        if !(head == idx && last_elem.attr ==# 'immutable')
+        if !(head == idx && last_elem.attr is# 'immutable')
           call s:add_buffer_text(buffer, 'item', a:text, head, idx)
         endif
         if idx == last_delimiter_tail
@@ -298,21 +298,21 @@ function! s:parse_charwise(text, rule) abort  "{{{
           let head = idx
           let last_delimiter_tail = idx
         endif
-      elseif kind ==# 'braket'
+      elseif kind is# 'braket'
         " a bra is found
         let idx = s:shift_to_braket_end(a:text, pattern, targets.quotes, targets.literal_quotes, idx)
         if idx < 0 || idx >= end
           call s:add_buffer_text(buffer, 'item', a:text, head, idx)
           break
         endif
-      elseif kind ==# 'quotes'
+      elseif kind is# 'quotes'
         " a quote is found
         let idx = s:shift_to_quote_end(a:text, pattern, idx)
         if idx < 0 || idx >= end
           call s:add_buffer_text(buffer, 'item', a:text, head, idx)
           break
         endif
-      elseif kind ==# 'literal_quotes'
+      elseif kind is# 'literal_quotes'
         " an literal quote (non-escaped quote) is found
         let idx = s:shift_to_literal_quote_end(a:text, pattern, idx)
         if idx < 0 || idx >= end
@@ -346,7 +346,7 @@ function! s:parse_charwise(text, rule) abort  "{{{
     if !empty(buffer[idx]['string'])
       break
     endif
-    if buffer[idx]['attr'] ==# 'delimiter'
+    if buffer[idx]['attr'] is# 'delimiter'
       call remove(buffer, start, idx)
       let start = 0
       let idx = 0
@@ -355,11 +355,11 @@ function! s:parse_charwise(text, rule) abort  "{{{
     endif
   endwhile
   " If the first item is a delimiter, put an empty item at the first place.
-  if buffer[0]['attr'] ==# 'delimiter'
+  if buffer[0]['attr'] is# 'delimiter'
     call s:add_buffer_text(buffer, 'item', a:text, 0, 0)
   endif
   " If the last item is a delimiter, put an empty item at the end.
-  if buffer[-1]['attr'] ==# 'delimiter'
+  if buffer[-1]['attr'] is# 'delimiter'
     call s:add_buffer_text(buffer, 'item', a:text, idx, idx)
   endif
   return buffer
@@ -412,12 +412,12 @@ endfunction "}}}
 function! s:address_linewise(buffer, region) abort  "{{{
   let lnum = a:region.head[1]
   for item in a:buffer
-    if item.attr ==# 'item'
+    if item.attr is# 'item'
       let len = strlen(item.string)
       let item.region.len  = len
       let item.region.head = [0, lnum, 1, 0]
       let item.region.tail = [0, lnum, len+1, 0]
-    elseif item.attr ==# 'delimiter'
+    elseif item.attr is# 'delimiter'
       let item.region.len = 1
       let item.region.head = [0, lnum, col([lnum, '$']), 0]
       let item.region.tail = [0, lnum+1, 1, 0]
@@ -433,13 +433,13 @@ function! s:address_blockwise(buffer, region) abort  "{{{
   let lnum = a:region.head[1]
   let virtcol = a:region.head[2]
   for item in a:buffer
-    if item.attr ==# 'item'
+    if item.attr is# 'item'
       let col = s:lib.virtcol2col(lnum, virtcol)
       let len = strlen(item.string)
       let item.region.len  = len
       let item.region.head = [0, lnum, col, 0]
       let item.region.tail = [0, lnum, col+len, 0]
-    elseif item.attr ==# 'delimiter'
+    elseif item.attr is# 'delimiter'
       let item.region.len = 0
       let item.region.head = [0, lnum, col+len, 0]
       let item.region.tail = [0, lnum, col+len, 0]
@@ -532,10 +532,10 @@ function! s:assort(buffer) abort "{{{
   for idx in range(len(a:buffer.all))
     let item = a:buffer.all[idx]
     let item.idx = idx
-    if item.attr ==# 'item'
+    if item.attr is# 'item'
       let item.itemidx = len(a:buffer.items)
       call add(a:buffer.items, item)
-    elseif item.attr ==# 'delimiter'
+    elseif item.attr is# 'delimiter'
       let item.delimiteridx = len(a:buffer.delimiters)
       call add(a:buffer.delimiters, item)
     endif
@@ -550,7 +550,7 @@ function! s:click(text, target, idx) abort  "{{{
     return a:target
   endif
 
-  if kind ==# 'delimiter' || kind ==# 'immutable'
+  if kind is# 'delimiter' || kind is# 'immutable'
     " delimiter or immutable
     let a:target[0:2] = s:match(a:text, a:target[0:2], a:idx, 1)
   else

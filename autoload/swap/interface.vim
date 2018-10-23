@@ -171,17 +171,17 @@ function! s:interface_prototype.echo(phase, op) dict abort "{{{
     let message += [[', ', 'NONE']]
   endfor
   if a:phase is# s:FIRST
-    if a:op.input[0] !=# ''
+    if a:op.input[0] isnot# ''
       let higoup = self.idx.is_valid(a:op.input[0])
                \ ? g:swap#hl_itemnr : 'ErrorMsg'
       let message += [[a:op.input[0], higoup]]
     else
-      if message != []
+      if !empty(message)
         call remove(message, -1)
       endif
     endif
   elseif a:phase == 1
-    if a:op.input[1] !=# ''
+    if a:op.input[1] isnot# ''
       let message += [[a:op.input[0], g:swap#hl_itemnr]]
       let message += [[g:swap#arrow, g:swap#hl_arrow]]
       let higoup = self.idx.is_valid(a:op.input[1])
@@ -205,7 +205,7 @@ function! s:interface_prototype.echo(phase, op) dict abort "{{{
         call insert(message, mes)
       endif
       let precedes = matchstr(&listchars, 'precedes:\zs.\ze')
-      let precedes = precedes ==# '' ? '<' : precedes
+      let precedes = precedes is# '' ? '<' : precedes
       call insert(message, [precedes, 'SpecialKey'])
     endif
   endif
@@ -417,17 +417,17 @@ function! s:is_input_matched(candidate, input, flag) abort "{{{
     return 0
   endif
 
-  if !a:flag && a:input ==# ''
+  if !a:flag && a:input is# ''
     return 1
   endif
 
   " If a:flag == 0, check forward match. Otherwise, check complete match.
   if a:flag
-    return a:input ==# a:candidate.input
+    return a:input is# a:candidate.input
   endif
 
   let idx = strlen(a:input) - 1
-  return a:input ==# a:candidate.input[: idx]
+  return a:input is# a:candidate.input[: idx]
 endfunction "}}}
 
 
@@ -435,7 +435,7 @@ function! s:move_prev_skipping_blank(items, current) abort  "{{{
   " skip empty items
   let idx = a:current - 1
   while idx >= 0
-    if a:items[idx].string !=# ''
+    if a:items[idx].string isnot# ''
       break
     endif
     let idx -= 1
@@ -449,7 +449,7 @@ function! s:move_next_skipping_blank(items, current) abort  "{{{
   let idx = a:current + 1
   let end = len(a:items) - 1
   while idx <= end
-    if a:items[idx].string !=# ''
+    if a:items[idx].string isnot# ''
       break
     endif
     let idx += 1

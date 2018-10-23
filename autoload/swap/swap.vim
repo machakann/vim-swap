@@ -88,9 +88,9 @@ endfunction "}}}
 
 
 function! s:swap_prototype.operatorfunc(type) dict abort "{{{
-  if self.mode ==# 'n'
+  if self.mode is# 'n'
     call self.around_cursor()
-  elseif self.mode ==# 'x'
+  elseif self.mode is# 'x'
     let start = getpos("'[")
     let end = getpos("']")
     call self.region(start, end, a:type)
@@ -209,7 +209,7 @@ function! s:get_rules(mode) abort  "{{{
   call map(rules, 'extend(v:val, {"priority": 0}, "keep")')
   call s:lib.sort(reverse(rules), function('s:compare_priority'))
   call filter(rules, 's:filter_filetype(v:val) && s:filter_mode(v:val, a:mode)')
-  if a:mode !=# 'x'
+  if a:mode isnot# 'x'
     call s:remove_duplicate_rules(rules)
   endif
   return map(rules, 'swap#rule#get(v:val)')
@@ -222,9 +222,9 @@ function! s:filter_filetype(rule) abort  "{{{
   endif
   let filetypes = split(&filetype, '\.')
   if filetypes == []
-    let filter = 'v:val ==# ""'
+    let filter = 'v:val is# ""'
   else
-    let filter = 'v:val !=# "" && count(filetypes, v:val) > 0'
+    let filter = 'v:val isnot# "" && count(filetypes, v:val) > 0'
   endif
   return filter(copy(a:rule['filetype']), filter) != []
 endfunction "}}}

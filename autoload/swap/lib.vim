@@ -76,7 +76,7 @@ endif
 
 function! s:is_valid_region(region) abort "{{{
   return a:region.head != s:const.NULLPOS && a:region.tail != s:const.NULLPOS
-        \ && (a:region.type ==# 'line' || s:is_ahead(a:region.tail, a:region.head))
+        \ && (a:region.type is# 'line' || s:is_ahead(a:region.tail, a:region.head))
 endfunction "}}}
 
 
@@ -105,8 +105,8 @@ endfunction "}}}
 
 
 function! s:motionwise2visualkey(motionwise) abort  "{{{
-  return a:motionwise ==# 'line'  ? 'V'
-     \ : a:motionwise ==# 'block' ? "\<C-v>"
+  return a:motionwise is# 'line'  ? 'V'
+     \ : a:motionwise is# 'block' ? "\<C-v>"
      \ : 'v'
 endfunction "}}}
 

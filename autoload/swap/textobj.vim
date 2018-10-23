@@ -11,9 +11,9 @@ function! swap#textobj#select(type) abort "{{{
   if empty(buffer) || empty(buffer.items)
     return
   endif
-  if a:type ==# 'a'
+  if a:type is# 'a'
     let [start, end] = s:get_target_a(buffer, l:count)
-  elseif a:type ==# 'i'
+  elseif a:type is# 'i'
     let [start, end] = s:get_target_i(buffer, l:count)
   else
     return
@@ -23,7 +23,7 @@ function! swap#textobj#select(type) abort "{{{
   call setpos('.', start.region.head)
   normal! o
   call setpos('.', end.region.tail)
-  if &selection !=# 'exclusive'
+  if &selection isnot# 'exclusive'
     normal! h
   endif
 endfunction "}}}
@@ -61,7 +61,7 @@ function! s:get_preconjugate_delimiter(buffer, cursoritem) abort "{{{
 
   if a:cursoritem.idx > 0
     for i in range(a:cursoritem.idx - 1, 0, -1)
-      if a:buffer.all[i]['attr'] ==# 'delimiter'
+      if a:buffer.all[i]['attr'] is# 'delimiter'
         return a:buffer.all[i]
       endif
     endfor
@@ -77,7 +77,7 @@ function! s:get_postconjugate_delimiter(buffer, enditem) abort "{{{
 
   if a:enditem.idx < len(a:buffer.all) - 1
     for i in range(a:enditem.idx + 1, len(a:buffer.all) - 1)
-      if a:buffer.all[i]['attr'] ==# 'delimiter'
+      if a:buffer.all[i]['attr'] is# 'delimiter'
         return a:buffer.all[i]
       endif
     endfor
