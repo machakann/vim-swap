@@ -52,11 +52,11 @@ function! s:rule_prototype.search(curpos, motionwise) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:rule_prototype.check(region) dict abort  "{{{
+function! s:rule_prototype.match(region) dict abort  "{{{
   let timeout = g:swap#stimeoutlen
 
   if has_key(self, 'body')
-    if s:check_body(self.body, a:region, timeout)
+    if s:match_body(self.body, a:region, timeout)
       let self.region = a:region
       return 1
     else
@@ -65,7 +65,7 @@ function! s:rule_prototype.check(region) dict abort  "{{{
   endif
 
   if has_key(self, 'surrounds')
-    if s:check_surrounds(self.surrounds, a:region, timeout)
+    if s:match_surrounds(self.surrounds, a:region, timeout)
       let self.region = a:region
       return 1
     else
@@ -156,7 +156,7 @@ function! s:searchpos_nonest_tail(pattern, timeout) abort  "{{{
 endfunction "}}}
 
 
-function! s:check_body(body, region, timeout) abort "{{{
+function! s:match_body(body, region, timeout) abort "{{{
   let is_matched = 1
   let cur_pos = getpos('.')
   call setpos('.', a:region.head)
@@ -171,8 +171,8 @@ function! s:check_body(body, region, timeout) abort "{{{
 endfunction "}}}
 
 
-function! s:check_surrounds(surrounds, region, timeout) abort "{{{
-  " NOTE: s:match_surrounds does not check nesting.
+function! s:match_surrounds(surrounds, region, timeout) abort "{{{
+  " NOTE: s:match_surrounds does not match nesting.
   "       Maybe it is reasonable considering use cases.
   let is_matched = 1
   let cur_pos = getpos('.')

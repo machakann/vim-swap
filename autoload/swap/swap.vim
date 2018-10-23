@@ -40,7 +40,7 @@ endfunction "}}}
 
 function! s:swap_prototype._around_cursor() abort "{{{
   let rules = deepcopy(self.rules)
-  let [buffer, rule] = s:scan(rules, 'char')
+  let [buffer, rule] = s:search(rules, 'char')
   if self.dotrepeat
     call self._swap_sequential(buffer)
   else
@@ -73,7 +73,7 @@ function! s:swap_prototype._region(start, end, type) abort "{{{
     return
   endif
   let rules = deepcopy(self.rules)
-  let [buffer, rule] = s:check(region, rules)
+  let [buffer, rule] = s:match(region, rules)
   if self.dotrepeat
     call self._swap_sequential(buffer)
   else
@@ -164,10 +164,10 @@ endfunction "}}}
 
 
 " This method is mainly for textobjects
-function! s:swap_prototype.scan(motionwise, ...) abort "{{{
+function! s:swap_prototype.search(motionwise, ...) abort "{{{
   let rules = deepcopy(self.rules)
   let textobj = get(a:000, 0, 0)
-  return s:scan(rules, a:motionwise, textobj)
+  return s:search(rules, a:motionwise, textobj)
 endfunction "}}}
 
 
@@ -297,7 +297,7 @@ function! s:get_priority_group(rules) abort "{{{
 endfunction "}}}
 
 
-function! s:scan(rules, motionwise, ...) abort "{{{
+function! s:search(rules, motionwise, ...) abort "{{{
   let view = winsaveview()
   let textobj = get(a:000, 0, 0)
   let curpos = getpos('.')
@@ -307,7 +307,8 @@ function! s:scan(rules, motionwise, ...) abort "{{{
   try
     while a:rules != []
       let priority_group = s:get_priority_group(a:rules)
-      let [buffer, rule] = s:scan_group(priority_group, curpos, a:motionwise, textobj)
+      let [buffer, rule] = s:search_by_group(priority_group, curpos,
+                                           \ a:motionwise, textobj)
       if buffer != {}
         break
       endif
@@ -320,7 +321,7 @@ function! s:scan(rules, motionwise, ...) abort "{{{
 endfunction "}}}
 
 
-function! s:scan_group(priority_group, curpos, motionwise, ...) abort "{{{
+function! s:search_by_group(priority_group, curpos, motionwise, ...) abort "{{{
   let textobj = get(a:000, 0, 0)
   while a:priority_group != []
     for rule in a:priority_group
@@ -341,7 +342,7 @@ function! s:scan_group(priority_group, curpos, motionwise, ...) abort "{{{
 endfunction "}}}
 
 
-function! s:check(region, rules) abort  "{{{
+function! s:match(region, rules) abort  "{{{
   if a:region == s:NULLREGION
     return [{}, {}]
   endif
@@ -351,7 +352,7 @@ function! s:check(region, rules) abort  "{{{
   let buffer = {}
   while a:rules != []
     let priority_group = s:get_priority_group(a:rules)
-    let [buffer, rule] = s:check_group(a:region, priority_group, curpos)
+    let [buffer, rule] = s:match_group(a:region, priority_group, curpos)
     if buffer != {}
       break
     endif
@@ -361,9 +362,9 @@ function! s:check(region, rules) abort  "{{{
 endfunction "}}}
 
 
-function! s:check_group(region, priority_group, curpos) abort "{{{
+function! s:match_group(region, priority_group, curpos) abort "{{{
   for rule in a:priority_group
-    if rule.check(a:region)
+    if rule.match(a:region)
       let buffer = swap#parser#parse(a:region, rule, a:curpos)
       if buffer.swappable()
         return [buffer, rule]
