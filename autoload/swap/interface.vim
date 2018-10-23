@@ -408,7 +408,7 @@ function! s:query(key_map) abort "{{{
   else
     let key = {}
   endif
-  return get(key, 'output', '')
+  return get(key, 'output', [])
 endfunction "}}}
 
 
