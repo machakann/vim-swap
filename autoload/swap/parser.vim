@@ -13,8 +13,6 @@ endfunction "}}}
 " Item object - represents an swappable item on the buffer {{{
 let s:Item_prototype = {
       \   'idx': -1,
-      \   'itemidx': -1,
-      \   'delimiteridx': -1,
       \   'attr': '',
       \   'string': '',
       \   'highlightid': [],
@@ -499,10 +497,8 @@ function! s:assort(buffer) abort "{{{
     let item = a:buffer.all[idx]
     let item.idx = idx
     if item.attr is# 'item'
-      let item.itemidx = len(a:buffer.items)
       call add(a:buffer.items, item)
     elseif item.attr is# 'delimiter'
-      let item.delimiteridx = len(a:buffer.delimiters)
       call add(a:buffer.delimiters, item)
     endif
   endfor
