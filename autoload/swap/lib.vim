@@ -113,14 +113,18 @@ endfunction "}}}
 
 function! s:get_left_pos(pos, ...) abort  "{{{
   call setpos('.', a:pos)
-  execute printf('normal! %dh', get(a:000, 0, 1))
+  if a:pos != [0, 1, 1, 0]
+    execute printf('normal! %dh', get(a:000, 0, 1))
+  endif
   return getpos('.')
 endfunction "}}}
 
 
 function! s:get_right_pos(pos, ...) abort  "{{{
   call setpos('.', a:pos)
-  execute printf('normal! %dl', get(a:000, 0, 1))
+  if a:pos != [0, line('$'), max([1, col('$') - 1]), 0]
+    execute printf('normal! %dl', get(a:000, 0, 1))
+  endif
   return getpos('.')
 endfunction "}}}
 
