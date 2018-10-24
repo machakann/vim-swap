@@ -24,7 +24,6 @@ function! s:rule_prototype.search(curpos, motionwise) dict abort  "{{{
       let self.region = s:search_body(self.body, a:curpos, timeout)
       if self.region != s:NULLREGION && s:lib.is_in_between(a:curpos, self.region.head, self.region.tail)
         let self.region.len = s:lib.get_buf_length(self.region)
-        let self.region.visualkey = s:lib.motionwise2visualkey(a:motionwise)
         let self.region.type = a:motionwise
         return self.region
       endif
@@ -41,7 +40,6 @@ function! s:rule_prototype.search(curpos, motionwise) dict abort  "{{{
       let [head, tail] = s:get_outer_pos(self.surrounds, self.region)
       if s:lib.is_in_between(a:curpos, head, tail)
         let self.region.len = s:lib.get_buf_length(self.region)
-        let self.region.visualkey = s:lib.motionwise2visualkey(a:motionwise)
         let self.region.type = a:motionwise
         return self.region
       endif

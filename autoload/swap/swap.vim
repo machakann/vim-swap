@@ -275,7 +275,6 @@ function! s:get_region(start, end, type) abort "{{{
   let region.head = a:start
   let region.tail = a:end
   let region.type = a:type
-  let region.visualkey = s:lib.motionwise2visualkey(a:type)
   if !s:lib.is_valid_region(region)
     return s:NULLREGION
   endif
@@ -454,14 +453,14 @@ endfunction "}}}
 
 function! s:write(buffer, undojoin) abort "{{{
   let str = join(map(copy(a:buffer.all), 'v:val.string'), '')
+  let v = s:lib.type2v(a:buffer.region.type)
   let view = winsaveview()
   let undojoin_cmd = a:undojoin ? 'undojoin | ' : ''
   let reg = ['"', getreg('"'), getregtype('"')]
-  call setreg('"', str, a:buffer.region.visualkey)
+  call setreg('"', str, v)
   call setpos('.', a:buffer.region.head)
   execute printf('%snoautocmd normal! "_d%s:call setpos(".", %s)%s""P:',
-               \ undojoin_cmd, a:buffer.region.visualkey,
-               \ string(a:buffer.region.tail), "\<CR>")
+               \ undojoin_cmd, v, string(a:buffer.region.tail), "\<CR>")
   call call('setreg', reg)
   call winrestview(view)
 endfunction "}}}

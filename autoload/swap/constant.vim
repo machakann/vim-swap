@@ -13,7 +13,6 @@ let s:const.NULLREGION = {
   \ 'tail': copy(s:const.NULLPOS),
   \ 'len': -1,
   \ 'type': '',
-  \ 'visualkey': ''
   \ }
 
 if exists('v:t_number')

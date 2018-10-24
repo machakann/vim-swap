@@ -431,13 +431,14 @@ function! s:get_buf_text(region) abort  "{{{
   "       Because it causes confusions for the unit of dot-repeating.
   "       Use visual selection+operator as following.
   let text = ''
+  let v = s:lib.type2v(a:region.type)
   let visual = [getpos("'<"), getpos("'>")]
   let registers = s:saveregisters()
   let selection = &selection
   set selection=inclusive
   try
     call setpos('.', a:region.head)
-    execute 'normal! ' . a:region.visualkey
+    execute 'normal! ' . v
     call setpos('.', a:region.tail)
     silent noautocmd normal! ""y
     let text = @@

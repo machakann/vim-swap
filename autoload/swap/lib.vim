@@ -104,9 +104,9 @@ function! s:virtcol2col(lnum, virtcol) abort  "{{{
 endfunction "}}}
 
 
-function! s:motionwise2visualkey(motionwise) abort  "{{{
-  return a:motionwise is# 'line'  ? 'V'
-     \ : a:motionwise is# 'block' ? "\<C-v>"
+function! s:type2v(type) abort  "{{{
+  return a:type is# 'line'  ? 'V'
+     \ : a:type is# 'block' ? "\<C-v>"
      \ : 'v'
 endfunction "}}}
 
@@ -135,7 +135,7 @@ let s:lib.is_ahead = function('s:is_ahead')
 let s:lib.is_in_between = function('s:is_in_between')
 let s:lib.escape = function('s:escape')
 let s:lib.virtcol2col = function('s:virtcol2col')
-let s:lib.motionwise2visualkey = function('s:motionwise2visualkey')
+let s:lib.type2v = function('s:type2v')
 let s:lib.get_left_pos = function('s:get_left_pos')
 let s:lib.get_right_pos = function('s:get_right_pos')
 lockvar! s:lib
