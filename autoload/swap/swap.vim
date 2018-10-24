@@ -11,10 +11,10 @@ let s:NULLREGION = s:const.NULLREGION
 let s:GUI_RUNNING = has('gui_running')
 
 
-function! swap#swap#new(mode, order_list) abort "{{{
+function! swap#swap#new(mode, input_list) abort "{{{
   let swap = deepcopy(s:swap_prototype)
   let swap.mode = a:mode
-  let swap.order_list = a:order_list
+  let swap.input_list = a:input_list
   let swap.rules = s:get_rules(a:mode)
   return swap
 endfunction "}}}
@@ -24,7 +24,7 @@ let s:swap_prototype = {
       \   'dotrepeat': s:FALSE,
       \   'mode': '',
       \   'rules': [],
-      \   'order_list': [],
+      \   'input_list': [],
       \ }
 
 
@@ -48,10 +48,10 @@ function! s:swap_prototype._around_cursor() abort "{{{
       return
     endif
     let self.rules = [rule.initialize()]
-    if self.order_list != []
+    if self.input_list != []
       call self._swap_sequential(buffer)
     else
-      let self.order_list = self._swap_interactive(buffer)
+      let self.input_list = self._swap_interactive(buffer)
     endif
   endif
 endfunction "}}}
@@ -78,10 +78,10 @@ function! s:swap_prototype._region(start, end, type) abort "{{{
     call self._swap_sequential(buffer)
   else
     let self.rules = [rule]
-    if self.order_list != []
+    if self.input_list != []
       call self._swap_sequential(buffer)
     else
-      let self.order_list = self._swap_interactive(buffer)
+      let self.input_list = self._swap_interactive(buffer)
     endif
   endif
 endfunction "}}}
@@ -104,21 +104,22 @@ function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
     return []
   endif
 
-  let order_list = []
+  let input_list = []
+  let buffer = a:buffer
   let undojoin = s:FALSE
   let interface = swap#interface#new()
   try
     while s:TRUE
-      let order = interface.query(a:buffer)
-      if order == [] | break | endif
-      let undojoin = self._swap_once(a:buffer, order, undojoin)
-      call add(order_list, order)
+      let input = interface.query(buffer)
+      if input == [] | break | endif
+      let [buffer, undojoin] = self._swap_once(buffer, input, undojoin)
+      call add(input_list, input)
     endwhile
   catch /^Vim:Interrupt$/
   finally
-    call a:buffer.clear_highlight()
+    call buffer.clear_highlight()
   endtry
-  return order_list
+  return input_list
 endfunction "}}}
 
 
@@ -127,62 +128,42 @@ function! s:swap_prototype._swap_sequential(buffer) dict abort  "{{{
     return
   endif
 
+  let buffer = a:buffer
   let undojoin = s:FALSE
-  for order in self.order_list
-    let undojoin = self._swap_once(a:buffer, order, undojoin)
+  for input in self.input_list
+    let [buffer, undojoin] = self._swap_once(buffer, input, undojoin)
   endfor
-  return self.order_list
+  return self.input_list
 endfunction "}}}
 
 
-function! s:swap_prototype._swap_once(buffer, order, undojoin) dict abort "{{{
-  if a:order == []
-    return a:undojoin
+function! s:swap_prototype._swap_once(buffer, input, undojoin) dict abort "{{{
+  if a:input == []
+    return [a:buffer, a:undojoin]
   endif
 
   " substitute and eval symbols
-  let order = map(copy(a:order), 's:eval(v:val, a:buffer)')
+  let input = map(copy(a:input), 's:eval(v:val, a:buffer)')
 
   let n = len(a:buffer.items)
-  if type(order[0]) != s:TYPENUM || type(order[1]) != s:TYPENUM
-        \ || order[0] < 1 || order[0] > n || order[1] < 1 || order[1] > n
+  if type(input[0]) != s:TYPENUM || type(input[1]) != s:TYPENUM
+        \ || input[0] < 1 || input[0] > n || input[1] < 1 || input[1] > n
     " the index is out of range
-    return a:undojoin
+    return [a:buffer, a:undojoin]
   endif
 
-  " swap items in buffer
-  let idx1 = order[0] - 1
-  let idx2 = order[1] - 1
-  if idx1 < 0 || idx1 >= len(a:buffer.items)
-      \ || idx2 < 0 || idx2 >= len(a:buffer.items)
-    return
-  endif
-  let item1 = s:extractall(a:buffer.items[idx1])
-  let item2 = s:extractall(a:buffer.items[idx2])
-  call extend(a:buffer.items[idx1], item2, 'force')
-  call extend(a:buffer.items[idx2], item1, 'force')
-
-  " reflect to the buffer
-  let view = winsaveview()
-  let undojoin_cmd = a:undojoin ? 'undojoin | ' : ''
-  let reg = ['"', getreg('"'), getregtype('"')]
-  call setreg('"', join(map(copy(a:buffer.all), 'v:val.string'), ''),
-            \ a:buffer.region.visualkey)
-  call setpos('.', a:buffer.region.head)
-  execute printf('%snoautocmd normal! "_d%s:call setpos(".", %s)%s""P:',
-               \ undojoin_cmd, a:buffer.region.visualkey,
-               \ string(a:buffer.region.tail), "\<CR>")
-  call call('setreg', reg)
-  call winrestview(view)
+  " swap items on the buffer
+  let newbuffer = s:swap(a:buffer, input)
+  call s:write(newbuffer, a:undojoin)
 
   " update buffer information
-  let a:buffer.region.head = getpos("'[")
-  let a:buffer.region.tail = getpos("']")
-  call a:buffer.update_items()
-  call a:buffer.items[idx2].cursor()
-  call a:buffer.update_sharp(getpos('.'))
-  call a:buffer.update_hat()
-  return s:TRUE
+  let newbuffer.region.head = getpos("'[")
+  let newbuffer.region.tail = getpos("']")
+  call newbuffer.update_items()
+  call newbuffer.items[input[1] - 1].cursor()
+  call newbuffer.update_sharp(getpos('.'))
+  call newbuffer.update_hat()
+  return [newbuffer, s:TRUE]
 endfunction "}}}
 
 
@@ -418,7 +399,7 @@ endfunction "}}}
 
 function! s:substitute_symbol(str, symbol, symbol_idx) abort "{{{
   let symbol = s:lib.escape(a:symbol)
-  return substitute(a:str, symbol, a:symbol_idx, "")
+  return substitute(a:str, symbol, a:symbol_idx, '')
 endfunction "}}}
 
 
@@ -438,12 +419,51 @@ function! s:eval(v, buffer) abort "{{{
 endfunction "}}}
 
 
-function! s:extractall(dict) abort "{{{
-  " remove all keys and values of dictionary
-  " return the copy of original dict
-  let copy_dict = copy(a:dict)
-  call filter(a:dict, 1)
-  return copy_dict
+function! s:new_empty_buffer(buffer) abort "{{{
+  let newbuffer = deepcopy(a:buffer)
+  call filter(newbuffer.all, 0)
+  call filter(newbuffer.items, 0)
+  call filter(newbuffer.delimiters, 0)
+  return newbuffer
+endfunction "}}}
+
+
+function! s:swap(buffer, input) abort "{{{
+  let itemindexes = range(len(a:buffer.items))
+  let idx1 = a:input[0] - 1
+  let idx2 = a:input[1] - 1
+  call remove(itemindexes, idx1)
+  call insert(itemindexes, idx2, idx1)
+  call remove(itemindexes, idx2)
+  call insert(itemindexes, idx1, idx2)
+
+  let newbuffer = s:new_empty_buffer(a:buffer)
+  for item in a:buffer.all
+    if item.attr is# 'item'
+      let i = remove(itemindexes, 0)
+      let item = a:buffer.items[i]
+      call add(newbuffer.items, item)
+    elseif item.attr is# 'delimiter'
+      call add(newbuffer.delimiters, item)
+    endif
+    call add(newbuffer.all, item)
+  endfor
+  return newbuffer
+endfunction "}}}
+
+
+function! s:write(buffer, undojoin) abort "{{{
+  let str = join(map(copy(a:buffer.all), 'v:val.string'), '')
+  let view = winsaveview()
+  let undojoin_cmd = a:undojoin ? 'undojoin | ' : ''
+  let reg = ['"', getreg('"'), getregtype('"')]
+  call setreg('"', str, a:buffer.region.visualkey)
+  call setpos('.', a:buffer.region.head)
+  execute printf('%snoautocmd normal! "_d%s:call setpos(".", %s)%s""P:',
+               \ undojoin_cmd, a:buffer.region.visualkey,
+               \ string(a:buffer.region.tail), "\<CR>")
+  call call('setreg', reg)
+  call winrestview(view)
 endfunction "}}}
 
 
