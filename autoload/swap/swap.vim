@@ -140,17 +140,8 @@ function! s:swap_prototype._swap_once(buffer, order, undojoin) dict abort "{{{
     return a:undojoin
   endif
 
-  let order = deepcopy(a:order)
-
-  " substitute symbols
-  for symbol in ['#', '^', '$']
-    if stridx(order[0], symbol) > -1 || stridx(order[1], symbol) > -1
-      call s:substitute_symbol(order, symbol, a:buffer.symbols[symbol])
-    endif
-  endfor
-
-  " evaluate after substituting symbols
-  call map(order, 'type(v:val) == s:TYPESTR ? eval(v:val) : v:val')
+  " substitute and eval symbols
+  let order = map(copy(a:order), 's:eval(v:val, a:buffer)')
 
   let n = len(a:buffer.items)
   if type(order[0]) != s:TYPENUM || type(order[1]) != s:TYPENUM
@@ -160,7 +151,37 @@ function! s:swap_prototype._swap_once(buffer, order, undojoin) dict abort "{{{
   endif
 
   " swap items in buffer
-  call a:buffer.swap(order, a:undojoin)
+  let idx1 = order[0] - 1
+  let idx2 = order[1] - 1
+  if idx1 < 0 || idx1 >= len(a:buffer.items)
+      \ || idx2 < 0 || idx2 >= len(a:buffer.items)
+    return
+  endif
+  let item1 = s:extractall(a:buffer.items[idx1])
+  let item2 = s:extractall(a:buffer.items[idx2])
+  call extend(a:buffer.items[idx1], item2, 'force')
+  call extend(a:buffer.items[idx2], item1, 'force')
+
+  " reflect to the buffer
+  let view = winsaveview()
+  let undojoin_cmd = a:undojoin ? 'undojoin | ' : ''
+  let reg = ['"', getreg('"'), getregtype('"')]
+  call setreg('"', join(map(copy(a:buffer.all), 'v:val.string'), ''),
+            \ a:buffer.region.visualkey)
+  call setpos('.', a:buffer.region.head)
+  execute printf('%snoautocmd normal! "_d%s:call setpos(".", %s)%s""P:',
+               \ undojoin_cmd, a:buffer.region.visualkey,
+               \ string(a:buffer.region.tail), "\<CR>")
+  call call('setreg', reg)
+  call winrestview(view)
+
+  " update buffer information
+  let a:buffer.region.head = getpos("'[")
+  let a:buffer.region.tail = getpos("']")
+  call a:buffer.update_items()
+  call a:buffer.items[idx2].cursor()
+  call a:buffer.update_sharp(getpos('.'))
+  call a:buffer.update_hat()
   return s:TRUE
 endfunction "}}}
 
@@ -395,9 +416,34 @@ function! s:compare_len(r1, r2) abort "{{{
 endfunction "}}}
 
 
-function! s:substitute_symbol(order, symbol, symbol_idx) abort "{{{
+function! s:substitute_symbol(str, symbol, symbol_idx) abort "{{{
   let symbol = s:lib.escape(a:symbol)
-  return map(a:order, 'type(v:val) == s:TYPESTR ? substitute(v:val, symbol, a:symbol_idx, "") : v:val')
+  return substitute(a:str, symbol, a:symbol_idx, "")
+endfunction "}}}
+
+
+function! s:eval(v, buffer) abort "{{{
+  if type(a:v) isnot# s:TYPESTR
+    return a:v
+  endif
+
+  let str = a:v
+  for [symbol, symbolidx] in items(a:buffer.index)
+    if stridx(str, symbol) > -1
+      let str = s:substitute_symbol(str, symbol, symbolidx)
+    endif
+  endfor
+  sandbox let v = eval(str)
+  return v
+endfunction "}}}
+
+
+function! s:extractall(dict) abort "{{{
+  " remove all keys and values of dictionary
+  " return the copy of original dict
+  let copy_dict = copy(a:dict)
+  call filter(a:dict, 1)
+  return copy_dict
 endfunction "}}}
 
 

@@ -1,4 +1,4 @@
-" parser - Parse a text to give a buffer object.
+" parser - parse a buffer text into swappable items
 
 let s:const = swap#constant#import()
 let s:NULLREGION = s:const.NULLREGION
@@ -10,7 +10,7 @@ function! swap#parser#parse(region, rule, curpos) abort "{{{
 endfunction "}}}
 
 
-" Item object {{{
+" Item object - represents an swappable item on the buffer {{{
 let s:Item_prototype = {
       \   'idx': -1,
       \   'itemidx': -1,
@@ -110,13 +110,13 @@ endfunction "}}}
 "}}}
 
 
-" Buffer object {{{
+" Buffer object - represents a swapping region of buffer {{{
 let s:Buffer_prototype = {
       \   'region': deepcopy(s:NULLREGION),
       \   'all': [],
       \   'items': [],
       \   'delimiters': [],
-      \   'symbols': {'#': 0, '^': 0, '$': 0},
+      \   'index': {'#': 0, '^': 0, '$': 0},
       \ }
 
 
@@ -153,33 +153,8 @@ function! s:Buffer_prototype.selectable() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:Buffer_prototype.swap(order, undojoin) dict abort  "{{{
-  let idx1 = a:order[0] - 1
-  let idx2 = a:order[1] - 1
-  if idx1 < 0 || idx1 >= len(self.items) || idx2 < 0 || idx2 >= len(self.items)
-    return
-  endif
-  let item1 = s:extractall(self.items[idx1])
-  let item2 = s:extractall(self.items[idx2])
-  call extend(self.items[idx1], item2, 'force')
-  call extend(self.items[idx2], item1, 'force')
+function! s:Buffer_prototype.update_items() abort "{{{
   call s:address_{self.region.type}wise(self.all, self.region)
-
-  " reflect to the buffer
-  let view = winsaveview()
-  let undojoin_cmd = a:undojoin ? 'undojoin | ' : ''
-  let reg = ['"', getreg('"'), getregtype('"')]
-  call setreg('"', join(map(copy(self.all), 'v:val.string'), ''), self.region.visualkey)
-  call setpos('.', self.region.head)
-  execute printf('%snoautocmd normal! "_d%s:call setpos(".", %s)%s""P:', undojoin_cmd, self.region.visualkey, string(self.region.tail), "\<CR>")
-  let self.region.head = getpos("'[")
-  let self.region.tail = getpos("']")
-  call call('setreg', reg)
-  call winrestview(view)
-
-  " move cursor
-  call self.items[idx2].cursor()
-  let self.symbols['#'] = a:order[1]
 endfunction "}}}
 
 
@@ -200,7 +175,7 @@ function! s:Buffer_prototype.update_sharp(curpos) dict abort "{{{
       endif
     endif
   endif
-  let self.symbols['#'] = sharp
+  let self.index['#'] = sharp
   return sharp
 endfunction "}}}
 
@@ -213,14 +188,14 @@ function! s:Buffer_prototype.update_hat() dict abort "{{{
       break
     endif
   endfor
-  let self.symbols['^'] = hat
+  let self.index['^'] = hat
   return hat
 endfunction "}}}
 
 
 function! s:Buffer_prototype.update_dollar() dict abort "{{{
   let dollar = len(self.items)
-  let self.symbols['$'] = dollar
+  let self.index['$'] = dollar
   return dollar
 endfunction "}}}
 
@@ -241,7 +216,7 @@ function! s:Buffer(region, rule, curpos) abort "{{{
   let buffer.all = s:parse_{a:region.type}wise(text, a:rule)
   call s:assort(buffer)
   call map(buffer.all, 's:Item(v:val)')
-  call s:address_{a:region.type}wise(buffer.all, a:region)
+  call buffer.update_items()
   call buffer.update_sharp(a:curpos)
   call buffer.update_hat()
   call buffer.update_dollar()
@@ -448,15 +423,6 @@ function! s:address_blockwise(buffer, region) abort  "{{{
   endfor
   call winrestview(view)
   return a:buffer
-endfunction "}}}
-
-
-function! s:extractall(dict) abort "{{{
-  " remove all keys and values of dictionary
-  " return the copy of original dict
-  let copy_dict = copy(a:dict)
-  call filter(a:dict, 1)
-  return copy_dict
 endfunction "}}}
 
 
