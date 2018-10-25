@@ -541,6 +541,11 @@ function! s:suite.swap_by_func() abort "{{{
   let newbuf = s:swap.swap_by_func(buf, [function('s:revsort')])
   let newstr = s:swap.string(newbuf)
   call g:assert.equals(newstr, 'dd, cc, bb, aa', 'failed at #3')
+
+  " #4
+  let newbuf = s:swap.swap_by_func(buf, ['sort'])
+  let newstr = s:swap.string(newbuf)
+  call g:assert.equals(newstr, 'aa, bb, cc, dd', 'failed at #4')
 endfunction "}}}
 
 " integration test

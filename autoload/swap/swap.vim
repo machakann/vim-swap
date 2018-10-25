@@ -144,7 +144,7 @@ function! s:swap_prototype._swap_once(buffer, input, undojoin) dict abort "{{{
   endif
 
   " substitute and eval symbols
-  let input = map(copy(a:input), 's:eval(v:val, a:buffer)')
+  let input = map(copy(a:input), 's:eval(v:key, v:val, a:buffer)')
   if !s:is_valid_input(input, a:buffer)
     return [a:buffer, a:undojoin]
   endif
@@ -399,9 +399,14 @@ function! s:substitute_symbol(str, symbol, symbol_idx) abort "{{{
 endfunction "}}}
 
 
-function! s:eval(v, buffer) abort "{{{
+let s:sortfunc = function('sort')
+
+function! s:eval(i, v, buffer) abort "{{{
   if type(a:v) isnot# s:TYPESTR
     return a:v
+  endif
+  if a:i == 0 && a:v is# 'sort'
+    return s:sortfunc
   endif
 
   let str = a:v
