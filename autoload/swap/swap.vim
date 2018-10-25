@@ -144,11 +144,8 @@ function! s:swap_prototype._swap_once(buffer, input, undojoin) dict abort "{{{
 
   " substitute and eval symbols
   let input = map(copy(a:input), 's:eval(v:val, a:buffer)')
-
   let n = len(a:buffer.items)
-  if type(input[0]) != s:TYPENUM || type(input[1]) != s:TYPENUM
-        \ || input[0] < 1 || input[0] > n || input[1] < 1 || input[1] > n
-    " the index is out of range
+  if !s:is_valid_input(input[0], n) || !s:is_valid_input(input[1], n)
     return [a:buffer, a:undojoin]
   endif
 
@@ -415,6 +412,17 @@ function! s:eval(v, buffer) abort "{{{
   endfor
   sandbox let v = eval(str)
   return v
+endfunction "}}}
+
+
+function! s:is_valid_input(input, number_of_items) abort "{{{
+  if type(a:input) isnot# s:TYPENUM
+    return s:FALSE
+  endif
+  if a:input < 1 || a:input > a:number_of_items
+    return s:FALSE
+  endif
+  return s:TRUE
 endfunction "}}}
 
 
