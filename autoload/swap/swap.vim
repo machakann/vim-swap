@@ -442,7 +442,6 @@ function! s:new_empty_buffer(buffer) abort "{{{
   let newbuffer = deepcopy(a:buffer)
   call filter(newbuffer.all, 0)
   call filter(newbuffer.items, 0)
-  call filter(newbuffer.delimiters, 0)
   return newbuffer
 endfunction "}}}
 
@@ -470,8 +469,6 @@ function! s:swap_by_index(buffer, input) abort "{{{
       let i = remove(itemindexes, 0)
       let item = a:buffer.items[i]
       call add(newbuffer.items, item)
-    elseif item.attr is# 'delimiter'
-      call add(newbuffer.delimiters, item)
     endif
     call add(newbuffer.all, item)
   endfor
@@ -500,8 +497,6 @@ function! s:swap_by_func(buffer, input) abort "{{{
                      \ string(a:input[0]))
       endif
       call add(newbuffer.items, item)
-    elseif item.attr is# 'delimiter'
-      call add(newbuffer.delimiters, item)
     endif
     call add(newbuffer.all, item)
   endfor

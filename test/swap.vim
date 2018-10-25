@@ -523,7 +523,6 @@ function! s:suite.swap_by_func() abort "{{{
   let buf = {}
   let buf.all = s:parser.parse_charwise('dd, aa, bb, cc', rule)
   let buf.items = filter(copy(buf.all), 'v:val.attr is# "item"')
-  let buf.delimiters = filter(copy(buf.all), 'v:val.attr is# "delimiter"')
 
   " #1
   let newbuf = s:swap.swap_by_func(buf, [function('sort')])

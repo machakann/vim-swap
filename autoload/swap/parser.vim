@@ -73,8 +73,10 @@ function! s:Item_prototype.clear_highlight() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:Item(item) abort "{{{
-  return extend(a:item, deepcopy(s:Item_prototype), 'keep')
+function! s:Item(idx, item) abort "{{{
+  let item = extend(a:item, deepcopy(s:Item_prototype), 'keep')
+  let item.idx = a:idx
+  return item
 endfunction "}}}
 
 
@@ -113,7 +115,6 @@ let s:Buffer_prototype = {
       \   'region': deepcopy(s:NULLREGION),
       \   'all': [],
       \   'items': [],
-      \   'delimiters': [],
       \   'index': {'#': 0, '^': 0, '$': 0},
       \ }
 
@@ -153,6 +154,7 @@ endfunction "}}}
 
 function! s:Buffer_prototype.update_items() abort "{{{
   call s:address_{self.region.type}wise(self.all, self.region)
+  call map(self.all, 'extend(v:val, {"idx": v:key})')
 endfunction "}}}
 
 
@@ -212,8 +214,8 @@ function! s:Buffer(region, rule, curpos) abort "{{{
   let buffer = deepcopy(s:Buffer_prototype)
   let buffer.region = a:region
   let buffer.all = s:parse_{a:region.type}wise(text, a:rule)
-  call s:assort(buffer)
-  call map(buffer.all, 's:Item(v:val)')
+  let buffer.items = filter(copy(buffer.all), 'v:val.attr is# "item"')
+  call map(buffer.all, 's:Item(v:key, v:val)')
   call buffer.update_items()
   call buffer.update_sharp(a:curpos)
   call buffer.update_hat()
@@ -490,20 +492,6 @@ endfunction "}}}
 function! s:setregister(register, contains) abort "{{{
   let [value, options] = a:contains
   return setreg(a:register, value, options)
-endfunction "}}}
-
-
-function! s:assort(buffer) abort "{{{
-  for idx in range(len(a:buffer.all))
-    let item = a:buffer.all[idx]
-    let item.idx = idx
-    if item.attr is# 'item'
-      call add(a:buffer.items, item)
-    elseif item.attr is# 'delimiter'
-      call add(a:buffer.delimiters, item)
-    endif
-  endfor
-  return a:buffer
 endfunction "}}}
 
 
