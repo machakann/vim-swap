@@ -7,6 +7,7 @@ let s:TRUE = 1
 let s:FALSE = 0
 let s:TYPESTR = s:const.TYPESTR
 let s:TYPENUM = s:const.TYPENUM
+let s:TYPEFUNC = s:const.TYPEFUNC
 let s:NULLREGION = s:const.NULLREGION
 let s:GUI_RUNNING = has('gui_running')
 
@@ -144,8 +145,7 @@ function! s:swap_prototype._swap_once(buffer, input, undojoin) dict abort "{{{
 
   " substitute and eval symbols
   let input = map(copy(a:input), 's:eval(v:val, a:buffer)')
-  let n = len(a:buffer.items)
-  if !s:is_valid_input(input[0], n) || !s:is_valid_input(input[1], n)
+  if !s:is_valid_input(input, a:buffer)
     return [a:buffer, a:undojoin]
   endif
 
@@ -415,11 +415,23 @@ function! s:eval(v, buffer) abort "{{{
 endfunction "}}}
 
 
-function! s:is_valid_input(input, number_of_items) abort "{{{
-  if type(a:input) isnot# s:TYPENUM
-    return s:FALSE
-  endif
-  if a:input < 1 || a:input > a:number_of_items
+function! s:is_valid_input(input, buffer) abort "{{{
+  let type_input0 = type(a:input[0])
+  if type_input0 is# s:TYPENUM
+    let type_input1 = type(a:input[1])
+    if type_input1 isnot# s:TYPENUM
+      return s:FALSE
+    endif
+    let n = len(a:buffer.items)
+    if a:input[0] < 1 || a:input[0] > n
+      return s:FALSE
+    endif
+    if a:input[1] < 1 || a:input[1] > n
+      return s:FALSE
+    endif
+  elseif type_input0 is# s:TYPEFUNC
+    " No limitation for a:input[1]
+  else
     return s:FALSE
   endif
   return s:TRUE
@@ -436,6 +448,14 @@ endfunction "}}}
 
 
 function! s:swap(buffer, input) abort "{{{
+  if type(a:input[0]) is# s:TYPEFUNC
+    return s:swap_by_func(a:buffer, a:input)
+  endif
+  return s:swap_by_index(a:buffer, a:input)
+endfunction "}}}
+
+
+function! s:swap_by_index(buffer, input) abort "{{{
   let itemindexes = range(len(a:buffer.items))
   let idx1 = a:input[0] - 1
   let idx2 = a:input[1] - 1
@@ -459,8 +479,53 @@ function! s:swap(buffer, input) abort "{{{
 endfunction "}}}
 
 
+let s:INVALID = 0
+
+function! s:swap_by_func(buffer, input) abort "{{{
+  let itemstr_list = map(copy(a:buffer.items), 'v:val.string')
+  sandbox let sorted_list = call(a:input[0], [itemstr_list] + a:input[1:])
+
+  let newbuffer = s:new_empty_buffer(a:buffer)
+  let items = copy(a:buffer.items)
+  if len(sorted_list) != len(items)
+    echoerr printf('vim-swap: The swap function "%s" should not change the number of items.',
+                 \ string(a:input[0]))
+  endif
+  for item in a:buffer.all
+    if item.attr is# 'item'
+      let str = remove(sorted_list, 0)
+      let item = s:pickup(items, str)
+      if item is# s:INVALID
+        echoerr printf('vim-swap: The swap function "%s" returned an invalid list.',
+                     \ string(a:input[0]))
+      endif
+      call add(newbuffer.items, item)
+    elseif item.attr is# 'delimiter'
+      call add(newbuffer.delimiters, item)
+    endif
+    call add(newbuffer.all, item)
+  endfor
+  return newbuffer
+endfunction "}}}
+
+
+function! s:pickup(list, str) abort "{{{
+  for i in range(len(a:list))
+    if a:list[i].string is# a:str
+      return remove(a:list, i)
+    endif
+  endfor
+  return s:INVALID
+endfunction "}}}
+
+
+function! s:string(buffer) abort "{{{
+  return join(map(copy(a:buffer.all), 'v:val.string'), '')
+endfunction "}}}
+
+
 function! s:write(buffer, undojoin) abort "{{{
-  let str = join(map(copy(a:buffer.all), 'v:val.string'), '')
+  let str = s:string(a:buffer)
   let v = s:lib.type2v(a:buffer.region.type)
   let view = winsaveview()
   let undojoin_cmd = a:undojoin ? 'undojoin | ' : ''

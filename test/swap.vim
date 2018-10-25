@@ -3,6 +3,7 @@ let s:suite = themis#suite('swap: ')
 let s:scope = themis#helper('scope')
 let s:parser = s:scope.funcs('autoload/swap/parser.vim')
 let s:lib = s:scope.funcs('autoload/swap/lib.vim')
+let s:swap = s:scope.funcs('autoload/swap/swap.vim')
 
 function! s:suite.before_each() abort "{{{
   %delete
@@ -516,6 +517,31 @@ function! s:suite.parse_charwise() dict abort  "{{{
   call g:assert.equals(stuffs[3]['string'], '',           'failed at #18-9')
   call g:assert.equals(stuffs[4]['attr'],   'item',       'failed at #18-10')
   call g:assert.equals(stuffs[4]['string'], 'Baz',        'failed at #18-11')
+endfunction "}}}
+function! s:suite.swap_by_func() abort "{{{
+  let rule = {'delimiter': [',\s*']}
+  let buf = {}
+  let buf.all = s:parser.parse_charwise('dd, aa, bb, cc', rule)
+  let buf.items = filter(copy(buf.all), 'v:val.attr is# "item"')
+  let buf.delimiters = filter(copy(buf.all), 'v:val.attr is# "delimiter"')
+
+  " #1
+  let newbuf = s:swap.swap_by_func(buf, [function('sort')])
+  let newstr = s:swap.string(newbuf)
+  call g:assert.equals(newstr, 'aa, bb, cc, dd', 'failed at #1')
+
+  " #2
+  let newbuf = s:swap.swap_by_func(buf, [function('sort'), 0])
+  let newstr = s:swap.string(newbuf)
+  call g:assert.equals(newstr, 'aa, bb, cc, dd', 'failed at #2')
+
+  " #3
+  function! s:revsort(list) abort
+    return reverse(sort(a:list))
+  endfunction
+  let newbuf = s:swap.swap_by_func(buf, [function('s:revsort')])
+  let newstr = s:swap.string(newbuf)
+  call g:assert.equals(newstr, 'dd, cc, bb, aa', 'failed at #3')
 endfunction "}}}
 
 " integration test
