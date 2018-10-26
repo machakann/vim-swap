@@ -110,7 +110,7 @@ let s:swapmode_prototype = {
 
 
 " This function asks user to input keys to determine an operation
-function! s:swapmode_prototype.query(buffer) dict abort "{{{
+function! s:swapmode_prototype.get_input(buffer) dict abort "{{{
   if empty(a:buffer)
     return []
   endif
