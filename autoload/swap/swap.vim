@@ -105,7 +105,6 @@ function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
     return []
   endif
 
-  let input_list = []
   let buffer = a:buffer
   let undojoin = s:FALSE
   let swapmode = swap#swapmode#new()
@@ -113,9 +112,8 @@ function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
     let input = swapmode.get_input(buffer)
     if input == [] | break | endif
     let [buffer, undojoin] = self._swap_once(buffer, input, undojoin)
-    call add(input_list, input)
   endwhile
-  return input_list
+  return map(copy(swapmode.history), 'v:val.input')
 endfunction "}}}
 
 
