@@ -138,6 +138,7 @@ function! s:interface_prototype.query(buffer) dict abort "{{{
       let funclist = s:query(key_map)
       let [phase, op] = self.call(funclist, phase, op)
     endwhile
+  catch /^Vim:Interrupt$/
   finally
     call self.clear_highlight()
     " clear messages

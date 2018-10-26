@@ -109,17 +109,12 @@ function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
   let buffer = a:buffer
   let undojoin = s:FALSE
   let interface = swap#interface#new()
-  try
-    while s:TRUE
-      let input = interface.query(buffer)
-      if input == [] | break | endif
-      let [buffer, undojoin] = self._swap_once(buffer, input, undojoin)
-      call add(input_list, input)
-    endwhile
-  catch /^Vim:Interrupt$/
-  finally
-    call buffer.clear_highlight()
-  endtry
+  while s:TRUE
+    let input = interface.query(buffer)
+    if input == [] | break | endif
+    let [buffer, undojoin] = self._swap_once(buffer, input, undojoin)
+    call add(input_list, input)
+  endwhile
   return input_list
 endfunction "}}}
 
