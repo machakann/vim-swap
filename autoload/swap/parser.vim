@@ -1,8 +1,9 @@
 " parser - parse a buffer text into swappable items
 
 let s:const = swap#constant#import()
-let s:NULLREGION = s:const.NULLREGION
 let s:lib = swap#lib#import()
+
+let s:NULLREGION = s:const.NULLREGION
 
 
 function! swap#parser#parse(region, rule, curpos) abort "{{{

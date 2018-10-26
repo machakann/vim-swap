@@ -131,8 +131,8 @@ function! s:swapmode_prototype.get_input(buffer) dict abort "{{{
   redraw
   try
     while phase < s:DONE
-      let funclist = s:query(key_map)
-      let [phase, op] = self.call(funclist, phase, op)
+      let key = s:prompt(key_map)
+      let [phase, op] = self.execute(key, phase, op)
     endwhile
   catch /^Vim:Interrupt$/
   finally
@@ -240,7 +240,7 @@ function! s:swapmode_prototype.revise_cursor_pos() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:swapmode_prototype.call(funclist, phase, op) abort "{{{
+function! s:swapmode_prototype.execute(funclist, phase, op) abort "{{{
   let phase = a:phase
   let op = a:op
   for name in a:funclist
@@ -406,7 +406,7 @@ function! s:swapmode_prototype.pos.is_valid(pos) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:query(key_map) abort "{{{
+function! s:prompt(key_map) abort "{{{
   let key_map = insert(copy(a:key_map), {'input': "\<Esc>", 'output': ['Esc']})   " for safety
   let clock = swap#clock#new()
   let timeoutlen = g:swap#timeoutlen
