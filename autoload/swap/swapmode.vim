@@ -1,4 +1,4 @@
-" interface object - Interactive order determination, "swap mode".
+" swapmode object - Interactive order determination.
 
 let s:const = swap#constant#import()
 let s:lib = swap#lib#import()
@@ -23,8 +23,7 @@ endif
 
 
 function! swap#swapmode#new() abort  "{{{
-  let s:interface = deepcopy(s:interface_prototype)
-  return s:interface
+  return deepcopy(s:swapmode_prototype)
 endfunction "}}}
 
 
@@ -111,7 +110,7 @@ let s:swapmode_prototype = {
 
 
 " This function asks user to input keys to determine an operation
-function! s:interface_prototype.query(buffer) dict abort "{{{
+function! s:swapmode_prototype.query(buffer) dict abort "{{{
   if empty(a:buffer)
     return []
   endif
@@ -153,7 +152,7 @@ function! s:interface_prototype.query(buffer) dict abort "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.echo(phase, op) dict abort "{{{
+function! s:swapmode_prototype.echo(phase, op) dict abort "{{{
   if a:phase >= s:DONE
     return
   endif
@@ -217,7 +216,7 @@ function! s:interface_prototype.echo(phase, op) dict abort "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.revise_cursor_pos() dict abort  "{{{
+function! s:swapmode_prototype.revise_cursor_pos() dict abort  "{{{
   let curpos = getpos('.')
   let item = self.get_current_item()
   if !empty(item) &&
@@ -241,7 +240,7 @@ function! s:interface_prototype.revise_cursor_pos() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.call(funclist, phase, op) abort "{{{
+function! s:swapmode_prototype.call(funclist, phase, op) abort "{{{
   let phase = a:phase
   let op = a:op
   for name in a:funclist
@@ -257,13 +256,13 @@ function! s:interface_prototype.call(funclist, phase, op) abort "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.add_history(op) dict abort  "{{{
+function! s:swapmode_prototype.add_history(op) dict abort  "{{{
   call self.truncate_history()
   call add(self.history, a:op)
 endfunction "}}}
 
 
-function! s:interface_prototype.truncate_history() dict abort  "{{{
+function! s:swapmode_prototype.truncate_history() dict abort  "{{{
   if self.undolevel == 0
     return self.history
   endif
@@ -274,7 +273,7 @@ function! s:interface_prototype.truncate_history() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.set_current(pos) dict abort "{{{
+function! s:swapmode_prototype.set_current(pos) dict abort "{{{
   let item = self.get_item(a:pos)
   if empty(item)
     return
@@ -292,7 +291,7 @@ function! s:interface_prototype.set_current(pos) dict abort "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.get_pos(pos) abort "{{{
+function! s:swapmode_prototype.get_pos(pos) abort "{{{
   if type(a:pos) is# s:TYPENUM && self.pos.is_valid(a:pos)
     return a:pos
   elseif type(a:pos) is# s:TYPESTR && has_key(self.buffer.mark, a:pos)
@@ -302,7 +301,7 @@ function! s:interface_prototype.get_pos(pos) abort "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.get_item(pos) abort "{{{
+function! s:swapmode_prototype.get_item(pos) abort "{{{
   let pos = self.get_pos(a:pos)
   if pos == 0
     return {}
@@ -311,22 +310,22 @@ function! s:interface_prototype.get_item(pos) abort "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.get_current_item() abort "{{{
+function! s:swapmode_prototype.get_current_item() abort "{{{
   return self.get_item(self.pos.current)
 endfunction "}}}
 
 
-function! s:interface_prototype.get_first_item() abort "{{{
+function! s:swapmode_prototype.get_first_item() abort "{{{
   return self.get_item(1)
 endfunction "}}}
 
 
-function! s:interface_prototype.get_last_item() abort "{{{
+function! s:swapmode_prototype.get_last_item() abort "{{{
   return self.get_item(self.pos.end)
 endfunction "}}}
 
 
-function! s:interface_prototype.get_nonblank_pos(pos) abort "{{{
+function! s:swapmode_prototype.get_nonblank_pos(pos) abort "{{{
   let item = self.get_item(a:pos)
   if empty(item)
     return self.pos.end
@@ -338,7 +337,7 @@ function! s:interface_prototype.get_nonblank_pos(pos) abort "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.highlight() dict abort "{{{
+function! s:swapmode_prototype.highlight() dict abort "{{{
   if !g:swap#highlight
     return
   endif
@@ -355,7 +354,7 @@ function! s:interface_prototype.highlight() dict abort "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.clear_highlight() dict abort  "{{{
+function! s:swapmode_prototype.clear_highlight() dict abort  "{{{
   " NOTE: This function itself does not redraw.
   if !g:swap#highlight
     return
@@ -369,7 +368,7 @@ function! s:interface_prototype.clear_highlight() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.update_highlight() dict abort  "{{{
+function! s:swapmode_prototype.update_highlight() dict abort  "{{{
   if !g:swap#highlight
     return
   endif
@@ -396,12 +395,12 @@ endfunction "}}}
 
 let s:NOTHING = 0
 
-function! s:interface_prototype.select(pos) abort "{{{
+function! s:swapmode_prototype.select(pos) abort "{{{
   let self.pos.selected = str2nr(a:pos)
 endfunction "}}}
 
 
-function! s:interface_prototype.pos.is_valid(pos) dict abort  "{{{
+function! s:swapmode_prototype.pos.is_valid(pos) dict abort  "{{{
   let pos = str2nr(a:pos)
   return pos >= 1 && pos <= self.end
 endfunction "}}}
@@ -522,7 +521,7 @@ endfunction "}}}
 "    move_next : Move to the next item.
 "    swap_prev : Swap the current item with the previous item.
 "    swap_next : Swap the current item with the next item.
-function! s:interface_prototype.swapmode_nr(nr, phase, op) dict abort  "{{{
+function! s:swapmode_prototype.swapmode_nr(nr, phase, op) dict abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:op]
   endif
@@ -531,39 +530,39 @@ function! s:interface_prototype.swapmode_nr(nr, phase, op) dict abort  "{{{
   call self.echo(a:phase, op)
   return [a:phase, op]
 endfunction "}}}
-function! s:interface_prototype.swapmode_0(phase, op) abort "{{{
+function! s:swapmode_prototype.swapmode_0(phase, op) abort "{{{
   return self.swapmode_nr(0, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_1(phase, op) abort "{{{
+function! s:swapmode_prototype.swapmode_1(phase, op) abort "{{{
   return self.swapmode_nr(1, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_2(phase, op) abort "{{{
+function! s:swapmode_prototype.swapmode_2(phase, op) abort "{{{
   return self.swapmode_nr(2, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_3(phase, op) abort "{{{
+function! s:swapmode_prototype.swapmode_3(phase, op) abort "{{{
   return self.swapmode_nr(3, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_4(phase, op) abort "{{{
+function! s:swapmode_prototype.swapmode_4(phase, op) abort "{{{
   return self.swapmode_nr(4, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_5(phase, op) abort "{{{
+function! s:swapmode_prototype.swapmode_5(phase, op) abort "{{{
   return self.swapmode_nr(5, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_6(phase, op) abort "{{{
+function! s:swapmode_prototype.swapmode_6(phase, op) abort "{{{
   return self.swapmode_nr(6, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_7(phase, op) abort "{{{
+function! s:swapmode_prototype.swapmode_7(phase, op) abort "{{{
   return self.swapmode_nr(7, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_8(phase, op) abort "{{{
+function! s:swapmode_prototype.swapmode_8(phase, op) abort "{{{
   return self.swapmode_nr(8, a:phase, a:op)
 endfunction "}}}
-function! s:interface_prototype.swapmode_9(phase, op) abort "{{{
+function! s:swapmode_prototype.swapmode_9(phase, op) abort "{{{
   return self.swapmode_nr(9, a:phase, a:op)
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_CR(phase, op) dict abort  "{{{
+function! s:swapmode_prototype.swapmode_CR(phase, op) dict abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:op]
   endif
@@ -576,7 +575,7 @@ function! s:interface_prototype.swapmode_CR(phase, op) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_BS(phase, op) dict abort  "{{{
+function! s:swapmode_prototype.swapmode_BS(phase, op) dict abort  "{{{
   let phase = a:phase
   let op = a:op
   if phase is# s:FIRST
@@ -599,7 +598,7 @@ function! s:interface_prototype.swapmode_BS(phase, op) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_undo(phase, op) dict abort "{{{
+function! s:swapmode_prototype.swapmode_undo(phase, op) dict abort "{{{
   if a:phase >= s:DONE
     return [a:phase, a:op]
   endif
@@ -616,7 +615,7 @@ function! s:interface_prototype.swapmode_undo(phase, op) dict abort "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_redo(phase, op) dict abort "{{{
+function! s:swapmode_prototype.swapmode_redo(phase, op) dict abort "{{{
   if a:phase >= s:DONE
     return [a:phase, a:op]
   endif
@@ -633,7 +632,7 @@ function! s:interface_prototype.swapmode_redo(phase, op) dict abort "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_current(phase, op) dict abort "{{{
+function! s:swapmode_prototype.swapmode_current(phase, op) dict abort "{{{
   let phase = a:phase
   let op = s:set(a:op, phase, string(self.pos.current))
   if phase is# s:FIRST
@@ -647,7 +646,7 @@ function! s:interface_prototype.swapmode_current(phase, op) dict abort "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_fix_nr(phase, op) dict abort "{{{
+function! s:swapmode_prototype.swapmode_fix_nr(phase, op) dict abort "{{{
   if a:op.kind isnot# 'swap'
     return [a:phase, a:op]
   endif
@@ -674,7 +673,7 @@ function! s:interface_prototype.swapmode_fix_nr(phase, op) dict abort "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_move_prev(phase, op) dict abort  "{{{
+function! s:swapmode_prototype.swapmode_move_prev(phase, op) dict abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:op]
   endif
@@ -691,7 +690,7 @@ function! s:interface_prototype.swapmode_move_prev(phase, op) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_move_next(phase, op) dict abort  "{{{
+function! s:swapmode_prototype.swapmode_move_next(phase, op) dict abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:op]
   endif
@@ -708,7 +707,7 @@ function! s:interface_prototype.swapmode_move_next(phase, op) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_swap_prev(phase, op) dict abort  "{{{
+function! s:swapmode_prototype.swapmode_swap_prev(phase, op) dict abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:op]
   endif
@@ -724,7 +723,7 @@ function! s:interface_prototype.swapmode_swap_prev(phase, op) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_swap_next(phase, op) dict abort  "{{{
+function! s:swapmode_prototype.swapmode_swap_next(phase, op) dict abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:op]
   endif
@@ -740,7 +739,7 @@ function! s:interface_prototype.swapmode_swap_next(phase, op) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.swapmode_Esc(phase, op) dict abort  "{{{
+function! s:swapmode_prototype.swapmode_Esc(phase, op) dict abort  "{{{
   call self.echo(a:phase, a:op)
   let phase = s:CANCELLED
   return [phase, a:op]
