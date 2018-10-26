@@ -108,9 +108,9 @@ function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
   let input_list = []
   let buffer = a:buffer
   let undojoin = s:FALSE
-  let interface = swap#interface#new()
+  let swapmode = swap#swapmode#new()
   while s:TRUE
-    let input = interface.query(buffer)
+    let input = swapmode.query(buffer)
     if input == [] | break | endif
     let [buffer, undojoin] = self._swap_once(buffer, input, undojoin)
     call add(input_list, input)

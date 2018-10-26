@@ -22,7 +22,7 @@ else
 endif
 
 
-function! swap#interface#new() abort  "{{{
+function! swap#swapmode#new() abort  "{{{
   let s:interface = deepcopy(s:interface_prototype)
   return s:interface
 endfunction "}}}
@@ -52,7 +52,7 @@ function! s:set(op, phase, input) abort "{{{
   elseif a:phase is# s:SECOND
     let input[1] = a:input
   else
-    echoerr 'vim-swap: Invalid argument for s:set() in autoload/swap/interface.vim'
+    echoerr 'vim-swap: Invalid argument for s:set() in autoload/swap/swapmode.vim'
   endif
   return s:operation('swap', input)
 endfunction "}}}
@@ -65,7 +65,7 @@ function! s:append(op, phase, input) abort "{{{
   elseif a:phase is# s:SECOND
     let input[1] .= a:input
   else
-    echoerr 'vim-swap: Invalid argument for s:append() in autoload/swap/interface.vim'
+    echoerr 'vim-swap: Invalid argument for s:append() in autoload/swap/swapmode.vim'
   endif
   return s:operation('swap', input)
 endfunction "}}}
@@ -78,7 +78,7 @@ function! s:truncate(op, phase) abort "{{{
   elseif a:phase is# s:SECOND
     let input[1] = input[1][0:-2]
   else
-    echoerr 'vim-swap: Invalid argument for s:truncate() in autoload/swap/interface.vim'
+    echoerr 'vim-swap: Invalid argument for s:truncate() in autoload/swap/swapmode.vim'
   endif
   return s:operation('swap', input)
 endfunction "}}}
@@ -90,14 +90,14 @@ function! s:get(op, phase) abort "{{{
   elseif a:phase is# s:SECOND
     return a:op.input[1]
   endif
-  echoerr 'vim-swap: Invalid argument for s:get() in autoload/swap/interface.vim'
+  echoerr 'vim-swap: Invalid argument for s:get() in autoload/swap/swapmode.vim'
 endfunction "}}}
 
 
 
-" interface object - for interactive determination of swap actions
-" swap#interface#new() returns a instance of this object
-let s:interface_prototype = {
+" swapmode object - for interactive determination of swap actions
+" swap#swapmode#new() returns a instance of this object
+let s:swapmode_prototype = {
       \   'pos': {
       \     'current': 0,
       \     'end': 0,
