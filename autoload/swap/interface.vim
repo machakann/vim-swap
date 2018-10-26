@@ -37,60 +37,60 @@ let s:operation_prototype = {
   \ }
 
 
-function! s:operation_prototype.set_input(phase, input) abort "{{{
-  let input = copy(self.input)
-  if a:phase is# s:FIRST
-    let input[0] = a:input
-  elseif a:phase is# s:SECOND
-    let input[1] = a:input
-  else
-    echoerr 'vim-swap: Invalid argument for operation.set_input()'
-  endif
-  return s:operation('swap', input)
-endfunction "}}}
-
-
-function! s:operation_prototype.append_input(phase, input) abort "{{{
-  let input = copy(self.input)
-  if a:phase is# s:FIRST
-    let input[0] .= a:input
-  elseif a:phase is# s:SECOND
-    let input[1] .= a:input
-  else
-    echoerr 'vim-swap: Invalid argument for operation.append_input()'
-  endif
-  return s:operation('swap', input)
-endfunction "}}}
-
-
-function! s:operation_prototype.truncate_input(phase) abort "{{{
-  let input = copy(self.input)
-  if a:phase is# s:FIRST
-    let input[0] = input[0][0:-2]
-  elseif a:phase is# s:SECOND
-    let input[1] = input[1][0:-2]
-  else
-    echoerr 'vim-swap: Invalid argument for operation.truncate_input()'
-  endif
-  return s:operation('swap', input)
-endfunction "}}}
-
-
-function! s:operation_prototype.get_input(phase) abort "{{{
-  if a:phase is# s:FIRST
-    return self.input[0]
-  elseif a:phase is# s:SECOND
-    return self.input[1]
-  endif
-  echoerr 'vim-swap: Invalid argument for operation.get_input()'
-endfunction "}}}
-
-
 function! s:operation(kind, input) abort "{{{
   let op = deepcopy(s:operation_prototype)
   let op.kind = a:kind
   let op.input = a:input
   return op
+endfunction "}}}
+
+
+function! s:set(op, phase, input) abort "{{{
+  let input = copy(a:op.input)
+  if a:phase is# s:FIRST
+    let input[0] = a:input
+  elseif a:phase is# s:SECOND
+    let input[1] = a:input
+  else
+    echoerr 'vim-swap: Invalid argument for s:set() in autoload/swap/interface.vim'
+  endif
+  return s:operation('swap', input)
+endfunction "}}}
+
+
+function! s:append(op, phase, input) abort "{{{
+  let input = copy(a:op.input)
+  if a:phase is# s:FIRST
+    let input[0] .= a:input
+  elseif a:phase is# s:SECOND
+    let input[1] .= a:input
+  else
+    echoerr 'vim-swap: Invalid argument for s:append() in autoload/swap/interface.vim'
+  endif
+  return s:operation('swap', input)
+endfunction "}}}
+
+
+function! s:truncate(op, phase) abort "{{{
+  let input = copy(a:op.input)
+  if a:phase is# s:FIRST
+    let input[0] = input[0][0:-2]
+  elseif a:phase is# s:SECOND
+    let input[1] = input[1][0:-2]
+  else
+    echoerr 'vim-swap: Invalid argument for s:truncate() in autoload/swap/interface.vim'
+  endif
+  return s:operation('swap', input)
+endfunction "}}}
+
+
+function! s:get(op, phase) abort "{{{
+  if a:phase is# s:FIRST
+    return a:op.input[0]
+  elseif a:phase is# s:SECOND
+    return a:op.input[1]
+  endif
+  echoerr 'vim-swap: Invalid argument for s:get() in autoload/swap/interface.vim'
 endfunction "}}}
 
 
@@ -534,7 +534,7 @@ function! s:interface_prototype.swapmode_nr(nr, phase, op) dict abort  "{{{
     return [a:phase, a:op]
   endif
 
-  let op = a:op.append_input(a:phase, a:nr)
+  let op = s:append(a:op, a:phase, a:nr)
   call self.echo(a:phase, op)
   return [a:phase, op]
 endfunction "}}}
@@ -575,7 +575,7 @@ function! s:interface_prototype.swapmode_CR(phase, op) dict abort  "{{{
     return [a:phase, a:op]
   endif
 
-  let input = a:op.get_input(a:phase)
+  let input = s:get(a:op, a:phase)
   if input is# ''
     return self.swapmode_current(a:phase, a:op)
   endif
@@ -587,15 +587,15 @@ function! s:interface_prototype.swapmode_BS(phase, op) dict abort  "{{{
   let phase = a:phase
   let op = a:op
   if phase is# s:FIRST
-    if a:op.get_input(s:FIRST) isnot# ''
-      let op = a:op.truncate_input(s:FIRST)
+    if s:get(a:op, s:FIRST) isnot# ''
+      let op = s:truncate(a:op, s:FIRST)
       call self.echo(phase, op)
     endif
   elseif phase is# s:SECOND
-    if a:op.get_input(s:SECOND) isnot# ''
-      let op = a:op.truncate_input(s:SECOND)
+    if s:get(a:op, s:SECOND) isnot# ''
+      let op = s:truncate(a:op, s:SECOND)
     else
-      let op = a:op.truncate_input(s:FIRST)
+      let op = s:truncate(a:op, s:FIRST)
       let phase = s:FIRST
       call self.select(s:NOTHING)
       call self.update_highlight()
@@ -642,7 +642,7 @@ endfunction "}}}
 
 function! s:interface_prototype.swapmode_current(phase, op) dict abort "{{{
   let phase = a:phase
-  let op = a:op.set_input(phase, string(self.pos.current))
+  let op = s:set(a:op, phase, string(self.pos.current))
   if phase is# s:FIRST
     let phase = s:SECOND
     call self.select(op.input[0])
@@ -661,7 +661,7 @@ function! s:interface_prototype.swapmode_fix_nr(phase, op) dict abort "{{{
 
   let phase = a:phase
   if phase is# s:FIRST
-    let pos = str2nr(a:op.get_input(s:FIRST))
+    let pos = str2nr(s:get(a:op, s:FIRST))
     if self.pos.is_valid(pos)
       call self.set_current(pos)
       let phase = s:SECOND
@@ -670,7 +670,7 @@ function! s:interface_prototype.swapmode_fix_nr(phase, op) dict abort "{{{
       call self.update_highlight()
     endif
   elseif phase is# s:SECOND
-    let pos = str2nr(a:op.get_input(s:SECOND))
+    let pos = str2nr(s:get(a:op, s:SECOND))
     if self.pos.is_valid(pos)
       let phase = s:DONE
     else
