@@ -119,21 +119,6 @@ let s:Buffer_prototype = {
       \ }
 
 
-function! s:Buffer_prototype.clear_highlight(...) dict abort  "{{{
-  " NOTE: This function itself does not redraw.
-  if !g:swap#highlight
-    return
-  endif
-
-  let section = get(a:000, 0, 'all')
-  for text in self[section]
-    if text.highlightid != []
-      call text.clear_highlight()
-    endif
-  endfor
-endfunction "}}}
-
-
 function! s:Buffer_prototype.swappable() dict abort  "{{{
   " Check whether the region matches with the conditions to treat as the target.
   " NOTE: The conditions are the following three.

@@ -317,7 +317,16 @@ endfunction "}}}
 
 
 function! s:interface_prototype.clear_highlight() dict abort  "{{{
-  call self.buffer.clear_highlight('items')
+  " NOTE: This function itself does not redraw.
+  if !g:swap#highlight
+    return
+  endif
+
+  for item in self.buffer.items
+    if item.highlightid != []
+      call item.clear_highlight()
+    endif
+  endfor
 endfunction "}}}
 
 
