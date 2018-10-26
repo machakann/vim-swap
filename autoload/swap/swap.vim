@@ -450,11 +450,11 @@ function! s:swap(buffer, input) abort "{{{
   if type(a:input[0]) is# s:TYPEFUNC
     return s:swap_by_func(a:buffer, a:input)
   endif
-  return s:swap_by_index(a:buffer, a:input)
+  return s:swap_2_items(a:buffer, a:input)
 endfunction "}}}
 
 
-function! s:swap_by_index(buffer, input) abort "{{{
+function! s:swap_2_items(buffer, input) abort "{{{
   let itemindexes = range(len(a:buffer.items))
   let idx1 = a:input[0] - 1
   let idx2 = a:input[1] - 1
