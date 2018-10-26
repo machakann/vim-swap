@@ -209,17 +209,10 @@ function! s:interface_prototype.echo(phase, op) dict abort "{{{
 
   echohl ModeMsg
   echo 'Swap mode: '
-  echohl NONE
   for mes in message
-    call self.echon(mes[0], mes[1])
+    execute 'echohl ' . mes[1]
+    echon mes[0]
   endfor
-endfunction "}}}
-
-
-function! s:interface_prototype.echon(str, ...) dict abort "{{{
-  let hl = get(a:000, 0, 'NONE')
-  execute 'echohl ' . hl
-  echon a:str
   echohl NONE
 endfunction "}}}
 
