@@ -98,11 +98,11 @@ endfunction "}}}
 " interface object - for interactive determination of swap actions
 " swap#interface#new() returns a instance of this object
 let s:interface_prototype = {
-      \   'idx'  : {
-      \     'current': -1,
-      \     'end': -1,
-      \     'last_current': -1,
-      \     'selected': -1,
+      \   'pos': {
+      \     'current': 0,
+      \     'end': 0,
+      \     'last_current': 0,
+      \     'selected': 0,
       \   },
       \   'buffer': {},
       \   'history': [],
@@ -120,16 +120,13 @@ function! s:interface_prototype.query(buffer) dict abort "{{{
   let op = s:operation('swap', ['', ''])
   let key_map = deepcopy(get(g:, 'swap#keymappings', g:swap#default_keymappings))
   let self.buffer = a:buffer
-  let self.idx.current = -1
-  let self.idx.last_current = -1
-  let self.idx.selected = -1
-  let self.idx.end = len(self.buffer.items) - 1
+  let self.pos.current = 0
+  let self.pos.last_current = 0
+  let self.pos.selected = 0
+  let self.pos.end = len(self.buffer.items)
 
-  let idx = self.buffer.mark['#'] - 1
-  if self.buffer.items[idx].string is# ''
-    let idx = s:move_next_skipping_blank(self.buffer.items, idx)
-  endif
-  call self.set_current(idx)
+  let pos = self.get_nonblank_pos('#')
+  call self.set_current(pos)
   call self.echo(phase, op)
   call self.highlight()
   redraw
@@ -172,7 +169,7 @@ function! s:interface_prototype.echo(phase, op) dict abort "{{{
   endfor
   if a:phase is# s:FIRST
     if a:op.input[0] isnot# ''
-      let higoup = self.idx.is_valid(a:op.input[0])
+      let higoup = self.pos.is_valid(a:op.input[0])
                \ ? g:swap#hl_itemnr : 'ErrorMsg'
       let message += [[a:op.input[0], higoup]]
     else
@@ -184,7 +181,7 @@ function! s:interface_prototype.echo(phase, op) dict abort "{{{
     if a:op.input[1] isnot# ''
       let message += [[a:op.input[0], g:swap#hl_itemnr]]
       let message += [[g:swap#arrow, g:swap#hl_arrow]]
-      let higoup = self.idx.is_valid(a:op.input[1])
+      let higoup = self.pos.is_valid(a:op.input[1])
                \ ? g:swap#hl_itemnr : 'ErrorMsg'
       let message += [[a:op.input[1], higoup]]
     else
@@ -229,24 +226,23 @@ endfunction "}}}
 
 function! s:interface_prototype.revise_cursor_pos() dict abort  "{{{
   let curpos = getpos('.')
-  if self.idx.is_valid(self.idx.current)
-    let item = self.buffer.items[self.idx.current]
-    if s:lib.is_in_between(curpos, item.region.head, item.region.tail) && curpos != item.region.tail
-      " no problem!
-      return
-    endif
+  let item = self.get_current_item()
+  if !empty(item) &&
+      \ s:lib.is_in_between(curpos, item.region.head, item.region.tail) &&
+      \ curpos != item.region.tail
+    " no problem!
+    return
   endif
 
-  let head = self.buffer.items[0].region.head
-  let tail = self.buffer.items[self.idx.end].region.tail
-  let self.idx.last_current = self.idx.current
+  let head = self.get_first_item().region.head
+  let tail = self.get_last_item().region.tail
+  let self.pos.last_current = self.pos.current
   if s:lib.is_ahead(head, curpos)
-    let self.idx.current = -1
+    let self.pos.current = 0
   elseif curpos == tail || s:lib.is_ahead(curpos, tail)
-    let self.idx.current = self.idx.end + 1
+    let self.pos.current = self.pos.end + 1
   else
-    let sharp = self.buffer.update_sharp(curpos)
-    let self.idx.current = sharp - 1
+    let self.pos.current = self.buffer.update_sharp(curpos)
   endif
   call self.update_highlight()
 endfunction "}}}
@@ -285,8 +281,12 @@ function! s:interface_prototype.truncate_history() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:interface_prototype.set_current(idx) dict abort "{{{
-  call self.buffer.items[a:idx].cursor()
+function! s:interface_prototype.set_current(pos) dict abort "{{{
+  let item = self.get_item(a:pos)
+  if empty(item)
+    return
+  endif
+  call item.cursor()
 
   " update side-scrolling
   " FIXME: Any standard way?
@@ -294,8 +294,54 @@ function! s:interface_prototype.set_current(idx) dict abort "{{{
     call winrestview({})
   endif
 
-  let self.idx.last_current = self.idx.current
-  let self.idx.current = a:idx
+  let self.pos.last_current = self.pos.current
+  let self.pos.current = a:pos
+endfunction "}}}
+
+
+function! s:interface_prototype.get_pos(pos) abort "{{{
+  if type(a:pos) is# s:TYPENUM && self.pos.is_valid(a:pos)
+    return a:pos
+  elseif type(a:pos) is# s:TYPESTR && has_key(self.buffer.mark, a:pos)
+    return self.get_pos(self.buffer.mark[a:pos])
+  endif
+  return 0
+endfunction "}}}
+
+
+function! s:interface_prototype.get_item(pos) abort "{{{
+  let pos = self.get_pos(a:pos)
+  if pos == 0
+    return {}
+  endif
+  return self.buffer.items[a:pos - 1]
+endfunction "}}}
+
+
+function! s:interface_prototype.get_current_item() abort "{{{
+  return self.get_item(self.pos.current)
+endfunction "}}}
+
+
+function! s:interface_prototype.get_first_item() abort "{{{
+  return self.get_item(1)
+endfunction "}}}
+
+
+function! s:interface_prototype.get_last_item() abort "{{{
+  return self.get_item(self.pos.end)
+endfunction "}}}
+
+
+function! s:interface_prototype.get_nonblank_pos(pos) abort "{{{
+  let item = self.get_item(a:pos)
+  if empty(item)
+    return self.pos.end
+  endif
+  if item.string isnot# ''
+    return self.get_pos(a:pos)
+  endif
+  return s:next_nonblank(self.buffer.items, self.get_pos(a:pos))
 endfunction "}}}
 
 
@@ -304,14 +350,14 @@ function! s:interface_prototype.highlight() dict abort "{{{
     return
   endif
 
-  let idx = 0
+  let pos = 1
   for item in self.buffer.items
-    if idx == self.idx.current
+    if pos == self.pos.current
       call item.highlight('SwapCurrentItem')
     else
       call item.highlight('SwapItem')
     endif
-    let idx += 1
+    let pos += 1
   endfor
 endfunction "}}}
 
@@ -335,36 +381,36 @@ function! s:interface_prototype.update_highlight() dict abort  "{{{
     return
   endif
 
-  let items = self.buffer.items
-  if self.idx.is_valid(self.idx.last_current)
-    call items[self.idx.last_current].clear_highlight()
-    call items[self.idx.last_current].highlight('SwapItem')
+  let last_current = self.get_item(self.pos.last_current)
+  if !empty(last_current)
+    call last_current.clear_highlight()
+    call last_current.highlight('SwapItem')
   endif
-  if self.idx.is_valid(self.idx.selected)
-    call items[self.idx.selected].clear_highlight()
-    call items[self.idx.selected].highlight('SwapSelectedItem')
+
+  let selected = self.get_item(self.pos.selected)
+  if !empty(selected)
+    call selected.clear_highlight()
+    call selected.highlight('SwapSelectedItem')
   endif
-  if self.idx.is_valid(self.idx.current)
-    call items[self.idx.current].clear_highlight()
-    call items[self.idx.current].highlight('SwapCurrentItem')
+
+  let current = self.get_item(self.pos.current)
+  if !empty(current)
+    call current.clear_highlight()
+    call current.highlight('SwapCurrentItem')
   endif
 endfunction "}}}
 
 
 let s:NOTHING = 0
 
-function! s:interface_prototype.select(idxstr) abort "{{{
-  let self.idx.selected = str2nr(a:idxstr) - 1
+function! s:interface_prototype.select(pos) abort "{{{
+  let self.pos.selected = str2nr(a:pos)
 endfunction "}}}
 
 
-function! s:interface_prototype.idx.is_valid(idx) dict abort  "{{{
-  if type(a:idx) == s:TYPENUM
-    return a:idx >= 0 && a:idx <= self.end
-  elseif type(a:idx) == s:TYPESTR
-    return str2nr(a:idx) >= 0 && str2nr(a:idx) <= self.end
-  endif
-  return 0
+function! s:interface_prototype.pos.is_valid(pos) dict abort  "{{{
+  let pos = str2nr(a:pos)
+  return pos >= 1 && pos <= self.end
 endfunction "}}}
 
 
@@ -440,30 +486,30 @@ function! s:is_input_matched(candidate, input, flag) abort "{{{
 endfunction "}}}
 
 
-function! s:move_prev_skipping_blank(items, current) abort  "{{{
+function! s:prev_nonblank(items, currentpos) abort  "{{{
   " skip empty items
-  let idx = a:current - 1
+  let idx = a:currentpos - 2
   while idx >= 0
     if a:items[idx].string isnot# ''
-      break
+      return idx + 1
     endif
     let idx -= 1
   endwhile
-  return idx < 0 ? a:current : idx
+  return a:currentpos
 endfunction "}}}
 
 
-function! s:move_next_skipping_blank(items, current) abort  "{{{
+function! s:next_nonblank(items, currentpos) abort  "{{{
   " skip empty items
-  let idx = a:current + 1
+  let idx = a:currentpos
   let end = len(a:items) - 1
   while idx <= end
     if a:items[idx].string isnot# ''
-      break
+      return idx + 1
     endif
     let idx += 1
   endwhile
-  return idx > end ? a:current : idx
+  return a:currentpos
 endfunction "}}}
 
 
@@ -596,7 +642,7 @@ endfunction "}}}
 
 function! s:interface_prototype.swapmode_current(phase, op) dict abort "{{{
   let phase = a:phase
-  let op = a:op.set_input(phase, string(self.idx.current) + 1)
+  let op = a:op.set_input(phase, string(self.pos.current))
   if phase is# s:FIRST
     let phase = s:SECOND
     call self.select(op.input[0])
@@ -615,17 +661,17 @@ function! s:interface_prototype.swapmode_fix_nr(phase, op) dict abort "{{{
 
   let phase = a:phase
   if phase is# s:FIRST
-    let idx = str2nr(a:op.get_input(s:FIRST)) - 1
-    if self.idx.is_valid(idx)
-      call self.set_current(idx)
+    let pos = str2nr(a:op.get_input(s:FIRST))
+    if self.pos.is_valid(pos)
+      call self.set_current(pos)
       let phase = s:SECOND
       call self.select(a:op.input[0])
       call self.echo(phase, a:op)
       call self.update_highlight()
     endif
   elseif phase is# s:SECOND
-    let idx = str2nr(a:op.get_input(s:SECOND)) - 1
-    if self.idx.is_valid(idx)
+    let pos = str2nr(a:op.get_input(s:SECOND))
+    if self.pos.is_valid(pos)
       let phase = s:DONE
     else
       call self.echo(phase, a:op)
@@ -640,13 +686,13 @@ function! s:interface_prototype.swapmode_move_prev(phase, op) dict abort  "{{{
     return [a:phase, a:op]
   endif
 
-  if self.idx.current <= 0
+  if self.pos.current <= 0
     return [a:phase, a:op]
   endif
 
-  let idx = s:move_prev_skipping_blank(
-    \ self.buffer.items, min([self.idx.current, self.idx.end+1]))
-  call self.set_current(idx)
+  let pos = s:prev_nonblank(self.buffer.items,
+            \ min([self.pos.current, self.pos.end+1]))
+  call self.set_current(pos)
   call self.update_highlight()
   return [a:phase, a:op]
 endfunction "}}}
@@ -657,13 +703,13 @@ function! s:interface_prototype.swapmode_move_next(phase, op) dict abort  "{{{
     return [a:phase, a:op]
   endif
 
-  if self.idx.current >= self.idx.end
+  if self.pos.current >= self.pos.end
     return [a:phase, a:op]
   endif
 
-  let idx = s:move_next_skipping_blank(
-    \ self.buffer.items, max([-1, self.idx.current]))
-  call self.set_current(idx)
+  let pos = s:next_nonblank(self.buffer.items,
+            \ max([0, self.pos.current]))
+  call self.set_current(pos)
   call self.update_highlight()
   return [a:phase, a:op]
 endfunction "}}}
@@ -674,11 +720,11 @@ function! s:interface_prototype.swapmode_swap_prev(phase, op) dict abort  "{{{
     return [a:phase, a:op]
   endif
 
-  if self.idx.current <= 0 || self.idx.current > self.idx.end
+  if self.pos.current < 2 || self.pos.current > self.pos.end
     return [a:phase, a:op]
   endif
 
-  let input = [self.idx.current+1, self.idx.current]
+  let input = [self.pos.current, self.pos.current - 1]
   let op = s:operation('swap', input)
   let phase = s:DONE
   return [phase, op]
@@ -690,11 +736,11 @@ function! s:interface_prototype.swapmode_swap_next(phase, op) dict abort  "{{{
     return [a:phase, a:op]
   endif
 
-  if self.idx.current < 0 || self.idx.current >= self.idx.end
+  if self.pos.current < 1 || self.pos.current > self.pos.end - 1
     return [a:phase, a:op]
   endif
 
-  let input = [self.idx.current+1, self.idx.current+2]
+  let input = [self.pos.current, self.pos.current + 1]
   let op = s:operation('swap', input)
   let phase = s:DONE
   return [phase, op]
@@ -702,14 +748,6 @@ endfunction "}}}
 
 
 function! s:interface_prototype.swapmode_Esc(phase, op) dict abort  "{{{
-  if a:phase >= s:DONE
-    return [a:phase, a:op]
-  endif
-
-  if self.idx.current < 0 && self.idx.current >= self.idx.end
-    return [a:phase, a:op]
-  endif
-
   call self.echo(a:phase, a:op)
   let phase = s:CANCELLED
   return [phase, a:op]
