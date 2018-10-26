@@ -244,7 +244,7 @@ function! s:swapmode_prototype.call(funclist, phase, op) abort "{{{
   let phase = a:phase
   let op = a:op
   for name in a:funclist
-    let fname = 'swapmode_' . name
+    let fname = 'key_' . name
     let [phase, op] = self[fname](a:phase, op)
     if phase is# s:DONE
       break
@@ -521,7 +521,7 @@ endfunction "}}}
 "    move_next : Move to the next item.
 "    swap_prev : Swap the current item with the previous item.
 "    swap_next : Swap the current item with the next item.
-function! s:swapmode_prototype.swapmode_nr(nr, phase, op) dict abort  "{{{
+function! s:swapmode_prototype.key_nr(nr, phase, op) dict abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:op]
   endif
@@ -530,52 +530,52 @@ function! s:swapmode_prototype.swapmode_nr(nr, phase, op) dict abort  "{{{
   call self.echo(a:phase, op)
   return [a:phase, op]
 endfunction "}}}
-function! s:swapmode_prototype.swapmode_0(phase, op) abort "{{{
-  return self.swapmode_nr(0, a:phase, a:op)
+function! s:swapmode_prototype.key_0(phase, op) abort "{{{
+  return self.key_nr(0, a:phase, a:op)
 endfunction "}}}
-function! s:swapmode_prototype.swapmode_1(phase, op) abort "{{{
-  return self.swapmode_nr(1, a:phase, a:op)
+function! s:swapmode_prototype.key_1(phase, op) abort "{{{
+  return self.key_nr(1, a:phase, a:op)
 endfunction "}}}
-function! s:swapmode_prototype.swapmode_2(phase, op) abort "{{{
-  return self.swapmode_nr(2, a:phase, a:op)
+function! s:swapmode_prototype.key_2(phase, op) abort "{{{
+  return self.key_nr(2, a:phase, a:op)
 endfunction "}}}
-function! s:swapmode_prototype.swapmode_3(phase, op) abort "{{{
-  return self.swapmode_nr(3, a:phase, a:op)
+function! s:swapmode_prototype.key_3(phase, op) abort "{{{
+  return self.key_nr(3, a:phase, a:op)
 endfunction "}}}
-function! s:swapmode_prototype.swapmode_4(phase, op) abort "{{{
-  return self.swapmode_nr(4, a:phase, a:op)
+function! s:swapmode_prototype.key_4(phase, op) abort "{{{
+  return self.key_nr(4, a:phase, a:op)
 endfunction "}}}
-function! s:swapmode_prototype.swapmode_5(phase, op) abort "{{{
-  return self.swapmode_nr(5, a:phase, a:op)
+function! s:swapmode_prototype.key_5(phase, op) abort "{{{
+  return self.key_nr(5, a:phase, a:op)
 endfunction "}}}
-function! s:swapmode_prototype.swapmode_6(phase, op) abort "{{{
-  return self.swapmode_nr(6, a:phase, a:op)
+function! s:swapmode_prototype.key_6(phase, op) abort "{{{
+  return self.key_nr(6, a:phase, a:op)
 endfunction "}}}
-function! s:swapmode_prototype.swapmode_7(phase, op) abort "{{{
-  return self.swapmode_nr(7, a:phase, a:op)
+function! s:swapmode_prototype.key_7(phase, op) abort "{{{
+  return self.key_nr(7, a:phase, a:op)
 endfunction "}}}
-function! s:swapmode_prototype.swapmode_8(phase, op) abort "{{{
-  return self.swapmode_nr(8, a:phase, a:op)
+function! s:swapmode_prototype.key_8(phase, op) abort "{{{
+  return self.key_nr(8, a:phase, a:op)
 endfunction "}}}
-function! s:swapmode_prototype.swapmode_9(phase, op) abort "{{{
-  return self.swapmode_nr(9, a:phase, a:op)
+function! s:swapmode_prototype.key_9(phase, op) abort "{{{
+  return self.key_nr(9, a:phase, a:op)
 endfunction "}}}
 
 
-function! s:swapmode_prototype.swapmode_CR(phase, op) dict abort  "{{{
+function! s:swapmode_prototype.key_CR(phase, op) dict abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:op]
   endif
 
   let input = s:get(a:op, a:phase)
   if input is# ''
-    return self.swapmode_current(a:phase, a:op)
+    return self.key_current(a:phase, a:op)
   endif
   return self.key_fix_nr(a:phase, a:op)
 endfunction "}}}
 
 
-function! s:swapmode_prototype.swapmode_BS(phase, op) dict abort  "{{{
+function! s:swapmode_prototype.key_BS(phase, op) dict abort  "{{{
   let phase = a:phase
   let op = a:op
   if phase is# s:FIRST
@@ -598,7 +598,7 @@ function! s:swapmode_prototype.swapmode_BS(phase, op) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:swapmode_prototype.swapmode_undo(phase, op) dict abort "{{{
+function! s:swapmode_prototype.key_undo(phase, op) dict abort "{{{
   if a:phase >= s:DONE
     return [a:phase, a:op]
   endif
@@ -615,7 +615,7 @@ function! s:swapmode_prototype.swapmode_undo(phase, op) dict abort "{{{
 endfunction "}}}
 
 
-function! s:swapmode_prototype.swapmode_redo(phase, op) dict abort "{{{
+function! s:swapmode_prototype.key_redo(phase, op) dict abort "{{{
   if a:phase >= s:DONE
     return [a:phase, a:op]
   endif
@@ -632,7 +632,7 @@ function! s:swapmode_prototype.swapmode_redo(phase, op) dict abort "{{{
 endfunction "}}}
 
 
-function! s:swapmode_prototype.swapmode_current(phase, op) dict abort "{{{
+function! s:swapmode_prototype.key_current(phase, op) dict abort "{{{
   let phase = a:phase
   let op = s:set(a:op, phase, string(self.pos.current))
   if phase is# s:FIRST
@@ -646,7 +646,7 @@ function! s:swapmode_prototype.swapmode_current(phase, op) dict abort "{{{
 endfunction "}}}
 
 
-function! s:swapmode_prototype.swapmode_fix_nr(phase, op) dict abort "{{{
+function! s:swapmode_prototype.key_fix_nr(phase, op) dict abort "{{{
   if a:op.kind isnot# 'swap'
     return [a:phase, a:op]
   endif
@@ -673,7 +673,7 @@ function! s:swapmode_prototype.swapmode_fix_nr(phase, op) dict abort "{{{
 endfunction "}}}
 
 
-function! s:swapmode_prototype.swapmode_move_prev(phase, op) dict abort  "{{{
+function! s:swapmode_prototype.key_move_prev(phase, op) dict abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:op]
   endif
@@ -690,7 +690,7 @@ function! s:swapmode_prototype.swapmode_move_prev(phase, op) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:swapmode_prototype.swapmode_move_next(phase, op) dict abort  "{{{
+function! s:swapmode_prototype.key_move_next(phase, op) dict abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:op]
   endif
@@ -707,7 +707,7 @@ function! s:swapmode_prototype.swapmode_move_next(phase, op) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:swapmode_prototype.swapmode_swap_prev(phase, op) dict abort  "{{{
+function! s:swapmode_prototype.key_swap_prev(phase, op) dict abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:op]
   endif
@@ -723,7 +723,7 @@ function! s:swapmode_prototype.swapmode_swap_prev(phase, op) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:swapmode_prototype.swapmode_swap_next(phase, op) dict abort  "{{{
+function! s:swapmode_prototype.key_swap_next(phase, op) dict abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:op]
   endif
@@ -739,7 +739,7 @@ function! s:swapmode_prototype.swapmode_swap_next(phase, op) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:swapmode_prototype.swapmode_Esc(phase, op) dict abort  "{{{
+function! s:swapmode_prototype.key_Esc(phase, op) dict abort  "{{{
   call self.echo(a:phase, a:op)
   let phase = s:CANCELLED
   return [phase, a:op]
