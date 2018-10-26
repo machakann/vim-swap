@@ -30,9 +30,9 @@ endfunction "}}}
 
 
 function! s:get_target_i(buffer, count) abort "{{{
-  let cursoritemidx = a:buffer.index['#'] - 1
+  let cursoritemidx = a:buffer.mark['#'] - 1
   let cursoritem = a:buffer.items[cursoritemidx]
-  let lastitemidx = a:buffer.index['$'] - 1
+  let lastitemidx = a:buffer.mark['$'] - 1
   let enditemidx = min([cursoritemidx + a:count - 1, lastitemidx])
   let enditem = a:buffer.items[enditemidx]
   return [cursoritem, enditem]

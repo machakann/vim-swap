@@ -115,7 +115,7 @@ let s:Buffer_prototype = {
       \   'region': deepcopy(s:NULLREGION),
       \   'all': [],
       \   'items': [],
-      \   'index': {'#': 0, '^': 0, '$': 0},
+      \   'mark': {'#': 0, '^': 0, '$': 0},
       \ }
 
 
@@ -160,7 +160,7 @@ function! s:Buffer_prototype.update_sharp(curpos) dict abort "{{{
       endif
     endif
   endif
-  let self.index['#'] = sharp
+  let self.mark['#'] = sharp
   return sharp
 endfunction "}}}
 
@@ -173,14 +173,14 @@ function! s:Buffer_prototype.update_hat() dict abort "{{{
       break
     endif
   endfor
-  let self.index['^'] = hat
+  let self.mark['^'] = hat
   return hat
 endfunction "}}}
 
 
 function! s:Buffer_prototype.update_dollar() dict abort "{{{
   let dollar = len(self.items)
-  let self.index['$'] = dollar
+  let self.mark['$'] = dollar
   return dollar
 endfunction "}}}
 

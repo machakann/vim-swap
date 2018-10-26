@@ -405,7 +405,7 @@ function! s:eval(i, v, buffer) abort "{{{
   endif
 
   let str = a:v
-  for [symbol, symbolidx] in items(a:buffer.index)
+  for [symbol, symbolidx] in items(a:buffer.mark)
     if stridx(str, symbol) > -1
       let str = s:substitute_symbol(str, symbol, symbolidx)
     endif

@@ -125,7 +125,7 @@ function! s:interface_prototype.query(buffer) dict abort "{{{
   let self.idx.selected = -1
   let self.idx.end = len(self.buffer.items) - 1
 
-  let idx = self.buffer.index['#'] - 1
+  let idx = self.buffer.mark['#'] - 1
   if self.buffer.items[idx].string is# ''
     let idx = s:move_next_skipping_blank(self.buffer.items, idx)
   endif
