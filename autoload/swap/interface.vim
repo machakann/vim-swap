@@ -116,6 +116,9 @@ function! s:interface_prototype.query(buffer) dict abort "{{{
     return []
   endif
 
+  let phase = 0
+  let op = s:operation('swap', ['', ''])
+  let key_map = deepcopy(get(g:, 'swap#keymappings', g:swap#default_keymappings))
   let self.buffer = a:buffer
   let self.idx.current = -1
   let self.idx.last_current = -1
@@ -126,10 +129,6 @@ function! s:interface_prototype.query(buffer) dict abort "{{{
   if self.buffer.items[idx].string is# ''
     let idx = s:move_next_skipping_blank(self.buffer.items, idx)
   endif
-
-  let phase = 0
-  let op = s:operation('swap', ['', ''])
-  let key_map = deepcopy(get(g:, 'swap#keymappings', g:swap#default_keymappings))
   call self.set_current(idx)
   call self.echo(phase, op)
   call self.highlight()
