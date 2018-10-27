@@ -188,6 +188,7 @@ function! s:Swap._sort_items(buffer, input, undojoin) abort "{{{
   if a:input[0] isnot# 'sort'
     echoerr 'vim-swap: Invalid arguments for swap._sort_items()'
   endif
+  let curpos = getpos('.')
 
   " sort items and reflect on the buffer
   let args = a:input[1:]
@@ -198,8 +199,8 @@ function! s:Swap._sort_items(buffer, input, undojoin) abort "{{{
   let newbuffer.region.head = getpos("'[")
   let newbuffer.region.tail = getpos("']")
   call newbuffer.update_items()
-  call newbuffer.get_item(1).cursor()
-  call newbuffer.update_sharp(getpos('.'))
+  let pos = newbuffer.update_sharp(curpos)
+  call newbuffer.get_item(pos).cursor()
   call newbuffer.update_hat()
   return [newbuffer, s:TRUE]
 endfunction "}}}
