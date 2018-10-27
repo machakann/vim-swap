@@ -133,10 +133,6 @@ endfunction "}}}
 
 
 function! s:swap_prototype._swap_once(buffer, input, undojoin) dict abort "{{{
-  if a:input == []
-    return [a:buffer, a:undojoin]
-  endif
-
   " substitute and eval symbols
   let input = map(copy(a:input), 's:eval(v:key, v:val, a:buffer)')
   if !s:is_valid_input(input, a:buffer)
