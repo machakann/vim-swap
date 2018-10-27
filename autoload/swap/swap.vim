@@ -120,7 +120,7 @@ function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
       let [buffer, undojoin] = self._swap_once(buffer, input, undojoin)
     endif
   endwhile
-  return map(copy(swapmode.history), 'v:val.input')
+  return swapmode.export_history()
 endfunction "}}}
 
 

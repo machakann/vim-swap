@@ -230,7 +230,7 @@ endfunction "}}}
 "   buffer: the buffer before changed by the input
 "   cursor: the positional number of cursor when the buffer is restored
 function! s:swapmode_prototype.add_history(input) dict abort  "{{{
-  call self.truncate_history()
+  call self._truncate_history()
   let histitem = {
     \ 'input': copy(a:input),
     \ 'buffer': deepcopy(self.buffer),
@@ -240,7 +240,7 @@ function! s:swapmode_prototype.add_history(input) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:swapmode_prototype.truncate_history() dict abort  "{{{
+function! s:swapmode_prototype._truncate_history() dict abort  "{{{
   if self.undolevel == 0
     return self.history
   endif
@@ -248,6 +248,11 @@ function! s:swapmode_prototype.truncate_history() dict abort  "{{{
   call remove(self.history, endidx, -1)
   let self.undolevel = 0
   return self.history
+endfunction "}}}
+
+
+function! s:swapmode_prototype.export_history() abort "{{{
+  return map(copy(self.history), 'v:val.input')
 endfunction "}}}
 
 
