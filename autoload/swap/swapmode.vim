@@ -274,19 +274,8 @@ function! s:Swapmode.set_current(pos) dict abort "{{{
 endfunction "}}}
 
 
-" Sanitize and materialize a position
-function! s:Swapmode.get_pos(pos) abort "{{{
-  let pos = a:pos
-  if type(pos) is# s:TYPESTR && pos =~# '\m\d\+'
-    let pos = str2nr(pos)
-  endif
-  return self.buffer.get_pos(pos)
-endfunction "}}}
-
-
 function! s:Swapmode.get_item(pos) abort "{{{
-  let pos = self.get_pos(a:pos)
-  return self.buffer.get_item(pos)
+  return self.buffer.get_item(a:pos)
 endfunction "}}}
 
 
@@ -311,9 +300,9 @@ function! s:Swapmode.get_nonblank_pos(pos) abort "{{{
     return self.pos.end
   endif
   if item.string isnot# ''
-    return self.get_pos(a:pos)
+    return self.buffer.get_pos(a:pos)
   endif
-  return s:next_nonblank(self.buffer.items, self.get_pos(a:pos))
+  return s:next_nonblank(self.buffer.items, self.buffer.get_pos(a:pos))
 endfunction "}}}
 
 

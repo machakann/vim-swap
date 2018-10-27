@@ -205,12 +205,37 @@ function! s:Buffer.is_valid(pos) abort "{{{
 endfunction "}}}
 
 
+" Evaluate 'pos' expression string
+function! s:Buffer.eval(pos) abort "{{{
+  let str = a:pos
+  for [symbol, symbolpos] in items(self.mark)
+    if stridx(str, symbol) > -1
+      let str = s:substitute_symbol(str, symbol, symbolpos)
+    endif
+  endfor
+  sandbox let pos = eval(str)
+  return pos
+endfunction "}}}
+
+
 " Sanitize and materialize a position
 function! s:Buffer.get_pos(pos) abort "{{{
   if type(a:pos) is# s:TYPENUM
+    " 1, 2, 3, ...
     return self.is_valid(a:pos) ? a:pos : 0
   elseif type(a:pos) is# s:TYPESTR
-    return get(self.mark, a:pos, 0)
+    if a:pos =~# '\m^\d\+$'
+      " '1', '2', '3', ...
+      return self.get_pos(str2nr(a:pos))
+    else
+      if has_key(self.mark, a:pos)
+        " '^', '#', '$', ...
+        return self.mark[a:pos]
+      else
+        " '^+1', '#-1', '#+1', '$-1', ...
+        return self.eval(a:pos)
+      endif
+    endif
   endif
   return 0
 endfunction "}}}
@@ -286,6 +311,12 @@ function! s:address_blockwise(buffer, region) abort  "{{{
   endfor
   call winrestview(view)
   return a:buffer
+endfunction "}}}
+
+
+function! s:substitute_symbol(str, symbol, symbol_idx) abort "{{{
+  let symbol = s:lib.escape(a:symbol)
+  return substitute(a:str, symbol, a:symbol_idx, '')
 endfunction "}}}
 "}}}
 

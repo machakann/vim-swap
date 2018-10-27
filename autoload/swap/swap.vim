@@ -144,7 +144,7 @@ endfunction "}}}
 
 function! s:Swap._swap_once(buffer, input, undojoin) dict abort "{{{
   " substitute and eval symbols
-  let input = map(copy(a:input), 's:eval(v:key, v:val, a:buffer)')
+  let input = map(copy(a:input), 'a:buffer.get_pos(v:val)')
   if !s:is_valid_input(input, a:buffer)
     return [a:buffer, a:undojoin]
   endif
@@ -157,7 +157,7 @@ function! s:Swap._swap_once(buffer, input, undojoin) dict abort "{{{
   let newbuffer.region.head = getpos("'[")
   let newbuffer.region.tail = getpos("']")
   call newbuffer.update_items()
-  call newbuffer.get_item(a:input[1]).cursor()
+  call newbuffer.get_item(input[1]).cursor()
   call newbuffer.update_sharp(getpos('.'))
   call newbuffer.update_hat()
   return [newbuffer, s:TRUE]
@@ -435,30 +435,11 @@ function! s:compare_len(r1, r2) abort "{{{
 endfunction "}}}
 
 
-function! s:substitute_symbol(str, symbol, symbol_idx) abort "{{{
-  let symbol = s:lib.escape(a:symbol)
-  return substitute(a:str, symbol, a:symbol_idx, '')
-endfunction "}}}
-
-
-function! s:eval(i, v, buffer) abort "{{{
-  if type(a:v) isnot# s:TYPESTR
-    return a:v
-  endif
-
-  let str = a:v
-  for [symbol, symbolidx] in items(a:buffer.mark)
-    if stridx(str, symbol) > -1
-      let str = s:substitute_symbol(str, symbol, symbolidx)
-    endif
-  endfor
-  sandbox let v = eval(str)
-  return v
-endfunction "}}}
-
-
 function! s:is_valid_input(input, buffer) abort "{{{
-  if type(a:input[0]) isnot# s:TYPENUM && type(a:input[1]) isnot# s:TYPENUM
+  if type(a:input[0]) isnot# s:TYPENUM
+    return s:FALSE
+  endif
+  if type(a:input[1]) isnot# s:TYPENUM
     return s:FALSE
   endif
   let n = len(a:buffer.items)
