@@ -7,6 +7,7 @@ let s:TRUE = 1
 let s:FALSE = 0
 let s:TYPESTR = s:const.TYPESTR
 let s:TYPENUM = s:const.TYPENUM
+let s:TYPEDICT = s:const.TYPEDICT
 let s:TYPEFUNC = s:const.TYPEFUNC
 let s:NULLREGION = s:const.NULLREGION
 let s:GUI_RUNNING = has('gui_running')
@@ -143,6 +144,7 @@ function! s:swap_prototype._swap_once(buffer, input, undojoin) dict abort "{{{
   endif
 
   " swap items on the buffer
+  let curpos = getpos('.')
   let newbuffer = s:swap(a:buffer, input)
   call s:write(newbuffer, a:undojoin)
 
@@ -150,7 +152,8 @@ function! s:swap_prototype._swap_once(buffer, input, undojoin) dict abort "{{{
   let newbuffer.region.head = getpos("'[")
   let newbuffer.region.tail = getpos("']")
   call newbuffer.update_items()
-  call newbuffer.items[input[1] - 1].cursor()
+  let idx = s:cursoridx(input, newbuffer)
+  call newbuffer.items[idx].cursor()
   call newbuffer.update_sharp(getpos('.'))
   call newbuffer.update_hat()
   return [newbuffer, s:TRUE]
@@ -427,8 +430,11 @@ function! s:is_valid_input(input, buffer) abort "{{{
     if a:input[1] < 1 || a:input[1] > n
       return s:FALSE
     endif
+  elseif type_input0 is# s:TYPEDICT
+    " The buffer object to restore
   elseif type_input0 is# s:TYPEFUNC
     " No limitation for a:input[1]
+    " a:input[1:] will be passed as arguments for a:input[0]
   else
     return s:FALSE
   endif
@@ -445,7 +451,9 @@ endfunction "}}}
 
 
 function! s:swap(buffer, input) abort "{{{
-  if type(a:input[0]) is# s:TYPEFUNC
+  if type(a:input[0]) is# s:TYPEDICT
+    return deepcopy(a:input[0])
+  elseif type(a:input[0]) is# s:TYPEFUNC
     return s:swap_by_func(a:buffer, a:input)
   endif
   return s:swap_2_items(a:buffer, a:input)
@@ -529,6 +537,26 @@ function! s:write(buffer, undojoin) abort "{{{
                \ undojoin_cmd, v, string(a:buffer.region.tail), "\<CR>")
   call call('setreg', reg)
   call winrestview(view)
+endfunction "}}}
+
+
+function! s:cursoridx(input, buffer) abort "{{{
+  if type(a:input[0]) is# s:TYPEFUNC
+    return 0
+  endif
+  if len(a:input) < 2
+    return 0
+  endif
+  if type(a:input[1]) isnot# s:TYPENUM
+    return 0
+  endif
+  if a:input[1] < 1
+    return 0
+  endif
+  if a:input[1] > len(a:buffer.items)
+    return len(a:buffer.items) - 1
+  endif
+  return a:input[1] - 1
 endfunction "}}}
 
 

@@ -29,7 +29,7 @@ endfunction "}}}
 
 
 " operation object - representing an edit action
-" operation.kind is either 'swap', 'undo' or 'redo'.
+" operation.kind is either 'swap' or 'undo'.
 let s:operation_prototype = {
   \   'kind': '',
   \   'input': ['', ''],
@@ -258,6 +258,7 @@ endfunction "}}}
 
 function! s:swapmode_prototype.add_history(op) dict abort  "{{{
   call self.truncate_history()
+  let a:op.buffer = deepcopy(self.buffer)
   call add(self.history, a:op)
 endfunction "}}}
 
@@ -609,7 +610,12 @@ function! s:swapmode_prototype.key_undo(phase, op) dict abort "{{{
 
   let phase = s:DONE
   let prev = self.history[-1*(self.undolevel+1)]
-  let op = s:operation('undo', s:flip(prev.input))
+  if prev.kind is# 'swap'
+    " The second input item is the cursor position after the operation
+    let op = s:operation('undo', [prev.buffer, prev.input[0]])
+  else
+    let op = s:operation('undo', [prev.buffer])
+  endif
   let self.undolevel += 1
   return [phase, op]
 endfunction "}}}
