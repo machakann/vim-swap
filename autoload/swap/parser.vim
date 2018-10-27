@@ -3,6 +3,8 @@
 let s:const = swap#constant#import()
 let s:lib = swap#lib#import()
 
+let s:TRUE = 1
+let s:FALSE = 0
 let s:NULLREGION = s:const.NULLREGION
 
 
@@ -126,10 +128,16 @@ function! s:Buffer_prototype.swappable() dict abort  "{{{
   "       1. Include two items at least.
   "       2. Not less than one of the item is not empty.
   "       3. Include one delimiter at least.
-  let cond1 = len(self.items) >= 2
-  let cond2 = filter(copy(self.items), 'v:val.string isnot# ""') != []
-  let cond3 = filter(copy(self.all), 'v:val.attr is# "delimiter"') != []
-  return cond1 && cond2 && cond3 ? 1 : 0
+  if len(self.items) < 2
+    return s:FALSE
+  endif
+  if filter(copy(self.items), 'v:val.string isnot# ""') == []
+    return s:FALSE
+  endif
+  if filter(copy(self.all), 'v:val.attr is# "delimiter"') == []
+    return s:FALSE
+  endif
+  return s:TRUE
 endfunction "}}}
 
 
