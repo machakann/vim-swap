@@ -112,7 +112,13 @@ function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
   while s:TRUE
     let input = swapmode.get_input(buffer)
     if input == [] | break | endif
-    let [buffer, undojoin] = self._swap_once(buffer, input, undojoin)
+    if input[0] is# 'undo'
+      let [buffer, undojoin] = self._restore_buffer(input, undojoin)
+    elseif input[0] is# 'sort'
+      let [buffer, undojoin] = self._sort_items(buffer, input, undojoin)
+    else
+      let [buffer, undojoin] = self._swap_once(buffer, input, undojoin)
+    endif
   endwhile
   return map(copy(swapmode.history), 'v:val.input')
 endfunction "}}}
@@ -126,7 +132,11 @@ function! s:swap_prototype._swap_sequential(buffer) dict abort  "{{{
   let buffer = a:buffer
   let undojoin = s:FALSE
   for input in self.input_list
-    let [buffer, undojoin] = self._swap_once(buffer, input, undojoin)
+    if input[0] is# 'sort'
+      let [buffer, undojoin] = self._sort_items(buffer, input, undojoin)
+    else
+      let [buffer, undojoin] = self._swap_once(buffer, input, undojoin)
+    endif
   endfor
   return self.input_list
 endfunction "}}}
@@ -140,7 +150,6 @@ function! s:swap_prototype._swap_once(buffer, input, undojoin) dict abort "{{{
   endif
 
   " swap items on the buffer
-  let curpos = getpos('.')
   let newbuffer = s:swap(a:buffer, input)
   call s:write(newbuffer, a:undojoin)
 
@@ -148,8 +157,50 @@ function! s:swap_prototype._swap_once(buffer, input, undojoin) dict abort "{{{
   let newbuffer.region.head = getpos("'[")
   let newbuffer.region.tail = getpos("']")
   call newbuffer.update_items()
-  let idx = s:cursoridx(input, newbuffer)
+  let idx = a:input[1] - 1
   call newbuffer.items[idx].cursor()
+  call newbuffer.update_sharp(getpos('.'))
+  call newbuffer.update_hat()
+  return [newbuffer, s:TRUE]
+endfunction "}}}
+
+
+function! s:swap_prototype._restore_buffer(input, undojoin) abort "{{{
+  if a:input[0] isnot# 'undo'
+    echoerr 'vim-swap: Invalid arguments for swap._restore_buffer()'
+  endif
+
+  " restore the buffer in input
+  let newbuffer = a:input[1]
+  call s:write(newbuffer, a:undojoin)
+
+  " update buffer information
+  let newbuffer.region.head = getpos("'[")
+  let newbuffer.region.tail = getpos("']")
+  call newbuffer.update_items()
+  let idx = get(a:input, 2, 1) - 1
+  call newbuffer.items[idx].cursor()
+  call newbuffer.update_sharp(getpos('.'))
+  call newbuffer.update_hat()
+  return [newbuffer, s:TRUE]
+endfunction "}}}
+
+
+function! s:swap_prototype._sort_items(buffer, input, undojoin) abort "{{{
+  if a:input[0] isnot# 'sort'
+    echoerr 'vim-swap: Invalid arguments for swap._sort_items()'
+  endif
+
+  " sort items and reflect on the buffer
+  let args = a:input[1:]
+  let newbuffer = s:sort(a:buffer, args)
+  call s:write(newbuffer, a:undojoin)
+
+  " update buffer information
+  let newbuffer.region.head = getpos("'[")
+  let newbuffer.region.tail = getpos("']")
+  call newbuffer.update_items()
+  call newbuffer.items[0].cursor()
   call newbuffer.update_sharp(getpos('.'))
   call newbuffer.update_hat()
   return [newbuffer, s:TRUE]
@@ -391,14 +442,9 @@ function! s:substitute_symbol(str, symbol, symbol_idx) abort "{{{
 endfunction "}}}
 
 
-let s:sortfunc = function('sort')
-
 function! s:eval(i, v, buffer) abort "{{{
   if type(a:v) isnot# s:TYPESTR
     return a:v
-  endif
-  if a:i == 0 && a:v is# 'sort'
-    return s:sortfunc
   endif
 
   let str = a:v
@@ -413,25 +459,14 @@ endfunction "}}}
 
 
 function! s:is_valid_input(input, buffer) abort "{{{
-  let type_input0 = type(a:input[0])
-  if type_input0 is# s:TYPENUM
-    let type_input1 = type(a:input[1])
-    if type_input1 isnot# s:TYPENUM
-      return s:FALSE
-    endif
-    let n = len(a:buffer.items)
-    if a:input[0] < 1 || a:input[0] > n
-      return s:FALSE
-    endif
-    if a:input[1] < 1 || a:input[1] > n
-      return s:FALSE
-    endif
-  elseif type_input0 is# s:TYPEDICT
-    " The buffer object to restore
-  elseif type_input0 is# s:TYPEFUNC
-    " No limitation for a:input[1]
-    " a:input[1:] will be passed as arguments for a:input[0]
-  else
+  if type(a:input[0]) isnot# s:TYPENUM && type(a:input[1]) isnot# s:TYPENUM
+    return s:FALSE
+  endif
+  let n = len(a:buffer.items)
+  if a:input[0] < 1 || a:input[0] > n
+    return s:FALSE
+  endif
+  if a:input[1] < 1 || a:input[1] > n
     return s:FALSE
   endif
   return s:TRUE
@@ -447,16 +482,6 @@ endfunction "}}}
 
 
 function! s:swap(buffer, input) abort "{{{
-  if type(a:input[0]) is# s:TYPEDICT
-    return deepcopy(a:input[0])
-  elseif type(a:input[0]) is# s:TYPEFUNC
-    return s:swap_by_func(a:buffer, a:input)
-  endif
-  return s:swap_2_items(a:buffer, a:input)
-endfunction "}}}
-
-
-function! s:swap_2_items(buffer, input) abort "{{{
   let itemindexes = range(len(a:buffer.items))
   let idx1 = a:input[0] - 1
   let idx2 = a:input[1] - 1
@@ -480,23 +505,23 @@ endfunction "}}}
 
 let s:INVALID = 0
 
-function! s:swap_by_func(buffer, input) abort "{{{
+function! s:sort(buffer, args) abort "{{{
   let itemstr_list = map(copy(a:buffer.items), 'v:val.string')
-  sandbox let sorted_list = call(a:input[0], [itemstr_list] + a:input[1:])
+  sandbox let sorted_list = call('sort', [copy(itemstr_list)] + a:args)
+  if len(sorted_list) != len(itemstr_list)
+    echoerr printf('vim-swap: An Error occurred in sorting items; the number of items has been changed. Input: %s, Output: %s',
+                 \ string(itemstr_list), string(sorted_list))
+  endif
 
   let newbuffer = s:new_empty_buffer(a:buffer)
   let items = copy(a:buffer.items)
-  if len(sorted_list) != len(items)
-    echoerr printf('vim-swap: The swap function "%s" should not change the number of items.',
-                 \ string(a:input[0]))
-  endif
   for item in a:buffer.all
     if item.attr is# 'item'
       let str = remove(sorted_list, 0)
       let item = s:pickup(items, str)
       if item is# s:INVALID
-        echoerr printf('vim-swap: The swap function "%s" returned an invalid list.',
-                     \ string(a:input[0]))
+        echoerr printf('vim-swap: An Error occurred in sorting items; An item in the sorted list has been changed. Input: %s, Output: %s',
+                     \ string(itemstr_list), string(sorted_list))
       endif
       call add(newbuffer.items, item)
     endif
@@ -529,30 +554,10 @@ function! s:write(buffer, undojoin) abort "{{{
   let reg = ['"', getreg('"'), getregtype('"')]
   call setreg('"', str, v)
   call setpos('.', a:buffer.region.head)
-  execute printf('%snoautocmd normal! "_d%s:call setpos(".", %s)%s""P:',
-               \ undojoin_cmd, v, string(a:buffer.region.tail), "\<CR>")
+  silent execute printf('%snoautocmd normal! "_d%s:call setpos(".", %s)%s""P:',
+                      \ undojoin_cmd, v, string(a:buffer.region.tail), "\<CR>")
   call call('setreg', reg)
   call winrestview(view)
-endfunction "}}}
-
-
-function! s:cursoridx(input, buffer) abort "{{{
-  if type(a:input[0]) is# s:TYPEFUNC
-    return 0
-  endif
-  if len(a:input) < 2
-    return 0
-  endif
-  if type(a:input[1]) isnot# s:TYPENUM
-    return 0
-  endif
-  if a:input[1] < 1
-    return 0
-  endif
-  if a:input[1] > len(a:buffer.items)
-    return len(a:buffer.items) - 1
-  endif
-  return a:input[1] - 1
 endfunction "}}}
 
 

@@ -518,34 +518,37 @@ function! s:suite.parse_charwise() dict abort  "{{{
   call g:assert.equals(stuffs[4]['attr'],   'item',       'failed at #18-10')
   call g:assert.equals(stuffs[4]['string'], 'Baz',        'failed at #18-11')
 endfunction "}}}
-function! s:suite.swap_by_func() abort "{{{
+function! s:suite.sort() abort "{{{
   let rule = {'delimiter': [',\s*']}
   let buf = {}
   let buf.all = s:parser.parse_charwise('dd, aa, bb, cc', rule)
   let buf.items = filter(copy(buf.all), 'v:val.attr is# "item"')
 
   " #1
-  let newbuf = s:swap.swap_by_func(buf, [function('sort')])
+  let newbuf = s:swap.sort(buf, [])
   let newstr = s:swap.string(newbuf)
   call g:assert.equals(newstr, 'aa, bb, cc, dd', 'failed at #1')
 
   " #2
-  let newbuf = s:swap.swap_by_func(buf, [function('sort'), 0])
+  let newbuf = s:swap.sort(buf, [0])
   let newstr = s:swap.string(newbuf)
   call g:assert.equals(newstr, 'aa, bb, cc, dd', 'failed at #2')
 
   " #3
-  function! s:revsort(list) abort
-    return reverse(sort(a:list))
+  function! s:compare_ascend(i, j) abort
+    return a:i is# a:j ? 0 : a:i > a:j ? 1 : -1
   endfunction
-  let newbuf = s:swap.swap_by_func(buf, [function('s:revsort')])
+  let newbuf = s:swap.sort(buf, [function('s:compare_ascend')])
   let newstr = s:swap.string(newbuf)
-  call g:assert.equals(newstr, 'dd, cc, bb, aa', 'failed at #3')
+  call g:assert.equals(newstr, 'aa, bb, cc, dd', 'failed at #3')
 
   " #4
-  let newbuf = s:swap.swap_by_func(buf, ['sort'])
+  function! s:compare_descend(i, j) abort
+    return a:i is# a:j ? 0 : a:i < a:j ? 1 : -1
+  endfunction
+  let newbuf = s:swap.sort(buf, [function('s:compare_descend')])
   let newstr = s:swap.string(newbuf)
-  call g:assert.equals(newstr, 'aa, bb, cc, dd', 'failed at #4')
+  call g:assert.equals(newstr, 'dd, cc, bb, aa', 'failed at #4')
 endfunction "}}}
 
 " integration test

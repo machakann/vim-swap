@@ -610,12 +610,12 @@ function! s:swapmode_prototype.key_undo(phase, op) dict abort "{{{
 
   let phase = s:DONE
   let prev = self.history[-1*(self.undolevel+1)]
+  let input = ['undo', prev.buffer]
   if prev.kind is# 'swap'
-    " The second input item is the cursor position after the operation
-    let op = s:operation('undo', [prev.buffer, prev.input[0]])
-  else
-    let op = s:operation('undo', [prev.buffer])
+    " The last input item is the cursor position after the operation
+    call add(input, prev.input[0])
   endif
+  let op = s:operation('undo', input)
   let self.undolevel += 1
   return [phase, op]
 endfunction "}}}
