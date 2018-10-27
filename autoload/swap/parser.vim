@@ -253,7 +253,7 @@ function! s:shift_to_something_start(text, targets, idx) abort  "{{{
   call map(a:targets, 's:click(a:text, v:val, a:idx)')
   call filter(a:targets, 'v:val[0] > -1')
   if a:targets != []
-    call s:lib.sort(a:targets, function('s:compare_idx'), 1)
+    call s:lib.sort(a:targets, function('s:compare_idx'))
     let result = a:targets[0]
   endif
   return result

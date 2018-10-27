@@ -42,35 +42,26 @@ function! s:c2p(coord) abort  "{{{
 endfunction "}}}
 
 
-" function! s:sort(list, func, ...) abort  "{{{
-if s:has_patch_7_4_358
-  function! s:sort(list, func, ...) abort
-    return sort(a:list, a:func)
-  endfunction
-else
-  function! s:sort(list, func, ...) abort
-    " NOTE: len(a:list) is always larger than n or same.
-    " FIXME: The number of item in a:list would not be large, but if there was
-    "        any efficient argorithm, I would rewrite here.
-    let len = len(a:list)
-    let n = min([get(a:000, 0, len), len])
-    for i in range(n)
-      if len - 2 >= i
-        let min = len - 1
-        for j in range(len - 2, i, -1)
-          if call(a:func, [a:list[min], a:list[j]]) >= 1
-            let min = j
-          endif
-        endfor
-
-        if min > i
-          call insert(a:list, remove(a:list, min), i)
+function! s:sort(list, func, ...) abort
+  " FIXME: The number of item in a:list would not be large, but if there was
+  "        any efficient argorithm, I would rewrite here.
+  let n = len(a:list)
+  for i in range(n)
+    if n - 2 >= i
+      let min = n - 1
+      for j in range(n - 2, i, -1)
+        if call(a:func, [a:list[min], a:list[j]] + a:000) >= 1
+          let min = j
         endif
+      endfor
+
+      if min > i
+        call insert(a:list, remove(a:list, min), i)
       endif
-    endfor
-    return a:list
-  endfunction
-endif
+    endif
+  endfor
+  return a:list
+endfunction
 "}}}
 
 
@@ -133,7 +124,7 @@ let s:Lib = {}
 let s:Lib.get_buf_length = function('s:get_buf_length')
 let s:Lib.buf_byte_len = function('s:buf_byte_len')
 let s:Lib.c2p = function('s:c2p')
-let s:Lib.sort = function('s:sort')
+let s:Lib.sort = s:has_patch_7_4_358 ? function('sort') : function('s:sort')
 let s:Lib.is_valid_region = function('s:is_valid_region')
 let s:Lib.is_ahead = function('s:is_ahead')
 let s:Lib.is_in_between = function('s:is_in_between')
