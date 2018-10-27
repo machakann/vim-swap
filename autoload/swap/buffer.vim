@@ -5,6 +5,8 @@ let s:lib = swap#lib#import()
 
 let s:TRUE = 1
 let s:FALSE = 0
+let s:TYPENUM = s:const.TYPENUM
+let s:TYPESTR = s:const.TYPESTR
 let s:NULLREGION = s:const.NULLREGION
 
 
@@ -195,6 +197,31 @@ function! s:Buffer.update_dollar() dict abort "{{{
   let dollar = len(self.items)
   let self.mark['$'] = dollar
   return dollar
+endfunction "}}}
+
+
+function! s:Buffer.is_valid(pos) abort "{{{
+  return a:pos >= 1 && a:pos <= len(self.items)
+endfunction "}}}
+
+
+" Sanitize and materialize a position
+function! s:Buffer.get_pos(pos) abort "{{{
+  if type(a:pos) is# s:TYPENUM
+    return self.is_valid(a:pos) ? a:pos : 0
+  elseif type(a:pos) is# s:TYPESTR
+    return get(self.mark, a:pos, 0)
+  endif
+  return 0
+endfunction "}}}
+
+
+function! s:Buffer.get_item(pos) abort "{{{
+  let pos = self.get_pos(a:pos)
+  if pos is# 0
+    return {}
+  endif
+  return self.items[pos - 1]
 endfunction "}}}
 
 

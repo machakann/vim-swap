@@ -274,22 +274,19 @@ function! s:Swapmode.set_current(pos) dict abort "{{{
 endfunction "}}}
 
 
+" Sanitize and materialize a position
 function! s:Swapmode.get_pos(pos) abort "{{{
-  if type(a:pos) is# s:TYPENUM && self.pos.is_valid(a:pos)
-    return a:pos
-  elseif type(a:pos) is# s:TYPESTR && has_key(self.buffer.mark, a:pos)
-    return self.get_pos(self.buffer.mark[a:pos])
+  let pos = a:pos
+  if type(pos) is# s:TYPESTR && pos =~# '\m\d\+'
+    let pos = str2nr(pos)
   endif
-  return 0
+  return self.buffer.get_pos(pos)
 endfunction "}}}
 
 
 function! s:Swapmode.get_item(pos) abort "{{{
   let pos = self.get_pos(a:pos)
-  if pos == 0
-    return {}
-  endif
-  return self.buffer.items[a:pos - 1]
+  return self.buffer.get_item(pos)
 endfunction "}}}
 
 
