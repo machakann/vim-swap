@@ -1,4 +1,4 @@
-" rule object - Describe the rule of swapping action.
+" Rule object - Describe the rule of swapping action.
 
 let s:const = swap#constant#import()
 let s:NULLCOORD = s:const.NULLCOORD
@@ -8,16 +8,16 @@ let s:lib = swap#lib#import()
 
 
 function! swap#rule#get(rule) abort "{{{
-  return extend(a:rule, deepcopy(s:rule_prototype), 'force')
+  return extend(a:rule, deepcopy(s:Rule), 'force')
 endfunction "}}}
 
 
-let s:rule_prototype = {
+let s:Rule = {
       \   'region': deepcopy(s:NULLREGION)
       \ }
 
 
-function! s:rule_prototype.search(curpos, motionwise) dict abort  "{{{
+function! s:Rule.search(curpos, motionwise) dict abort  "{{{
   let timeout = g:swap#stimeoutlen
   if has_key(self, 'body')
     if self.region == s:NULLREGION
@@ -50,7 +50,7 @@ function! s:rule_prototype.search(curpos, motionwise) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:rule_prototype.match(region) dict abort  "{{{
+function! s:Rule.match(region) dict abort  "{{{
   let timeout = g:swap#stimeoutlen
 
   if has_key(self, 'body')
@@ -75,7 +75,7 @@ function! s:rule_prototype.match(region) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:rule_prototype.initialize() dict abort  "{{{
+function! s:Rule.initialize() dict abort  "{{{
   let self.region = deepcopy(s:NULLREGION)
   return self
 endfunction "}}}

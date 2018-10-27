@@ -1,4 +1,4 @@
-" buffer - represents a region of the buffer swappped as delimited items
+" Buffer - represents a region of the buffer swappped as delimited items
 
 let s:const = swap#constant#import()
 let s:lib = swap#lib#import()
@@ -9,7 +9,7 @@ let s:NULLREGION = s:const.NULLREGION
 
 
 function! swap#buffer#new(region, parseditems) abort "{{{
-  let buffer = deepcopy(s:Buffer_prototype)
+  let buffer = deepcopy(s:Buffer)
   let buffer.region = a:region
   let buffer.all = map(copy(a:parseditems), 's:Item(v:key, v:val)')
   let buffer.items = filter(copy(buffer.all), 'v:val.attr is# "item"')
@@ -18,14 +18,14 @@ endfunction "}}}
 
 
 " Item object - represents an swappable item on the buffer {{{
-let s:Item_prototype = {
+let s:Item = {
   \   'idx': -1,
   \   'attr': '',
   \   'string': '',
   \   'highlightid': [],
   \   'region': deepcopy(s:NULLREGION),
   \ }
-function! s:Item_prototype.cursor(...) dict abort "{{{
+function! s:Item.cursor(...) dict abort "{{{
   let to_tail = get(a:000, 0, 0)
   if to_tail
     call setpos('.', self.region.tail)
@@ -35,7 +35,7 @@ function! s:Item_prototype.cursor(...) dict abort "{{{
 endfunction "}}}
 
 
-function! s:Item_prototype.highlight(group) dict abort "{{{
+function! s:Item.highlight(group) dict abort "{{{
   if self.region.len <= 0
     return
   endif
@@ -75,13 +75,13 @@ function! s:Item_prototype.highlight(group) dict abort "{{{
 endfunction "}}}
 
 
-function! s:Item_prototype.clear_highlight() dict abort  "{{{
+function! s:Item.clear_highlight() dict abort  "{{{
   call filter(map(self.highlightid, 's:matchdelete(v:val)'), 'v:val > 0')
 endfunction "}}}
 
 
 function! s:Item(idx, item) abort "{{{
-  let item = extend(a:item, deepcopy(s:Item_prototype), 'keep')
+  let item = extend(a:item, deepcopy(s:Item), 'keep')
   let item.idx = a:idx
   return item
 endfunction "}}}
@@ -118,7 +118,7 @@ endfunction "}}}
 
 
 " Buffer object - represents a swapping region of buffer {{{
-let s:Buffer_prototype = {
+let s:Buffer = {
   \   'region': deepcopy(s:NULLREGION),
   \   'all': [],
   \   'items': [],
@@ -126,7 +126,7 @@ let s:Buffer_prototype = {
   \ }
 
 
-function! s:Buffer_prototype.swappable() dict abort  "{{{
+function! s:Buffer.swappable() dict abort  "{{{
   " Check whether the region matches with the conditions to treat as the target.
   " NOTE: The conditions are the following three.
   "       1. Include two items at least.
@@ -145,18 +145,18 @@ function! s:Buffer_prototype.swappable() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:Buffer_prototype.selectable() dict abort  "{{{
+function! s:Buffer.selectable() dict abort  "{{{
   return filter(copy(self.items), 'v:val.string isnot# ""') != []
 endfunction "}}}
 
 
-function! s:Buffer_prototype.update_items() abort "{{{
+function! s:Buffer.update_items() abort "{{{
   call s:address_{self.region.type}wise(self.all, self.region)
   call map(self.all, 'extend(v:val, {"idx": v:key})')
 endfunction "}}}
 
 
-function! s:Buffer_prototype.update_sharp(curpos) dict abort "{{{
+function! s:Buffer.update_sharp(curpos) dict abort "{{{
   let sharp = 0
   if self.all != []
     if s:lib.is_ahead(self.region.head, a:curpos)
@@ -178,7 +178,7 @@ function! s:Buffer_prototype.update_sharp(curpos) dict abort "{{{
 endfunction "}}}
 
 
-function! s:Buffer_prototype.update_hat() dict abort "{{{
+function! s:Buffer.update_hat() dict abort "{{{
   let hat = 0
   for text in self.items
     let hat += 1
@@ -191,7 +191,7 @@ function! s:Buffer_prototype.update_hat() dict abort "{{{
 endfunction "}}}
 
 
-function! s:Buffer_prototype.update_dollar() dict abort "{{{
+function! s:Buffer.update_dollar() dict abort "{{{
   let dollar = len(self.items)
   let self.mark['$'] = dollar
   return dollar

@@ -1,15 +1,15 @@
-" clock object - Measuring time.
+" Clock object - Measuring time.
 
 " features
 let s:has_reltime_and_float = has('reltime') && has('float')
 
 
 function! swap#clock#new() abort  "{{{
-  return deepcopy(s:clock_prototype)
+  return deepcopy(s:Clock)
 endfunction "}}}
 
 
-let s:clock_prototype = {
+let s:Clock = {
       \   'started' : 0,
       \   'paused'  : 0,
       \   'losstime': 0,
@@ -18,7 +18,7 @@ let s:clock_prototype = {
       \ }
 
 
-function! s:clock_prototype.start() dict abort  "{{{
+function! s:Clock.start() dict abort  "{{{
   if self.started
     if self.paused
       let self.losstime += str2float(reltimestr(reltime(self.pause_at)))
@@ -33,13 +33,13 @@ function! s:clock_prototype.start() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:clock_prototype.pause() dict abort "{{{
+function! s:Clock.pause() dict abort "{{{
   let self.pause_at = reltime()
   let self.paused   = 1
 endfunction "}}}
 
 
-function! s:clock_prototype.elapsed() dict abort "{{{
+function! s:Clock.elapsed() dict abort "{{{
   if self.started
     let total = str2float(reltimestr(reltime(self.zerotime)))
     return floor((total - self.losstime)*1000)
@@ -48,7 +48,7 @@ function! s:clock_prototype.elapsed() dict abort "{{{
 endfunction "}}}
 
 
-function! s:clock_prototype.stop() dict abort  "{{{
+function! s:Clock.stop() dict abort  "{{{
   let self.started  = 0
   let self.paused   = 0
   let self.losstime = 0

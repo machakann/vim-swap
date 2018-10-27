@@ -1,4 +1,4 @@
-" swap object - Managing a whole action.
+" Swap object - Managing a whole action.
 
 let s:const = swap#constant#import(s:, ['TYPESTR', 'TYPENUM', 'NULLREGION'])
 let s:lib = swap#lib#import()
@@ -14,7 +14,7 @@ let s:GUI_RUNNING = has('gui_running')
 
 
 function! swap#swap#new(mode, input_list) abort "{{{
-  let swap = deepcopy(s:swap_prototype)
+  let swap = deepcopy(s:Swap)
   let swap.mode = a:mode
   let swap.input_list = a:input_list
   let swap.rules = s:get_rules(a:mode)
@@ -22,7 +22,7 @@ function! swap#swap#new(mode, input_list) abort "{{{
 endfunction "}}}
 
 
-let s:swap_prototype = {
+let s:Swap = {
       \   'dotrepeat': s:FALSE,
       \   'mode': '',
       \   'rules': [],
@@ -30,7 +30,7 @@ let s:swap_prototype = {
       \ }
 
 
-function! s:swap_prototype.around_cursor() abort "{{{
+function! s:Swap.around_cursor() abort "{{{
   let options = s:displace_options()
   try
     call self._around_cursor()
@@ -40,7 +40,7 @@ function! s:swap_prototype.around_cursor() abort "{{{
 endfunction "}}}
 
 
-function! s:swap_prototype._around_cursor() abort "{{{
+function! s:Swap._around_cursor() abort "{{{
   let rules = deepcopy(self.rules)
   let [buffer, rule] = s:search(rules, 'char')
   if self.dotrepeat
@@ -59,7 +59,7 @@ function! s:swap_prototype._around_cursor() abort "{{{
 endfunction "}}}
 
 
-function! s:swap_prototype.region(start, end, type) abort "{{{
+function! s:Swap.region(start, end, type) abort "{{{
   let options = s:displace_options()
   try
     call self._region(a:start, a:end, a:type)
@@ -69,7 +69,7 @@ function! s:swap_prototype.region(start, end, type) abort "{{{
 endfunction "}}}
 
 
-function! s:swap_prototype._region(start, end, type) abort "{{{
+function! s:Swap._region(start, end, type) abort "{{{
   let region = s:get_region(a:start, a:end, a:type)
   if region is# s:NULLREGION
     return
@@ -89,7 +89,7 @@ function! s:swap_prototype._region(start, end, type) abort "{{{
 endfunction "}}}
 
 
-function! s:swap_prototype.operatorfunc(type) dict abort "{{{
+function! s:Swap.operatorfunc(type) dict abort "{{{
   if self.mode is# 'n'
     call self.around_cursor()
   elseif self.mode is# 'x'
@@ -101,7 +101,7 @@ function! s:swap_prototype.operatorfunc(type) dict abort "{{{
 endfunction "}}}
 
 
-function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
+function! s:Swap._swap_interactive(buffer) dict abort "{{{
   if a:buffer == {}
     return []
   endif
@@ -124,7 +124,7 @@ function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
 endfunction "}}}
 
 
-function! s:swap_prototype._swap_sequential(buffer) dict abort  "{{{
+function! s:Swap._swap_sequential(buffer) dict abort  "{{{
   if a:buffer == {}
     return
   endif
@@ -142,7 +142,7 @@ function! s:swap_prototype._swap_sequential(buffer) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:swap_prototype._swap_once(buffer, input, undojoin) dict abort "{{{
+function! s:Swap._swap_once(buffer, input, undojoin) dict abort "{{{
   " substitute and eval symbols
   let input = map(copy(a:input), 's:eval(v:key, v:val, a:buffer)')
   if !s:is_valid_input(input, a:buffer)
@@ -165,7 +165,7 @@ function! s:swap_prototype._swap_once(buffer, input, undojoin) dict abort "{{{
 endfunction "}}}
 
 
-function! s:swap_prototype._restore_buffer(input, undojoin) abort "{{{
+function! s:Swap._restore_buffer(input, undojoin) abort "{{{
   if a:input[0] isnot# 'undo'
     echoerr 'vim-swap: Invalid arguments for swap._restore_buffer()'
   endif
@@ -186,7 +186,7 @@ function! s:swap_prototype._restore_buffer(input, undojoin) abort "{{{
 endfunction "}}}
 
 
-function! s:swap_prototype._sort_items(buffer, input, undojoin) abort "{{{
+function! s:Swap._sort_items(buffer, input, undojoin) abort "{{{
   if a:input[0] isnot# 'sort'
     echoerr 'vim-swap: Invalid arguments for swap._sort_items()'
   endif
@@ -208,7 +208,7 @@ endfunction "}}}
 
 
 " This method is mainly for textobjects
-function! s:swap_prototype.search(motionwise, ...) abort "{{{
+function! s:Swap.search(motionwise, ...) abort "{{{
   let rules = deepcopy(self.rules)
   let textobj = get(a:000, 0, 0)
   return s:search(rules, a:motionwise, textobj)

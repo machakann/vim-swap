@@ -1,4 +1,4 @@
-" lib.vim - Miscellaneous functions library.
+" Lib - Miscellaneous functions library.
 
 let s:const = swap#constant#import()
 let s:NULLPOS = s:const.NULLPOS
@@ -12,7 +12,7 @@ endif
 
 
 function! swap#lib#import() abort "{{{
-  return s:lib
+  return s:Lib
 endfunction "}}}
 
 
@@ -129,20 +129,20 @@ function! s:get_right_pos(pos, ...) abort  "{{{
 endfunction "}}}
 
 
-let s:lib = {}
-let s:lib.get_buf_length = function('s:get_buf_length')
-let s:lib.buf_byte_len = function('s:buf_byte_len')
-let s:lib.c2p = function('s:c2p')
-let s:lib.sort = function('s:sort')
-let s:lib.is_valid_region = function('s:is_valid_region')
-let s:lib.is_ahead = function('s:is_ahead')
-let s:lib.is_in_between = function('s:is_in_between')
-let s:lib.escape = function('s:escape')
-let s:lib.virtcol2col = function('s:virtcol2col')
-let s:lib.type2v = function('s:type2v')
-let s:lib.get_left_pos = function('s:get_left_pos')
-let s:lib.get_right_pos = function('s:get_right_pos')
-lockvar! s:lib
+let s:Lib = {}
+let s:Lib.get_buf_length = function('s:get_buf_length')
+let s:Lib.buf_byte_len = function('s:buf_byte_len')
+let s:Lib.c2p = function('s:c2p')
+let s:Lib.sort = function('s:sort')
+let s:Lib.is_valid_region = function('s:is_valid_region')
+let s:Lib.is_ahead = function('s:is_ahead')
+let s:Lib.is_in_between = function('s:is_in_between')
+let s:Lib.escape = function('s:escape')
+let s:Lib.virtcol2col = function('s:virtcol2col')
+let s:Lib.type2v = function('s:type2v')
+let s:Lib.get_left_pos = function('s:get_left_pos')
+let s:Lib.get_right_pos = function('s:get_right_pos')
+lockvar! s:Lib
 
 
 " vim:set foldmethod=marker:
