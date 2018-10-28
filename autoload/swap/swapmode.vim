@@ -474,11 +474,6 @@ function! s:next_nonblank(items, currentpos) abort  "{{{
 endfunction "}}}
 
 
-function! s:flip(input) abort "{{{
-  return [a:input[1], a:input[0]]
-endfunction "}}}
-
-
 " NOTE: Key function list
 "    {0~9} : Input {0~9} to specify an item.
 "    CR    : Fix the input number. If nothing has been input, fix to the item under the cursor.
