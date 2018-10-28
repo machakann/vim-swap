@@ -207,10 +207,10 @@ endfunction "}}}
 
 
 " This method is mainly for textobjects
-function! s:Swap.search(motionwise, ...) abort "{{{
+function! s:Swap.search(type, ...) abort "{{{
   let rules = deepcopy(self.rules)
   let textobj = get(a:000, 0, 0)
-  return s:search(rules, a:motionwise, textobj)
+  return s:search(rules, a:type, textobj)
 endfunction "}}}
 
 
@@ -339,7 +339,7 @@ function! s:get_priority_group(rules) abort "{{{
 endfunction "}}}
 
 
-function! s:search(rules, motionwise, ...) abort "{{{
+function! s:search(rules, type, ...) abort "{{{
   let view = winsaveview()
   let textobj = get(a:000, 0, 0)
   let curpos = getpos('.')
@@ -349,8 +349,8 @@ function! s:search(rules, motionwise, ...) abort "{{{
   try
     while a:rules != []
       let priority_group = s:get_priority_group(a:rules)
-      let [buffer, rule] = s:search_by_group(priority_group, curpos,
-                                           \ a:motionwise, textobj)
+      let [buffer, rule] = s:search_by_group(priority_group, a:type,
+                                           \ curpos, textobj)
       if buffer != {}
         break
       endif
@@ -363,11 +363,11 @@ function! s:search(rules, motionwise, ...) abort "{{{
 endfunction "}}}
 
 
-function! s:search_by_group(priority_group, curpos, motionwise, ...) abort "{{{
+function! s:search_by_group(priority_group, type, curpos, ...) abort "{{{
   let textobj = get(a:000, 0, 0)
   while a:priority_group != []
     for rule in a:priority_group
-      call rule.search(a:curpos, a:motionwise)
+      call rule.search(a:curpos, a:type)
     endfor
     call filter(a:priority_group, 's:lib.is_valid_region(v:val.region)')
     call s:lib.sort(a:priority_group, function('s:compare_len'))

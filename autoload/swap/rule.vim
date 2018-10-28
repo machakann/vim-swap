@@ -17,14 +17,14 @@ let s:Rule = {
       \ }
 
 
-function! s:Rule.search(curpos, motionwise) dict abort  "{{{
+function! s:Rule.search(curpos, type) dict abort  "{{{
   let timeout = g:swap#stimeoutlen
   if has_key(self, 'body')
     if self.region == s:NULLREGION
       let self.region = s:search_body(self.body, a:curpos, timeout)
       if self.region != s:NULLREGION && s:lib.is_in_between(a:curpos, self.region.head, self.region.tail)
         let self.region.len = s:lib.get_buf_length(self.region)
-        let self.region.type = a:motionwise
+        let self.region.type = a:type
         return self.region
       endif
     endif
@@ -40,7 +40,7 @@ function! s:Rule.search(curpos, motionwise) dict abort  "{{{
       let [head, tail] = s:get_outer_pos(self.surrounds, self.region)
       if s:lib.is_in_between(a:curpos, head, tail)
         let self.region.len = s:lib.get_buf_length(self.region)
-        let self.region.type = a:motionwise
+        let self.region.type = a:type
         return self.region
       endif
     endif
