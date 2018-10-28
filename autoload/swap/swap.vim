@@ -157,7 +157,7 @@ function! s:Swap._swap_once(buffer, input, undojoin) dict abort "{{{
   let newbuffer.region.head = getpos("'[")
   let newbuffer.region.tail = getpos("']")
   call newbuffer.update_items()
-  call newbuffer.get_item(input[1]).cursor()
+  call newbuffer.get_item(input[1], s:TRUE).cursor()
   call newbuffer.update_sharp(getpos('.'))
   call newbuffer.update_hat()
   return [newbuffer, s:TRUE]
@@ -177,7 +177,7 @@ function! s:Swap._restore_buffer(input, undojoin) abort "{{{
   let newbuffer.region.head = getpos("'[")
   let newbuffer.region.tail = getpos("']")
   call newbuffer.update_items()
-  call newbuffer.get_item(a:input[2]).cursor()
+  call newbuffer.get_item(a:input[2], s:TRUE).cursor()
   call newbuffer.update_sharp(getpos('.'))
   call newbuffer.update_hat()
   return [newbuffer, s:TRUE]
@@ -200,7 +200,7 @@ function! s:Swap._sort_items(buffer, input, undojoin) abort "{{{
   let newbuffer.region.tail = getpos("']")
   call newbuffer.update_items()
   let pos = newbuffer.update_sharp(curpos)
-  call newbuffer.get_item(pos).cursor()
+  call newbuffer.get_item(pos, s:TRUE).cursor()
   call newbuffer.update_hat()
   return [newbuffer, s:TRUE]
 endfunction "}}}

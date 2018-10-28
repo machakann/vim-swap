@@ -161,12 +161,12 @@ endfunction "}}}
 function! s:Buffer.update_sharp(curpos) dict abort "{{{
   let sharp = 0
   if self.all != []
-    if s:lib.is_ahead(self.region.head, a:curpos)
+    if s:lib.in_order_of(a:curpos, self.region.head)
       let sharp = 1
     else
       for text in self.items
         let sharp += 1
-        if s:lib.is_ahead(text.region.tail, a:curpos)
+        if s:lib.in_order_of(a:curpos, text.region.tail)
           break
         endif
       endfor
@@ -219,10 +219,15 @@ endfunction "}}}
 
 
 " Sanitize and materialize a position
-function! s:Buffer.get_pos(pos) abort "{{{
+function! s:Buffer.get_pos(pos, ...) abort "{{{
   if type(a:pos) is# s:TYPENUM
     " 1, 2, 3, ...
-    return self.is_valid(a:pos) ? a:pos : 0
+    if self.is_valid(a:pos)
+      return a:pos
+    else
+      let clamp = get(a:000, 0, s:FALSE)
+      return clamp ? s:clamp(a:pos, 1, len(self.items)) : 0
+    endif
   elseif type(a:pos) is# s:TYPESTR
     if a:pos =~# '\m^\d\+$'
       " '1', '2', '3', ...
@@ -237,12 +242,14 @@ function! s:Buffer.get_pos(pos) abort "{{{
       endif
     endif
   endif
-  return 0
+  echoerr printf('vim-swap: Invalid argument for Buffer.get_pos(); %s [type: %d]',
+          \ string(a:pos), type(a:pos))
 endfunction "}}}
 
 
-function! s:Buffer.get_item(pos) abort "{{{
-  let pos = self.get_pos(a:pos)
+function! s:Buffer.get_item(pos, ...) abort "{{{
+  let clamp = get(a:000, 0, s:FALSE)
+  let pos = self.get_pos(a:pos, clamp)
   if pos is# 0
     return {}
   endif
@@ -317,6 +324,11 @@ endfunction "}}}
 function! s:substitute_symbol(str, symbol, symbol_idx) abort "{{{
   let symbol = s:lib.escape(a:symbol)
   return substitute(a:str, symbol, a:symbol_idx, '')
+endfunction "}}}
+
+
+function! s:clamp(x, lo, hi) abort "{{{
+  return max([a:lo, min(a:x, a:hi)])
 endfunction "}}}
 "}}}
 

@@ -89,7 +89,7 @@ function! s:search_body(body, pos, timeout) abort "{{{
   let tail = searchpos(a:body, 'eW', 0, a:timeout)
   if tail == s:NULLCOORD | return deepcopy(s:NULLREGION) | endif
   let tail = s:lib.c2p(tail)
-  if s:lib.is_ahead(tail, head) && s:lib.is_in_between(a:pos, head, tail)
+  if s:lib.in_order_of(head, tail) && s:lib.is_in_between(a:pos, head, tail)
     let target = extend(deepcopy(s:NULLREGION), {'head': head, 'tail': tail}, 'force')
   else
     let target = deepcopy(s:NULLREGION)

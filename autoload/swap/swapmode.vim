@@ -198,9 +198,9 @@ function! s:Swapmode.revise_cursor_pos() dict abort  "{{{
   let head = self.get_first_item().region.head
   let tail = self.get_last_item().region.tail
   let self.pos.last_current = self.pos.current
-  if s:lib.is_ahead(head, curpos)
+  if s:lib.in_order_of(curpos, head)
     let self.pos.current = 0
-  elseif curpos == tail || s:lib.is_ahead(curpos, tail)
+  elseif curpos == tail || s:lib.in_order_of(tail, curpos)
     let self.pos.current = self.pos.end + 1
   else
     let self.pos.current = self.buffer.update_sharp(curpos)

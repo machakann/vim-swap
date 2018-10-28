@@ -67,12 +67,14 @@ endfunction
 
 function! s:is_valid_region(region) abort "{{{
   return a:region.head != s:const.NULLPOS && a:region.tail != s:const.NULLPOS
-        \ && (a:region.type is# 'line' || s:is_ahead(a:region.tail, a:region.head))
+        \ && (a:region.type is# 'line' || s:in_order_of(a:region.head, a:region.tail))
 endfunction "}}}
 
 
-function! s:is_ahead(pos1, pos2) abort  "{{{
-  return a:pos1[1] > a:pos2[1] || (a:pos1[1] == a:pos2[1] && a:pos1[2] > a:pos2[2])
+" Return true is pos2 is later than pos1 on the buffer
+" NOTE: Return false even if pos1 == pos2
+function! s:in_order_of(pos1, pos2) abort  "{{{
+  return a:pos1[1] < a:pos2[1] || (a:pos1[1] == a:pos2[1] && a:pos1[2] < a:pos2[2])
 endfunction "}}}
 
 
@@ -126,7 +128,7 @@ let s:Lib.buf_byte_len = function('s:buf_byte_len')
 let s:Lib.c2p = function('s:c2p')
 let s:Lib.sort = s:has_patch_7_4_358 ? function('sort') : function('s:sort')
 let s:Lib.is_valid_region = function('s:is_valid_region')
-let s:Lib.is_ahead = function('s:is_ahead')
+let s:Lib.in_order_of = function('s:in_order_of')
 let s:Lib.is_in_between = function('s:is_in_between')
 let s:Lib.escape = function('s:escape')
 let s:Lib.virtcol2col = function('s:virtcol2col')
