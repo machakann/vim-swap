@@ -42,7 +42,7 @@ function! s:c2p(coord) abort  "{{{
 endfunction "}}}
 
 
-function! s:sort(list, func, ...) abort
+function! s:sort(list, func, ...) abort "{{{
   " FIXME: The number of item in a:list would not be large, but if there was
   "        any efficient argorithm, I would rewrite here.
   let n = len(a:list)
@@ -61,8 +61,7 @@ function! s:sort(list, func, ...) abort
     endif
   endfor
   return a:list
-endfunction
-"}}}
+endfunction "}}}
 
 
 function! s:is_valid_region(region) abort "{{{

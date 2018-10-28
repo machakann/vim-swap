@@ -267,7 +267,7 @@ function! s:suite.buf_byte_len() abort "{{{
   let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 8)
 endfunction "}}}
-function! s:suite.parse_charwise() dict abort  "{{{
+function! s:suite.parse_charwise() abort  "{{{
   let rule = {'surrounds': ['(', ')', 1], 'delimiter': [',\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']}
 
   " #1

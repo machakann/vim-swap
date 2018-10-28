@@ -18,7 +18,7 @@ let s:Clock = {
       \ }
 
 
-function! s:Clock.start() dict abort  "{{{
+function! s:Clock.start() abort  "{{{
   if self.started
     if self.paused
       let self.losstime += str2float(reltimestr(reltime(self.pause_at)))
@@ -33,13 +33,13 @@ function! s:Clock.start() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:Clock.pause() dict abort "{{{
+function! s:Clock.pause() abort "{{{
   let self.pause_at = reltime()
   let self.paused   = 1
 endfunction "}}}
 
 
-function! s:Clock.elapsed() dict abort "{{{
+function! s:Clock.elapsed() abort "{{{
   if self.started
     let total = str2float(reltimestr(reltime(self.zerotime)))
     return floor((total - self.losstime)*1000)
@@ -48,7 +48,7 @@ function! s:Clock.elapsed() dict abort "{{{
 endfunction "}}}
 
 
-function! s:Clock.stop() dict abort  "{{{
+function! s:Clock.stop() abort  "{{{
   let self.started  = 0
   let self.paused   = 0
   let self.losstime = 0

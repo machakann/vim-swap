@@ -89,7 +89,7 @@ function! s:Swap._region(start, end, type) abort "{{{
 endfunction "}}}
 
 
-function! s:Swap.operatorfunc(type) dict abort "{{{
+function! s:Swap.operatorfunc(type) abort "{{{
   if self.mode is# 'n'
     call self.around_cursor()
   elseif self.mode is# 'x'
@@ -101,7 +101,7 @@ function! s:Swap.operatorfunc(type) dict abort "{{{
 endfunction "}}}
 
 
-function! s:Swap._swap_interactive(buffer) dict abort "{{{
+function! s:Swap._swap_interactive(buffer) abort "{{{
   if a:buffer == {}
     return []
   endif
@@ -124,7 +124,7 @@ function! s:Swap._swap_interactive(buffer) dict abort "{{{
 endfunction "}}}
 
 
-function! s:Swap._swap_sequential(buffer) dict abort  "{{{
+function! s:Swap._swap_sequential(buffer) abort  "{{{
   if a:buffer == {}
     return
   endif
@@ -142,7 +142,7 @@ function! s:Swap._swap_sequential(buffer) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:Swap._swap_once(buffer, input, undojoin) dict abort "{{{
+function! s:Swap._swap_once(buffer, input, undojoin) abort "{{{
   " substitute and eval symbols
   let input = map(copy(a:input), 'a:buffer.get_pos(v:val)')
   if !s:is_valid_input(input, a:buffer)

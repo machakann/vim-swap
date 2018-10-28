@@ -79,7 +79,7 @@ let s:Swapmode = {
 
 
 " This function asks user to input keys to determine an operation
-function! s:Swapmode.get_input(buffer) dict abort "{{{
+function! s:Swapmode.get_input(buffer) abort "{{{
   if empty(a:buffer)
     return []
   endif
@@ -121,7 +121,7 @@ function! s:Swapmode.get_input(buffer) dict abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.echo(phase, input) dict abort "{{{
+function! s:Swapmode.echo(phase, input) abort "{{{
   if a:phase >= s:DONE
     return
   endif
@@ -185,7 +185,7 @@ function! s:Swapmode.echo(phase, input) dict abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.revise_cursor_pos() dict abort  "{{{
+function! s:Swapmode.revise_cursor_pos() abort  "{{{
   let curpos = getpos('.')
   let item = self.get_current_item()
   if !empty(item) &&
@@ -229,7 +229,7 @@ endfunction "}}}
 "   input : the determined input
 "   buffer: the buffer before changed by the input
 "   cursor: the positional number of cursor when the buffer is restored
-function! s:Swapmode.add_history(input) dict abort  "{{{
+function! s:Swapmode.add_history(input) abort  "{{{
   call self._truncate_history()
   let histitem = {
     \ 'input': copy(a:input),
@@ -240,7 +240,7 @@ function! s:Swapmode.add_history(input) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:Swapmode._truncate_history() dict abort  "{{{
+function! s:Swapmode._truncate_history() abort  "{{{
   if self.undolevel == 0
     return self.history
   endif
@@ -256,7 +256,7 @@ function! s:Swapmode.export_history() abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.set_current(pos) dict abort "{{{
+function! s:Swapmode.set_current(pos) abort "{{{
   let item = self.get_item(a:pos)
   if empty(item)
     return
@@ -306,7 +306,7 @@ function! s:Swapmode.get_nonblank_pos(pos) abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.highlight() dict abort "{{{
+function! s:Swapmode.highlight() abort "{{{
   if !g:swap#highlight
     return
   endif
@@ -323,7 +323,7 @@ function! s:Swapmode.highlight() dict abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.clear_highlight() dict abort  "{{{
+function! s:Swapmode.clear_highlight() abort  "{{{
   " NOTE: This function itself does not redraw.
   if !g:swap#highlight
     return
@@ -337,7 +337,7 @@ function! s:Swapmode.clear_highlight() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.update_highlight() dict abort  "{{{
+function! s:Swapmode.update_highlight() abort  "{{{
   if !g:swap#highlight
     return
   endif
@@ -369,7 +369,7 @@ function! s:Swapmode.select(pos) abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.pos.is_valid(pos) dict abort  "{{{
+function! s:Swapmode.pos.is_valid(pos) abort  "{{{
   let pos = str2nr(a:pos)
   return pos >= 1 && pos <= self.end
 endfunction "}}}
@@ -490,7 +490,7 @@ endfunction "}}}
 "    move_next : Move to the next item.
 "    swap_prev : Swap the current item with the previous item.
 "    swap_next : Swap the current item with the next item.
-function! s:Swapmode.key_nr(nr, phase, input) dict abort  "{{{
+function! s:Swapmode.key_nr(nr, phase, input) abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
@@ -531,7 +531,7 @@ function! s:Swapmode.key_9(phase, input) abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_CR(phase, input) dict abort  "{{{
+function! s:Swapmode.key_CR(phase, input) abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
@@ -544,7 +544,7 @@ function! s:Swapmode.key_CR(phase, input) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_BS(phase, input) dict abort  "{{{
+function! s:Swapmode.key_BS(phase, input) abort  "{{{
   let phase = a:phase
   let input = a:input
   if phase is# s:FIRST
@@ -567,7 +567,7 @@ function! s:Swapmode.key_BS(phase, input) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_undo(phase, input) dict abort "{{{
+function! s:Swapmode.key_undo(phase, input) abort "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
@@ -585,7 +585,7 @@ function! s:Swapmode.key_undo(phase, input) dict abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_redo(phase, input) dict abort "{{{
+function! s:Swapmode.key_redo(phase, input) abort "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
@@ -602,7 +602,7 @@ function! s:Swapmode.key_redo(phase, input) dict abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_current(phase, input) dict abort "{{{
+function! s:Swapmode.key_current(phase, input) abort "{{{
   let phase = a:phase
   let input = s:set(a:input, phase, string(self.pos.current))
   if phase is# s:FIRST
@@ -616,7 +616,7 @@ function! s:Swapmode.key_current(phase, input) dict abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_fix_nr(phase, input) dict abort "{{{
+function! s:Swapmode.key_fix_nr(phase, input) abort "{{{
   let phase = a:phase
   if phase is# s:FIRST
     let pos = str2nr(a:input[s:FIRST])
@@ -639,7 +639,7 @@ function! s:Swapmode.key_fix_nr(phase, input) dict abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_move_prev(phase, input) dict abort  "{{{
+function! s:Swapmode.key_move_prev(phase, input) abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
@@ -655,7 +655,7 @@ function! s:Swapmode.key_move_prev(phase, input) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_move_next(phase, input) dict abort  "{{{
+function! s:Swapmode.key_move_next(phase, input) abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
@@ -671,7 +671,7 @@ function! s:Swapmode.key_move_next(phase, input) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_swap_prev(phase, input) dict abort  "{{{
+function! s:Swapmode.key_swap_prev(phase, input) abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
@@ -685,7 +685,7 @@ function! s:Swapmode.key_swap_prev(phase, input) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_swap_next(phase, input) dict abort  "{{{
+function! s:Swapmode.key_swap_next(phase, input) abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
@@ -699,7 +699,11 @@ function! s:Swapmode.key_swap_next(phase, input) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_Esc(phase, input) dict abort  "{{{
+function! s:Swapmode.key_sort(phase, input) abort "{{{
+endfunction "}}}
+
+
+function! s:Swapmode.key_Esc(phase, input) abort  "{{{
   call self.echo(a:phase, a:input)
   let phase = s:CANCELLED
   return [phase, a:input]

@@ -27,7 +27,7 @@ let s:Item = {
   \   'highlightid': [],
   \   'region': deepcopy(s:NULLREGION),
   \ }
-function! s:Item.cursor(...) dict abort "{{{
+function! s:Item.cursor(...) abort "{{{
   let to_tail = get(a:000, 0, 0)
   if to_tail
     call setpos('.', self.region.tail)
@@ -37,7 +37,7 @@ function! s:Item.cursor(...) dict abort "{{{
 endfunction "}}}
 
 
-function! s:Item.highlight(group) dict abort "{{{
+function! s:Item.highlight(group) abort "{{{
   if self.region.len <= 0
     return
   endif
@@ -77,7 +77,7 @@ function! s:Item.highlight(group) dict abort "{{{
 endfunction "}}}
 
 
-function! s:Item.clear_highlight() dict abort  "{{{
+function! s:Item.clear_highlight() abort  "{{{
   call filter(map(self.highlightid, 's:matchdelete(v:val)'), 'v:val > 0')
 endfunction "}}}
 
@@ -128,7 +128,7 @@ let s:Buffer = {
   \ }
 
 
-function! s:Buffer.swappable() dict abort  "{{{
+function! s:Buffer.swappable() abort  "{{{
   " Check whether the region matches with the conditions to treat as the target.
   " NOTE: The conditions are the following three.
   "       1. Include two items at least.
@@ -147,7 +147,7 @@ function! s:Buffer.swappable() dict abort  "{{{
 endfunction "}}}
 
 
-function! s:Buffer.selectable() dict abort  "{{{
+function! s:Buffer.selectable() abort  "{{{
   return filter(copy(self.items), 'v:val.string isnot# ""') != []
 endfunction "}}}
 
@@ -158,7 +158,7 @@ function! s:Buffer.update_items() abort "{{{
 endfunction "}}}
 
 
-function! s:Buffer.update_sharp(curpos) dict abort "{{{
+function! s:Buffer.update_sharp(curpos) abort "{{{
   let sharp = 0
   if self.all != []
     if s:lib.in_order_of(a:curpos, self.region.head)
@@ -180,7 +180,7 @@ function! s:Buffer.update_sharp(curpos) dict abort "{{{
 endfunction "}}}
 
 
-function! s:Buffer.update_hat() dict abort "{{{
+function! s:Buffer.update_hat() abort "{{{
   let hat = 0
   for text in self.items
     let hat += 1
@@ -193,7 +193,7 @@ function! s:Buffer.update_hat() dict abort "{{{
 endfunction "}}}
 
 
-function! s:Buffer.update_dollar() dict abort "{{{
+function! s:Buffer.update_dollar() abort "{{{
   let dollar = len(self.items)
   let self.mark['$'] = dollar
   return dollar

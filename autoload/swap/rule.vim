@@ -17,7 +17,7 @@ let s:Rule = {
       \ }
 
 
-function! s:Rule.search(curpos, type) dict abort  "{{{
+function! s:Rule.search(curpos, type) abort  "{{{
   let timeout = g:swap#stimeoutlen
   if has_key(self, 'body')
     if self.region == s:NULLREGION
@@ -50,7 +50,7 @@ function! s:Rule.search(curpos, type) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:Rule.match(region) dict abort  "{{{
+function! s:Rule.match(region) abort  "{{{
   let timeout = g:swap#stimeoutlen
 
   if has_key(self, 'body')
@@ -75,7 +75,7 @@ function! s:Rule.match(region) dict abort  "{{{
 endfunction "}}}
 
 
-function! s:Rule.initialize() dict abort  "{{{
+function! s:Rule.initialize() abort  "{{{
   let self.region = deepcopy(s:NULLREGION)
   return self
 endfunction "}}}
