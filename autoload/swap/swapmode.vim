@@ -66,16 +66,16 @@ endfunction "}}}
 " Swapmode object - for interactive determination of swap actions
 " swap#swapmode#new() returns a instance of this object
 let s:Swapmode = {
-      \   'pos': {
-      \     'current': 0,
-      \     'end': 0,
-      \     'last_current': 0,
-      \     'selected': 0,
-      \   },
-      \   'buffer': {},
-      \   'history': [],
-      \   'undolevel': 0,
-      \ }
+  \   'pos': {
+  \     'current': 0,
+  \     'end': 0,
+  \     'last_current': 0,
+  \     'selected': 0,
+  \   },
+  \   'buffer': {},
+  \   'history': [],
+  \   'undolevel': 0,
+  \ }
 
 
 " This function asks user to input keys to determine an operation

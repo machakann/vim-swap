@@ -13,8 +13,8 @@ endfunction "}}}
 
 
 let s:Rule = {
-      \   'region': deepcopy(s:NULLREGION)
-      \ }
+  \   'region': deepcopy(s:NULLREGION),
+  \ }
 
 
 function! s:Rule.search(curpos, type) abort  "{{{

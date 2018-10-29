@@ -10,12 +10,12 @@ endfunction "}}}
 
 
 let s:Clock = {
-      \   'started' : 0,
-      \   'paused'  : 0,
-      \   'losstime': 0,
-      \   'zerotime': reltime(),
-      \   'pause_at': reltime(),
-      \ }
+  \   'started' : 0,
+  \   'paused'  : 0,
+  \   'losstime': 0,
+  \   'zerotime': reltime(),
+  \   'pause_at': reltime(),
+  \ }
 
 
 function! s:Clock.start() abort  "{{{

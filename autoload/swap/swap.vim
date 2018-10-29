@@ -23,11 +23,11 @@ endfunction "}}}
 
 
 let s:Swap = {
-      \   'dotrepeat': s:FALSE,
-      \   'mode': '',
-      \   'rules': [],
-      \   'input_list': [],
-      \ }
+  \   'dotrepeat': s:FALSE,
+  \   'mode': '',
+  \   'rules': [],
+  \   'input_list': [],
+  \ }
 
 
 function! s:Swap.around_cursor() abort "{{{
