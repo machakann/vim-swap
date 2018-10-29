@@ -64,6 +64,16 @@ function! s:sort(list, func, ...) abort "{{{
 endfunction "}}}
 
 
+function! s:compare_ascend(i, j) abort "{{{
+  return a:i is# a:j ? 0 : a:i < a:j ? -1 : 1
+endfunction "}}}
+
+
+function! s:compare_descend(i, j) abort "{{{
+  return a:i is# a:j ? 0 : a:i > a:j ? -1 : 1
+endfunction "}}}
+
+
 function! s:is_valid_region(region) abort "{{{
   return a:region.head != s:const.NULLPOS && a:region.tail != s:const.NULLPOS
         \ && (a:region.type is# 'line' || s:in_order_of(a:region.head, a:region.tail))
@@ -126,6 +136,8 @@ let s:Lib.get_buf_length = function('s:get_buf_length')
 let s:Lib.buf_byte_len = function('s:buf_byte_len')
 let s:Lib.c2p = function('s:c2p')
 let s:Lib.sort = s:has_patch_7_4_358 ? function('sort') : function('s:sort')
+let s:Lib.compare_ascend = function('s:compare_ascend')
+let s:Lib.compare_descend = function('s:compare_descend')
 let s:Lib.is_valid_region = function('s:is_valid_region')
 let s:Lib.in_order_of = function('s:in_order_of')
 let s:Lib.is_in_between = function('s:is_in_between')

@@ -22,6 +22,13 @@ else
 endif
 
 
+" sort functions
+let g:swap#swapmode#sortfunc =
+  \ get(g:, 'swap#swapmode#sortfunc', [s:lib.compare_ascend])
+let g:swap#swapmode#SORTFUNC =
+  \ get(g:, 'swap#swapmode#SORTFUNC', [s:lib.compare_descend])
+
+
 function! swap#swapmode#new() abort  "{{{
   return deepcopy(s:Swapmode)
 endfunction "}}}
@@ -126,26 +133,54 @@ function! s:Swapmode.echo(phase, input) abort "{{{
     return
   endif
 
-  let max_len = &columns - 25
   let message = []
-
   for histitem in self.history[: -1*(self.undolevel+1)]
-    let message += [[histitem.input[0], g:swap#hl_itemnr]]
-    let message += [[g:swap#arrow, g:swap#hl_arrow]]
-    let message += [[histitem.input[1], g:swap#hl_itemnr]]
-    let message += [[', ', 'NONE']]
+    let message += self._msg_hist(histitem.input)
   endfor
+  if !empty(message)
+    call remove(message, -1)
+  endif
+  let message += self._msg_input(a:phase, a:input)
+  call self._fit_msg(message)
+
+  echohl ModeMsg
+  echo 'Swap mode: '
+  for mes in message
+    execute 'echohl ' . mes[1]
+    echon mes[0]
+  endfor
+  echohl NONE
+endfunction "}}}
+
+
+function! s:Swapmode._msg_hist(input) abort "{{{
+  if a:input[0] is# 'sort'
+    return [['sort', g:swap#hl_itemnr],
+          \ [', ', 'NONE']]
+  endif
+  return [[a:input[0], g:swap#hl_itemnr],
+        \ [g:swap#arrow, g:swap#hl_arrow],
+        \ [a:input[1], g:swap#hl_itemnr],
+        \ [', ', 'NONE']]
+endfunction "}}}
+
+
+function! s:Swapmode._msg_input(phase, input) abort "{{{
+  if a:input[0] is# 'sort'
+    return [[', ', 'NONE'],
+          \ ['sort', g:swap#hl_itemnr]]
+  endif
+
+  let message = []
   if a:phase is# s:FIRST
     if a:input[0] isnot# ''
       let higoup = self.pos.is_valid(a:input[0])
                \ ? g:swap#hl_itemnr : 'ErrorMsg'
+      let message += [[', ', 'NONE']]
       let message += [[a:input[0], higoup]]
-    else
-      if !empty(message)
-        call remove(message, -1)
-      endif
     endif
-  elseif a:phase == 1
+  elseif a:phase is# s:SECOND
+    let message += [[', ', 'NONE']]
     if a:input[1] isnot# ''
       let message += [[a:input[0], g:swap#hl_itemnr]]
       let message += [[g:swap#arrow, g:swap#hl_arrow]]
@@ -157,31 +192,33 @@ function! s:Swapmode.echo(phase, input) abort "{{{
       let message += [[g:swap#arrow, g:swap#hl_arrow]]
     endif
   endif
+  return message
+endfunction "}}}
 
-  if message != []
-    let len = eval(join(map(copy(message), 'strwidth(v:val[0])'), '+'))
-    if len > max_len
-      while len > max_len-1
-        let mes  = remove(message, 0)
-        let len -= strwidth(mes[0])
-      endwhile
-      if len < 0
-        let mes = [mes[0][len :], mes[1]]
-        call insert(message, mes)
-      endif
-      let precedes = matchstr(&listchars, 'precedes:\zs.\ze')
-      let precedes = precedes is# '' ? '<' : precedes
-      call insert(message, [precedes, 'SpecialKey'])
-    endif
+
+function! s:Swapmode._fit_msg(message) abort "{{{
+  if empty(a:message)
+    return a:message
   endif
 
-  echohl ModeMsg
-  echo 'Swap mode: '
-  for mes in message
-    execute 'echohl ' . mes[1]
-    echon mes[0]
-  endfor
-  echohl NONE
+  let len = eval(join(map(copy(a:message), 'strwidth(v:val[0])'), '+'))
+  let max_len = &columns - 25
+  if len <= max_len
+    return a:message
+  endif
+
+  while len > max_len-1
+    let mes  = remove(a:message, 0)
+    let len -= strwidth(mes[0])
+  endwhile
+  if len < 0
+    let mes = [mes[0][len :], mes[1]]
+    call insert(a:message, mes)
+  endif
+  let precedes = matchstr(&listchars, 'precedes:\zs.\ze')
+  let precedes = precedes is# '' ? '<' : precedes
+  call insert(a:message, [precedes, 'SpecialKey'])
+  return a:message
 endfunction "}}}
 
 
@@ -474,6 +511,24 @@ function! s:next_nonblank(items, currentpos) abort  "{{{
 endfunction "}}}
 
 
+function! s:msg_hist(input) abort "{{{
+  if a:input[0] is# 'sort'
+    return [
+      \ [a:input[0], g:swap#hl_itemnr],
+      \ [', ', 'NONE']]
+  endif
+  return [
+    \ [a:input[0], g:swap#hl_itemnr],
+    \ [g:swap#arrow, g:swap#hl_arrow],
+    \ [a:input[1], g:swap#hl_itemnr],
+    \ [', ', 'NONE']]
+endfunction "}}}
+
+
+function! s:msg_input(input) abort "{{{
+endfunction "}}}
+
+
 " NOTE: Key function list
 "    {0~9} : Input {0~9} to specify an item.
 "    CR    : Fix the input number. If nothing has been input, fix to the item under the cursor.
@@ -695,6 +750,24 @@ endfunction "}}}
 
 
 function! s:Swapmode.key_sort(phase, input) abort "{{{
+  if a:phase >= s:DONE
+    return [a:phase, a:input]
+  endif
+
+  let input = ['sort'] + g:swap#swapmode#sortfunc
+  let phase = s:DONE
+  return [phase, input]
+endfunction "}}}
+
+
+function! s:Swapmode.key_SORT(phase, input) abort "{{{
+  if a:phase >= s:DONE
+    return [a:phase, a:input]
+  endif
+
+  let input = ['sort'] + g:swap#swapmode#SORTFUNC
+  let phase = s:DONE
+  return [phase, input]
 endfunction "}}}
 
 

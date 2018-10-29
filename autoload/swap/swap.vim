@@ -30,19 +30,19 @@ let s:Swap = {
   \ }
 
 
-function! s:Swap.around_cursor() abort "{{{
+function! s:Swap.around(pos) abort "{{{
   let options = s:displace_options()
   try
-    call self._around_cursor()
+    call self._around(a:pos)
   finally
     call s:restore_options(options)
   endtry
 endfunction "}}}
 
 
-function! s:Swap._around_cursor() abort "{{{
+function! s:Swap._around(pos) abort "{{{
   let rules = deepcopy(self.rules)
-  let [buffer, rule] = s:search(rules, 'char')
+  let [buffer, rule] = s:search(rules, a:pos, 'char')
   if self.dotrepeat
     call self._swap_sequential(buffer)
   else
@@ -91,7 +91,7 @@ endfunction "}}}
 
 function! s:Swap.operatorfunc(type) abort "{{{
   if self.mode is# 'n'
-    call self.around_cursor()
+    call self.around(getpos('.'))
   elseif self.mode is# 'x'
     let start = getpos("'[")
     let end = getpos("']")
@@ -207,10 +207,10 @@ endfunction "}}}
 
 
 " This method is mainly for textobjects
-function! s:Swap.search(type, ...) abort "{{{
+function! s:Swap.search(pos, type, ...) abort "{{{
   let rules = deepcopy(self.rules)
   let textobj = get(a:000, 0, 0)
-  return s:search(rules, a:type, textobj)
+  return s:search(rules, a:pos, a:type, textobj)
 endfunction "}}}
 
 
@@ -339,10 +339,9 @@ function! s:get_priority_group(rules) abort "{{{
 endfunction "}}}
 
 
-function! s:search(rules, type, ...) abort "{{{
+function! s:search(rules, pos, type, ...) abort "{{{
   let view = winsaveview()
   let textobj = get(a:000, 0, 0)
-  let curpos = getpos('.')
   let buffer = {}
   let virtualedit = &virtualedit
   let &virtualedit = 'onemore'
@@ -350,7 +349,7 @@ function! s:search(rules, type, ...) abort "{{{
     while a:rules != []
       let priority_group = s:get_priority_group(a:rules)
       let [buffer, rule] = s:search_by_group(priority_group, a:type,
-                                           \ curpos, textobj)
+                                           \ a:pos, textobj)
       if buffer != {}
         break
       endif
@@ -487,7 +486,7 @@ let s:INVALID = 0
 
 function! s:sort(buffer, args) abort "{{{
   let itemstr_list = map(copy(a:buffer.items), 'v:val.string')
-  sandbox let sorted_list = call('sort', [copy(itemstr_list)] + a:args)
+  sandbox let sorted_list = call(s:lib.sort, [copy(itemstr_list)] + a:args)
   if len(sorted_list) != len(itemstr_list)
     echoerr printf('vim-swap: An Error occurred in sorting items; the number of items has been changed. Input: %s, Output: %s',
                  \ string(itemstr_list), string(sorted_list))

@@ -703,6 +703,37 @@ function! s:suite.integration_normal() abort  "{{{
   execute "normal 2G6lg<"
   call g:assert.equals(getline('.'), 'bar, foo, baz)', 'failed at #28')
   %delete
+
+  " #29
+  call setline(1, '(dd, bb, cc, aa)')
+  execute "normal 1Glgss\<Esc>"
+  call g:assert.equals(getline('.'), '(aa, bb, cc, dd)', 'failed at #29')
+
+  " #30
+  call setline(1, '(dd, bb, cc, aa)')
+  execute "normal 1GlgsS\<Esc>"
+  call g:assert.equals(getline('.'), '(dd, cc, bb, aa)', 'failed at #30')
+
+  " #31
+  call setline(1, '(dd, bb, cc, aa)')
+  let saved = g:swap#swapmode#sortfunc
+  let g:swap#swapmode#sortfunc = [s:lib.compare_descend]
+  execute "normal 1Glgss\<Esc>"
+  call g:assert.equals(getline('.'), '(dd, cc, bb, aa)', 'failed at #31')
+  let g:swap#swapmode#sortfunc = saved
+
+  " #32
+  call setline(1, '(dd, bb, cc, aa)')
+  let saved = g:swap#swapmode#SORTFUNC
+  let g:swap#swapmode#SORTFUNC = [s:lib.compare_ascend]
+  execute "normal 1GlgsS\<Esc>"
+  call g:assert.equals(getline('.'), '(aa, bb, cc, dd)', 'failed at #32')
+  let g:swap#swapmode#SORTFUNC = saved
+
+  " #33
+  call setline(1, '(dd, bb, cc, aa)')
+  execute "normal 1Glgss12\<Esc>"
+  call g:assert.equals(getline('.'), '(bb, aa, cc, dd)', 'failed at #33')
 endfunction "}}}
 function! s:suite.integration_normal_selection_option() abort  "{{{
   " #1
@@ -762,6 +793,16 @@ function! s:suite.integration_visual() abort  "{{{
   call g:assert.equals(getline(2), 'for', 'failed at #3')
   call g:assert.equals(getline(3), 'baz', 'failed at #3')
   %delete
+
+  " #4
+  call setline(1, 'dd, bb, cc, aa')
+  execute "normal ggv$gss\<Esc>"
+  call g:assert.equals(getline('.'), 'aa, bb, cc, dd', 'failed at #4')
+
+  " #5
+  call setline(1, 'dd, bb, cc, aa')
+  execute "normal ggv$gsS\<Esc>"
+  call g:assert.equals(getline('.'), 'dd, cc, bb, aa', 'failed at #5')
 endfunction "}}}
 function! s:suite.integration_textobj_i() abort "{{{
   " #1
