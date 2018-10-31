@@ -1040,6 +1040,143 @@ function! s:suite.integration_textobj_a_exclusive() abort "{{{
 endfunction "}}}
 
 
+" functions
+function! s:suite.swap_region() abort "{{{
+  " #1
+  call setline(1, '(foo, bar, baz)')
+  let start = [0, 1, 2, 0]
+  let end = [0, 1, 14, 0]
+  let type = 'char'
+  call swap#region(start, end, type, [[1, 2]])
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #1')
+
+  " #2
+  call setline(1, '(foo, bar, baz)')
+  call setpos("'a", [0, 1, 2, 0])
+  call setpos("'b", [0, 1, 14, 0])
+  call swap#region("'a", "'b", 'v', [[1, 2]])
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #2')
+
+  " #3
+  call setline(1, '(foo, bar; baz)')
+  let start = [0, 1, 2, 0]
+  let end = [0, 1, 14, 0]
+  let type = 'char'
+  let g:swap#rules = [{
+  \     'description': 'Reorder the selected comma-delimited word in visual mode.',
+  \     'mode': 'x',
+  \     'delimiter': ['\s*,\s*'],
+  \   }]
+  let rules = [{
+  \     'description': 'Reorder the selected semicolon-delimited word in visual mode.',
+  \     'mode': 'x',
+  \     'delimiter': ['\s*;\s*'],
+  \   }]
+  call swap#region(start, end, type, [[1, 2]], rules)
+  call g:assert.equals(getline('.'), '(baz; foo, bar)', 'failed at #3')
+  unlet! g:swap#rules
+endfunction "}}}
+function! s:suite.swap_region_interactively() abort "{{{
+  " #1
+  call setline(1, '(foo, bar, baz)')
+  let start = [0, 1, 2, 0]
+  let end = [0, 1, 14, 0]
+  let type = 'char'
+  execute "normal! :\<C-u>call swap#region_interactively(start, end, type)\<CR>12\<Esc>"
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #1')
+
+  " #2
+  call setline(1, '(foo, bar, baz)')
+  call setpos("'a", [0, 1, 2, 0])
+  call setpos("'b", [0, 1, 14, 0])
+  execute "normal! :\<C-u>call swap#region_interactively(\"'a\", \"'b\", 'v')\<CR>12\<Esc>"
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #2')
+
+  " #3
+  call setline(1, '(foo, bar; baz)')
+  let start = [0, 1, 2, 0]
+  let end = [0, 1, 14, 0]
+  let type = 'char'
+  let g:swap#rules = [{
+  \     'description': 'Reorder the selected comma-delimited word in visual mode.',
+  \     'mode': 'x',
+  \     'delimiter': ['\s*,\s*'],
+  \   }]
+  let rules = [{
+  \     'description': 'Reorder the selected semicolon-delimited word in visual mode.',
+  \     'mode': 'x',
+  \     'delimiter': ['\s*;\s*'],
+  \   }]
+  execute "normal! :\<C-u>call swap#region_interactively(start, end, type, rules)\<CR>12\<Esc>"
+  call g:assert.equals(getline('.'), '(baz; foo, bar)', 'failed at #3')
+  unlet! g:swap#rules
+endfunction "}}}
+function! s:suite.swap_around_pos() abort "{{{
+  " #1
+  call setline(1, '(foo, bar, baz)')
+  let pos = [0, 1, 2, 0]
+  call swap#around_pos(pos, [[1, 2]])
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #1')
+
+  " #2
+  call setline(1, '(foo, bar, baz)')
+  call setpos("'a", [0, 1, 2, 0])
+  call swap#around_pos("'a", [[1, 2]])
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #2')
+
+  " #3
+  call setline(1, '(foo, bar; baz)')
+  let pos = [0, 1, 2, 0]
+  let g:swap#rules = [{
+  \     'description': 'Reorder the selected comma-delimited word in visual mode.',
+  \     'mode': 'n',
+  \     'surrounds': ['(', ')'],
+  \     'delimiter': ['\s*,\s*'],
+  \   }]
+  let rules = [{
+  \     'description': 'Reorder the selected semicolon-delimited word in visual mode.',
+  \     'mode': 'n',
+  \     'surrounds': ['(', ')'],
+  \     'delimiter': ['\s*;\s*'],
+  \   }]
+  call swap#around_pos(pos, [[1, 2]], rules)
+  call g:assert.equals(getline('.'), '(baz; foo, bar)', 'failed at #3')
+  unlet! g:swap#rules
+endfunction "}}}
+function! s:suite.swap_around_pos_interactively() abort "{{{
+  " #1
+  call setline(1, '(foo, bar, baz)')
+  let pos = [0, 1, 2, 0]
+  execute "normal! :\<C-u>call swap#around_pos_interactively(pos)\<CR>12\<Esc>"
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #1')
+
+  " #2
+  call setline(1, '(foo, bar, baz)')
+  call setpos("'a", [0, 1, 2, 0])
+  execute "normal! :\<C-u>call swap#around_pos_interactively(\"'a\")\<CR>12\<Esc>"
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #2')
+
+  " #3
+  call setline(1, '(foo, bar; baz)')
+  let pos = [0, 1, 2, 0]
+  let g:swap#rules = [{
+  \     'description': 'Reorder the selected comma-delimited word in visual mode.',
+  \     'mode': 'n',
+  \     'surrounds': ['(', ')'],
+  \     'delimiter': ['\s*,\s*'],
+  \   }]
+  let rules = [{
+  \     'description': 'Reorder the selected semicolon-delimited word in visual mode.',
+  \     'mode': 'n',
+  \     'surrounds': ['(', ')'],
+  \     'delimiter': ['\s*;\s*'],
+  \   }]
+  execute "normal! :\<C-u>call swap#around_pos_interactively(pos, rules)\<CR>12\<Esc>"
+  call g:assert.equals(getline('.'), '(baz; foo, bar)', 'failed at #3')
+  unlet! g:swap#rules
+endfunction "}}}
+
+
 
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:

@@ -3,10 +3,11 @@
 " The key mapping interface function. Use like this:
 "   noremap <silent> i, :<C-u>call swap#textobj#select('i')<CR>
 "   noremap <silent> a, :<C-u>call swap#textobj#select('a')<CR>
-function! swap#textobj#select(type) abort "{{{
+function! swap#textobj#select(type, ...) abort "{{{
   let l:count = v:count1
   let TEXTOBJ = !!1
-  let swap = swap#swap#new('n', [])
+  let rules = get(a:000, 0, get(g:, 'swap#rules', g:swap#default_rules))
+  let swap = swap#swap#new('n', [], rules)
   let [buffer, rule] = swap.search(getpos('.'), 'char', TEXTOBJ)
   if empty(buffer) || empty(buffer.items)
     return

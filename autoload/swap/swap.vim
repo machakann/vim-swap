@@ -13,11 +13,11 @@ let s:NULLREGION = s:const.NULLREGION
 let s:GUI_RUNNING = has('gui_running')
 
 
-function! swap#swap#new(mode, input_list) abort "{{{
+function! swap#swap#new(mode, input_list, rules) abort "{{{
   let swap = deepcopy(s:Swap)
   let swap.mode = a:mode
   let swap.input_list = a:input_list
-  let swap.rules = s:get_rules(a:mode)
+  let swap.rules = s:get_rules(a:rules, a:mode)
   return swap
 endfunction "}}}
 
@@ -33,7 +33,8 @@ let s:Swap = {
 function! s:Swap.around(pos) abort "{{{
   let options = s:displace_options()
   try
-    call self._around(a:pos)
+    let pos = s:getpos(a:pos)
+    call self._around(pos)
   finally
     call s:restore_options(options)
   endtry
@@ -62,7 +63,10 @@ endfunction "}}}
 function! s:Swap.region(start, end, type) abort "{{{
   let options = s:displace_options()
   try
-    call self._region(a:start, a:end, a:type)
+    let start = s:getpos(a:start)
+    let end = s:getpos(a:end)
+    let type = s:lib.v2type(a:type)
+    call self._region(start, end, type)
   finally
     call s:restore_options(options)
   endtry
@@ -95,7 +99,8 @@ function! s:Swap.operatorfunc(type) abort "{{{
   elseif self.mode is# 'x'
     let start = getpos("'[")
     let end = getpos("']")
-    call self.region(start, end, a:type)
+    let type = s:lib.v2type(a:type)
+    call self.region(start, end, type)
   endif
   let self.dotrepeat = s:TRUE
 endfunction "}}}
@@ -209,8 +214,10 @@ endfunction "}}}
 " This method is mainly for textobjects
 function! s:Swap.search(pos, type, ...) abort "{{{
   let rules = deepcopy(self.rules)
+  let pos = s:getpos(a:pos)
+  let type = s:lib.v2type(a:type)
   let textobj = get(a:000, 0, 0)
-  return s:search(rules, a:pos, a:type, textobj)
+  return s:search(rules, pos, type, textobj)
 endfunction "}}}
 
 
@@ -247,8 +254,8 @@ function! s:restore_options(options) abort "{{{
 endfunction "}}}
 
 
-function! s:get_rules(mode) abort  "{{{
-  let rules = deepcopy(get(g:, 'swap#rules', g:swap#default_rules))
+function! s:get_rules(rules, mode) abort  "{{{
+  let rules = deepcopy(a:rules)
   call map(rules, 'extend(v:val, {"priority": 0}, "keep")')
   call s:lib.sort(reverse(rules), function('s:compare_priority'))
   call filter(rules, 's:filter_filetype(v:val) && s:filter_mode(v:val, a:mode)')
@@ -537,6 +544,14 @@ function! s:write(buffer, undojoin) abort "{{{
                       \ undojoin_cmd, v, string(a:buffer.region.tail), "\<CR>")
   call call('setreg', reg)
   call winrestview(view)
+endfunction "}}}
+
+
+function! s:getpos(pos) abort "{{{
+  if type(a:pos) is# s:TYPESTR
+    return getpos(a:pos)
+  endif
+  return a:pos
 endfunction "}}}
 
 

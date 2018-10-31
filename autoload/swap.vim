@@ -179,11 +179,55 @@ augroup swapdotvim-highlight
 augroup END
 
 
+" Swap items in the specific region on the current buffer
+" NOTE: Just a one-shot action, not repeated by dot command
+function! swap#region(start, end, type, input_list, ...) abort "{{{
+  let rules = get(a:000, 0, get(g:, 'swap#rules', g:swap#default_rules))
+  if empty(a:input_list)
+    return
+  endif
+  let swap = swap#swap#new('x', a:input_list, rules)
+  call swap.region(a:start, a:end, a:type)
+endfunction "}}}
+
+
+" Search swappable items around a position and swap them
+" NOTE: Just a one-shot action, not repeated by dot command
+function! swap#around_pos(pos, input_list, ...) abort "{{{
+  let rules = get(a:000, 0, get(g:, 'swap#rules', g:swap#default_rules))
+  if empty(a:input_list)
+    return
+  endif
+  let swap = swap#swap#new('n', a:input_list, rules)
+  call swap.around(a:pos)
+endfunction "}}}
+
+
+" Swap items in the specific region on the current buffer in swap mode
+" NOTE: Just a one-shot action, not repeated by dot command
+function! swap#region_interactively(start, end, type, ...) abort "{{{
+  let rules = get(a:000, 0, get(g:, 'swap#rules', g:swap#default_rules))
+  let swap = swap#swap#new('x', [], rules)
+  call swap.region(a:start, a:end, a:type)
+endfunction "}}}
+
+
+" Search swappable items around a position and swap them in swap mode
+" NOTE: Just a one-shot action, not repeated by dot command
+function! swap#around_pos_interactively(pos, ...) abort "{{{
+  let rules = get(a:000, 0, get(g:, 'swap#rules', g:swap#default_rules))
+  let swap = swap#swap#new('n', [], rules)
+  call swap.around(a:pos)
+endfunction "}}}
+
+
 " This function sets 'operatorfunc' option. Use like this:
 "   nnoremap <silent> gs :<C-u>call swap#prerequisite('n')g@l
 "   xnoremap <silent> gs :<C-u>call swap#prerequisite('x')gvg@
 function! swap#prerequisite(mode, ...) abort "{{{
-  let g:swap = swap#swap#new(a:mode, get(a:000, 0, []))
+  let input_list = get(a:000, 0, [])
+  let rules = get(a:000, 1, get(g:, 'swap#rules', g:swap#default_rules))
+  let g:swap = swap#swap#new(a:mode, input_list, rules)
   set operatorfunc=swap#operatorfunc
 endfunction "}}}
 

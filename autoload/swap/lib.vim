@@ -107,9 +107,18 @@ endfunction "}}}
 
 
 function! s:type2v(type) abort  "{{{
-  return a:type is# 'line'  ? 'V'
-     \ : a:type is# 'block' ? "\<C-v>"
-     \ : 'v'
+  return a:type is# 'char' ? 'v' :
+  \      a:type is# 'line' ? 'V' :
+  \      a:type is# 'block' ? "\<C-v>" :
+  \      a:type
+endfunction "}}}
+
+
+function! s:v2type(v) abort "{{{
+  return a:v is# 'v' ? 'char' :
+  \      a:v is# 'V' ? 'line' :
+  \      a:v is# "\<C-v>" ? 'block' :
+  \      a:v
 endfunction "}}}
 
 
@@ -144,6 +153,7 @@ let s:Lib.is_in_between = function('s:is_in_between')
 let s:Lib.escape = function('s:escape')
 let s:Lib.virtcol2col = function('s:virtcol2col')
 let s:Lib.type2v = function('s:type2v')
+let s:Lib.v2type = function('s:v2type')
 let s:Lib.get_left_pos = function('s:get_left_pos')
 let s:Lib.get_right_pos = function('s:get_right_pos')
 lockvar! s:Lib

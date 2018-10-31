@@ -1,5 +1,5 @@
 *swap.txt*	いれかえたりする。
-						Last change:30-Oct-2018.
+						Last change:31-Oct-2018.
 
 書いた人   : machakann <mckn{at}outlook.jp>
 ライセンス : NYSL ライセンス
@@ -15,6 +15,7 @@ INDEX					*swap-index*
 
 INTRODUCTION				|swap-introduction|
 KEYMAPPINGS				|swap-keymappings|
+FUNCTIONS				|swap-functions|
 CUSTOMIZATION				|swap-customization|
 HIGHLIGHT GROUPS			|swap-highlight-groups|
 CONFIGURATION				|swap-configuration|
@@ -174,6 +175,91 @@ swap mode における操作~
 >
 	let g:swap#keymappings = g:swap#key_layout_impatient
 <
+
+==============================================================================
+FUNCTIONS				*swap-functions*
+
+					*swap#region()*
+swap#region({start}, {end}, {type}, {inputlist}[, {rules}])
+	バッファ上の特定の範囲を対象に要素の順番の入れ替えを行います。
+
+	{start} と {end} はバッファ上の範囲の開始と終了位置です。これらは
+	|getpos()| 関数の第一引数か、あるいは |setpos()| 関数の第二引数と同じ
+	形式を取ります。
+
+	{type} はバッファ上の範囲の形状を指定します。
+	  "char" は文字単位 (|characterwise|)
+	  "line" は行単位 (|linewise|)
+	  "block" は矩形 (|blockwise-visual|) の範囲を指定します。
+	また、|visualmode()| の返り値を替わりに使うこともできます。
+
+	{inputlist} は要素入れ替え手順のリスト |List| です。ひとつの入れ替え手
+	順は二つの整数 |Number| を要素に持つリスト |List| です。
+	例えば [[1, 2]] という {inputlist} を与えると、最初の二つの要素を入れ
+	替えます。
+>
+	(foo, bar, baz) -> (bar, foo, baz)
+<
+	[[1, 2], [2, 3]] のように複数の手順を指定することもできます。
+>
+	(foo, bar, baz) -> (bar, foo, baz) -> (bar, baz, foo)
+<
+	整数の替わりに式 |expression| として文字列を渡すことも可能です。評価さ
+	れて整数を返すような式を指定してください。いくつかの文字は評価の前に対
+	応する整数に置換されます。
+	  '^' : 先頭から最初に現れる空でない要素の位置
+	  '#' : カーソル下の要素の位置
+	  '$' : 最後の要素の位置
+	例えば ['#', '#-1'] という手順はカーソル下の要素をその直前の要素と入れ
+	替えます。
+
+	さらに、要素をソートするための手順が使用できます。これは最初の要素が
+	"sort" であるリスト |List| 、すなわち ["sort"] です。二つ目以降の要素
+	は省略可能で、組み込み関数 |sort()| の第二第三引数に対応します。
+	バッファ上の要素の文字列のリストが内部で |sort()| に渡されて処理されま
+	す。例えばバッファが次のようであるとすると ["foo", "bar", "baz"] とい
+	ったリストがソートの対象になります。
+>
+	  (foo, bar, baz)
+<
+
+	{rules} はルールのリスト |List| です。{rules} が与えられると、
+	|g:swap#rules| のかわりに使われます。
+	ルールについては |swap-configuration| をご覧ください。
+>
+	" バッファ上 1 行目の 1 から 10 桁目の範囲を対象に二つ目と三つ目の要素
+	" を入れ替える
+	call swap#region([0, 1, 1, 0], [0, 1, 10, 0], 'char', [[2, 3]])
+
+	" 選択範囲の最初と最後の要素を入れ替える
+	call swap#region("'<", "'>", visualmode(), [[1, '$']])
+<
+
+
+					*swap#region_interactively()*
+swap#region_interactively({start}, {end}, {type}[, {rules}])
+	|swap#region()| と同様ですが、swap mode に入り対話的に入れ替えを行いま
+	す。
+
+
+
+					*swap#around_pos()*
+swap#around_pos({pos}, {inputlist}[, {rules}])
+	{pos} 付近で入れ替え可能な範囲を検索し、順番の入れ替えを実行すします。
+
+	{pos} は |getpos()| 関数の第一引数か、あるいは |setpos()| 関数の第二引
+	数と同じ形式を取ります。
+
+	{inputlist} と {rules} については |swap#region()| と同様です。
+
+
+
+					*swap#around_pos_interactively()*
+swap#around_pos_interactively({pos}[, {rules}])
+	|swap#around_pos()| と同様ですが、 swap mode に入り対話的に順番の入れ
+	替えを行います。
+
+
 
 ==============================================================================
 CUSTOMIZATION				*swap-customization*
