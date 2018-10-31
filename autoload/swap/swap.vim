@@ -159,8 +159,8 @@ function! s:Swap._swap_once(buffer, input, undojoin) abort "{{{
   call s:write(newbuffer, a:undojoin)
 
   " update buffer information
-  let newbuffer.region.head = getpos("'[")
-  let newbuffer.region.tail = getpos("']")
+  let newbuffer.head = getpos("'[")
+  let newbuffer.tail = getpos("']")
   call newbuffer.update_items()
   call newbuffer.get_item(input[1], s:TRUE).cursor()
   call newbuffer.update_sharp(getpos('.'))
@@ -179,8 +179,8 @@ function! s:Swap._restore_buffer(input, undojoin) abort "{{{
   call s:write(newbuffer, a:undojoin)
 
   " update buffer information
-  let newbuffer.region.head = getpos("'[")
-  let newbuffer.region.tail = getpos("']")
+  let newbuffer.head = getpos("'[")
+  let newbuffer.tail = getpos("']")
   call newbuffer.update_items()
   call newbuffer.get_item(a:input[2], s:TRUE).cursor()
   call newbuffer.update_sharp(getpos('.'))
@@ -201,8 +201,8 @@ function! s:Swap._sort_items(buffer, input, undojoin) abort "{{{
   call s:write(newbuffer, a:undojoin)
 
   " update buffer information
-  let newbuffer.region.head = getpos("'[")
-  let newbuffer.region.tail = getpos("']")
+  let newbuffer.head = getpos("'[")
+  let newbuffer.tail = getpos("']")
   call newbuffer.update_items()
   let pos = newbuffer.update_sharp(curpos)
   call newbuffer.get_item(pos, s:TRUE).cursor()
@@ -492,23 +492,18 @@ endfunction "}}}
 let s:INVALID = 0
 
 function! s:sort(buffer, args) abort "{{{
-  let itemstr_list = map(copy(a:buffer.items), 'v:val.string')
-  sandbox let sorted_list = call(s:lib.sort, [copy(itemstr_list)] + a:args)
-  if len(sorted_list) != len(itemstr_list)
-    echoerr printf('vim-swap: An Error occurred in sorting items; the number of items has been changed. Input: %s, Output: %s',
-                 \ string(itemstr_list), string(sorted_list))
+  let items = deepcopy(a:buffer.items)
+  let items = s:lockall(items)
+  sandbox let sorted_items = call(s:lib.sort, [items] + a:args)
+  let sorted_items = s:unlockall(sorted_items)
+  if len(sorted_items) != len(a:buffer.items)
+    echoerr 'vim-swap: An Error occurred in sorting items; the number of items has been changed.'
   endif
 
   let newbuffer = s:new_empty_buffer(a:buffer)
-  let items = copy(a:buffer.items)
   for item in a:buffer.all
     if item.attr is# 'item'
-      let str = remove(sorted_list, 0)
-      let item = s:pickup(items, str)
-      if item is# s:INVALID
-        echoerr printf('vim-swap: An Error occurred in sorting items; An item in the sorted list has been changed. Input: %s, Output: %s',
-                     \ string(itemstr_list), string(sorted_list))
-      endif
+      let item = remove(sorted_items, 0)
       call add(newbuffer.items, item)
     endif
     call add(newbuffer.all, item)
@@ -517,31 +512,42 @@ function! s:sort(buffer, args) abort "{{{
 endfunction "}}}
 
 
-function! s:pickup(list, str) abort "{{{
-  for i in range(len(a:list))
-    if a:list[i].string is# a:str
-      return remove(a:list, i)
-    endif
+function! s:lockall(list) abort "{{{
+  for item in a:list
+    call s:lock(item)
   endfor
-  return s:INVALID
+  return a:list
+endfunction "}}}
+
+
+function! s:lock(item) abort "{{{
+  lockvar! a:item
+endfunction "}}}
+
+
+function! s:unlockall(list) abort "{{{
+  for item in a:list
+    unlockvar! item
+  endfor
+  return a:list
 endfunction "}}}
 
 
 function! s:string(buffer) abort "{{{
-  return join(map(copy(a:buffer.all), 'v:val.string'), '')
+  return join(map(copy(a:buffer.all), 'v:val.str'), '')
 endfunction "}}}
 
 
 function! s:write(buffer, undojoin) abort "{{{
   let str = s:string(a:buffer)
-  let v = s:lib.type2v(a:buffer.region.type)
+  let v = s:lib.type2v(a:buffer.type)
   let view = winsaveview()
   let undojoin_cmd = a:undojoin ? 'undojoin | ' : ''
   let reg = ['"', getreg('"'), getregtype('"')]
   call setreg('"', str, v)
-  call setpos('.', a:buffer.region.head)
+  call setpos('.', a:buffer.head)
   silent execute printf('%snoautocmd normal! "_d%s:call setpos(".", %s)%s""P:',
-                      \ undojoin_cmd, v, string(a:buffer.region.tail), "\<CR>")
+                      \ undojoin_cmd, v, string(a:buffer.tail), "\<CR>")
   call call('setreg', reg)
   call winrestview(view)
 endfunction "}}}

@@ -226,14 +226,14 @@ function! s:Swapmode.revise_cursor_pos() abort  "{{{
   let curpos = getpos('.')
   let item = self.get_current_item()
   if !empty(item) &&
-      \ s:lib.is_in_between(curpos, item.region.head, item.region.tail) &&
-      \ curpos != item.region.tail
+      \ s:lib.is_in_between(curpos, item.head, item.tail) &&
+      \ curpos != item.tail
     " no problem!
     return
   endif
 
-  let head = self.get_first_item().region.head
-  let tail = self.get_last_item().region.tail
+  let head = self.get_first_item().head
+  let tail = self.get_last_item().tail
   let self.pos.last_current = self.pos.current
   if s:lib.in_order_of(curpos, head)
     let self.pos.current = 0
@@ -336,7 +336,7 @@ function! s:Swapmode.get_nonblank_pos(pos) abort "{{{
   if empty(item)
     return self.pos.end
   endif
-  if item.string isnot# ''
+  if item.str isnot# ''
     return self.buffer.get_pos(a:pos)
   endif
   return s:next_nonblank(self.buffer.items, self.buffer.get_pos(a:pos))
@@ -488,7 +488,7 @@ function! s:prev_nonblank(items, currentpos) abort  "{{{
   " skip empty items
   let idx = a:currentpos - 2
   while idx >= 0
-    if a:items[idx].string isnot# ''
+    if a:items[idx].str isnot# ''
       return idx + 1
     endif
     let idx -= 1
@@ -502,7 +502,7 @@ function! s:next_nonblank(items, currentpos) abort  "{{{
   let idx = a:currentpos
   let end = len(a:items) - 1
   while idx <= end
-    if a:items[idx].string isnot# ''
+    if a:items[idx].str isnot# ''
       return idx + 1
     endif
     let idx += 1

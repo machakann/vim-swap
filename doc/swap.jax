@@ -1,5 +1,5 @@
 *swap.txt*	いれかえたりする。
-						Last change:31-Oct-2018.
+						Last change:01-Nov-2018.
 
 書いた人   : machakann <mckn{at}outlook.jp>
 ライセンス : NYSL ライセンス
@@ -216,12 +216,15 @@ swap#region({start}, {end}, {type}, {inputlist}[, {rules}])
 	さらに、要素をソートするための手順が使用できます。これは最初の要素が
 	"sort" であるリスト |List| 、すなわち ["sort"] です。二つ目以降の要素
 	は省略可能で、組み込み関数 |sort()| の第二第三引数に対応します。
-	バッファ上の要素の文字列のリストが内部で |sort()| に渡されて処理されま
-	す。例えばバッファが次のようであるとすると ["foo", "bar", "baz"] とい
-	ったリストがソートの対象になります。
->
-	  (foo, bar, baz)
-<
+	バッファ上の要素のリストが内部で |sort()| に渡されて処理されます。この
+	要素は以下のキーと値を持つ辞書 |Dictionary| です。
+	  "str"  : 要素の文字列
+	  "head" : 要素の先頭位置
+	  "tail" : 要素の終端位置
+	  "type" : 要素の形状; "char", "line" あるいは "block"
+	例えば、次のような手順は要素をその文字列について昇順に並べます。
+	["sort", {x, y -> x.str is# y.str ? 0 : x.str < y.str ? -1 : 1}]
+	NOTE: sort() 関数の中で要素を変更しないように注意してください
 
 	{rules} はルールのリスト |List| です。{rules} が与えられると、
 	|g:swap#rules| のかわりに使われます。
@@ -259,6 +262,23 @@ swap#around_pos_interactively({pos}[, {rules}])
 	|swap#around_pos()| と同様ですが、 swap mode に入り対話的に順番の入れ
 	替えを行います。
 
+
+
+------------------------------------------------------------------------------
+SORT FUNCTIONS				*swap-sort-function-examples*
+
+ `*` 昇順 >
+  call swap#region({start}, {end}, {type},
+  \ [['sort', {x, y -> x.str is# y.str ? 0 : x.str < y.str ? -1 : 1}]])
+<
+ `*` 降順 >
+  call swap#region({start}, {end}, {type},
+  \ [['sort', {x, y -> x.str is# y.str ? 0 : x.str > y.str ? -1 : 1}]])
+<
+ `*` 文字列の長さ順 >
+  call swap#region({start}, {end}, {type},
+  \ [['sort', {x, y -> strlen(x.str) - strlen(y.str)}]])
+<
 
 
 ==============================================================================

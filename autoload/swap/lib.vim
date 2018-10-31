@@ -65,12 +65,12 @@ endfunction "}}}
 
 
 function! s:compare_ascend(i, j) abort "{{{
-  return a:i is# a:j ? 0 : a:i < a:j ? -1 : 1
+  return a:i.str is# a:j.str ? 0 : a:i.str < a:j.str ? -1 : 1
 endfunction "}}}
 
 
 function! s:compare_descend(i, j) abort "{{{
-  return a:i is# a:j ? 0 : a:i > a:j ? -1 : 1
+  return a:i.str is# a:j.str ? 0 : a:i.str > a:j.str ? -1 : 1
 endfunction "}}}
 
 

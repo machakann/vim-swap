@@ -5,14 +5,14 @@ let s:lib = swap#lib#import()
 
 
 function! swap#parser#parse(region, rule, curpos) abort "{{{
-  " s:parse_{type}wise() functions return a list of dictionaries which have two keys at least, attr and string.
-  "   attr   : 'item' or 'delimiter' or 'immutable'.
-  "            'item' means that the string is an item reordered.
-  "            'delimiter' means that the string is an item for separation. It would not be regarded as an item reordered.
-  "            'immutable' is not an 'item' and not a 'delimiter'. It is a string which should not be changed.
-  "   string : The value is the string as 'item' or 'delimiter' or 'immutable'.
+  " s:parse_{type}wise() functions return a list of dictionaries which have two keys at least, attr and str.
+  "   attr : 'item' or 'delimiter' or 'immutable'.
+  "          'item' means that the string is an item reordered.
+  "          'delimiter' means that the string is an item for separation. It would not be regarded as an item reordered.
+  "          'immutable' is not an 'item' and not a 'delimiter'. It is a string which should not be changed.
+  "   str  : The value is the string as 'item' or 'delimiter' or 'immutable'.
   " For instance,
-  "   'foo,bar' is parsed to [{'attr': 'item', 'string': 'foo'}, {'attr': 'delimiter', 'string': ','}, {'attr': 'item': 'string': 'bar'}]
+  "   'foo,bar' is parsed to [{'attr': 'item', 'str': 'foo'}, {'attr': 'delimiter', 'str': ','}, {'attr': 'item': 'str': 'bar'}]
   " In case that motionwise is# 'V' or "\<C-v>", delimiter string should be "\n".
   let text = s:get_buf_text(a:region)
   let parseditems = s:parse_{a:region.type}wise(text, a:rule)
@@ -51,7 +51,7 @@ function! s:parse_charwise(text, rule) abort  "{{{
         " a delimiter is found
         " NOTE: I would like to treat zero-width delimiter as possible.
         let last_elem = get(buffer, -1, {'attr': ''})
-        if idx == last_delimiter_tail && last_elem.attr is# 'delimiter' && last_elem.string ==# ''
+        if idx == last_delimiter_tail && last_elem.attr is# 'delimiter' && last_elem.str ==# ''
           " zero-width delimiter is found
           let idx += 1
           continue
@@ -118,7 +118,7 @@ function! s:parse_charwise(text, rule) abort  "{{{
   let start = 0
   let idx = 0
   while idx < len(buffer)
-    if !empty(buffer[idx]['string'])
+    if !empty(buffer[idx]['str'])
       break
     endif
     if buffer[idx]['attr'] is# 'delimiter'
@@ -398,7 +398,7 @@ endfunction "}}}
 
 
 function! s:add_an_item(buffer, attr, string) abort "{{{
-  return add(a:buffer, {'attr': a:attr, 'string': a:string})
+  return add(a:buffer, {'attr': a:attr, 'str': a:string})
 endfunction "}}}
 
 

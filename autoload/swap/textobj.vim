@@ -13,17 +13,17 @@ function! swap#textobj#select(type, ...) abort "{{{
     return
   endif
   if a:type is# 'a'
-    let [start, end] = s:get_target_a(buffer, l:count)
+    let [first, last] = s:get_target_a(buffer, l:count)
   elseif a:type is# 'i'
-    let [start, end] = s:get_target_i(buffer, l:count)
+    let [first, last] = s:get_target_i(buffer, l:count)
   else
     return
   endif
 
   normal! v
-  call setpos('.', start.region.head)
+  call setpos('.', first.head)
   normal! o
-  call setpos('.', end.region.tail)
+  call setpos('.', last.tail)
   if &selection isnot# 'exclusive'
     normal! h
   endif

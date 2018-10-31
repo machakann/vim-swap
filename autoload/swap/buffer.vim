@@ -12,52 +12,51 @@ let s:NULLREGION = s:const.NULLREGION
 
 function! swap#buffer#new(region, parseditems) abort "{{{
   let buffer = deepcopy(s:Buffer)
-  let buffer.region = a:region
   let buffer.all = map(copy(a:parseditems), 's:Item(v:key, v:val)')
   let buffer.items = filter(copy(buffer.all), 'v:val.attr is# "item"')
+  call extend(buffer, deepcopy(a:region))
   return buffer
 endfunction "}}}
 
 
 " Item object - represents an swappable item on the buffer {{{
-let s:Item = {
+let s:Item = extend({
   \   'idx': -1,
   \   'attr': '',
-  \   'string': '',
+  \   'str': '',
   \   'highlightid': [],
-  \   'region': deepcopy(s:NULLREGION),
-  \ }
+  \ }, deepcopy(s:NULLREGION))
 function! s:Item.cursor(...) abort "{{{
   let to_tail = get(a:000, 0, 0)
   if to_tail
-    call setpos('.', self.region.tail)
+    call setpos('.', self.tail)
   else
-    call setpos('.', self.region.head)
+    call setpos('.', self.head)
   endif
 endfunction "}}}
 
 
 function! s:Item.highlight(group) abort "{{{
-  if self.region.len <= 0
+  if self.len <= 0
     return
   endif
 
   let n = 0
   let order = []
   let order_list = []
-  let lines = split(self.string, '\n\zs')
+  let lines = split(self.str, '\n\zs')
   let n_lines = len(lines)
   if n_lines == 1
-    let order = [self.region.head[1:2] + [self.region.len]]
+    let order = [self.head[1:2] + [self.len]]
     let order_list = [order]
   else
     for i in range(n_lines)
       if i == 0
-        let order += [self.region.head[1:2] + [strlen(lines[0])]]
+        let order += [self.head[1:2] + [strlen(lines[0])]]
       elseif i == n_lines-1
-        let order += [[self.region.head[1] + i, 1, strlen(lines[i])]]
+        let order += [[self.head[1] + i, 1, strlen(lines[i])]]
       else
-        let order += [[self.region.head[1] + i]]
+        let order += [[self.head[1] + i]]
       endif
 
       if n == 7
@@ -120,12 +119,11 @@ endfunction "}}}
 
 
 " Buffer object - represents a swapping region of buffer {{{
-let s:Buffer = {
-  \   'region': deepcopy(s:NULLREGION),
+let s:Buffer = extend({
   \   'all': [],
   \   'items': [],
   \   'mark': {'#': 0, '^': 0, '$': 0},
-  \ }
+  \ }, deepcopy(s:NULLREGION))
 
 
 function! s:Buffer.swappable() abort  "{{{
@@ -137,7 +135,7 @@ function! s:Buffer.swappable() abort  "{{{
   if len(self.items) < 2
     return s:FALSE
   endif
-  if filter(copy(self.items), 'v:val.string isnot# ""') == []
+  if filter(copy(self.items), 'v:val.str isnot# ""') == []
     return s:FALSE
   endif
   if filter(copy(self.all), 'v:val.attr is# "delimiter"') == []
@@ -148,12 +146,12 @@ endfunction "}}}
 
 
 function! s:Buffer.selectable() abort  "{{{
-  return filter(copy(self.items), 'v:val.string isnot# ""') != []
+  return filter(copy(self.items), 'v:val.str isnot# ""') != []
 endfunction "}}}
 
 
 function! s:Buffer.update_items() abort "{{{
-  call s:address_{self.region.type}wise(self.all, self.region)
+  call s:address_{self.type}wise(self)
   call map(self.all, 'extend(v:val, {"idx": v:key})')
 endfunction "}}}
 
@@ -161,12 +159,12 @@ endfunction "}}}
 function! s:Buffer.update_sharp(curpos) abort "{{{
   let sharp = 0
   if self.all != []
-    if s:lib.in_order_of(a:curpos, self.region.head)
+    if s:lib.in_order_of(a:curpos, self.head)
       let sharp = 1
     else
       for text in self.items
         let sharp += 1
-        if s:lib.in_order_of(a:curpos, text.region.tail)
+        if s:lib.in_order_of(a:curpos, text.tail)
           break
         endif
       endfor
@@ -184,7 +182,7 @@ function! s:Buffer.update_hat() abort "{{{
   let hat = 0
   for text in self.items
     let hat += 1
-    if text.string isnot# ''
+    if text.str isnot# ''
       break
     endif
   endfor
@@ -257,40 +255,40 @@ function! s:Buffer.get_item(pos, ...) abort "{{{
 endfunction "}}}
 
 
-function! s:address_charwise(buffer, region) abort  "{{{
-  let pos = copy(a:region.head)
-  for item in a:buffer
-    if stridx(item.string, "\n") < 0
-      let len = strlen(item.string)
-      let item.region.len  = len
-      let item.region.head = copy(pos)
+function! s:address_charwise(buffer) abort  "{{{
+  let pos = copy(a:buffer.head)
+  for item in a:buffer.all
+    if stridx(item.str, "\n") < 0
+      let len = strlen(item.str)
+      let item.len  = len
+      let item.head = copy(pos)
       let pos[2] += len
-      let item.region.tail = copy(pos)
+      let item.tail = copy(pos)
     else
-      let lines = split(item.string, '\n\zs', 1)
-      let item.region.len  = strlen(item.string)
-      let item.region.head = copy(pos)
+      let lines = split(item.str, '\n\zs', 1)
+      let item.len  = strlen(item.str)
+      let item.head = copy(pos)
       let pos[1] += len(lines) - 1
       let pos[2] = strlen(lines[-1]) + 1
-      let item.region.tail = copy(pos)
+      let item.tail = copy(pos)
     endif
   endfor
   return a:buffer
 endfunction "}}}
 
 
-function! s:address_linewise(buffer, region) abort  "{{{
-  let lnum = a:region.head[1]
-  for item in a:buffer
+function! s:address_linewise(buffer) abort  "{{{
+  let lnum = a:buffer.head[1]
+  for item in a:buffer.all
     if item.attr is# 'item'
-      let len = strlen(item.string)
-      let item.region.len  = len
-      let item.region.head = [0, lnum, 1, 0]
-      let item.region.tail = [0, lnum, len+1, 0]
+      let len = strlen(item.str)
+      let item.len  = len
+      let item.head = [0, lnum, 1, 0]
+      let item.tail = [0, lnum, len+1, 0]
     elseif item.attr is# 'delimiter'
-      let item.region.len = 1
-      let item.region.head = [0, lnum, col([lnum, '$']), 0]
-      let item.region.tail = [0, lnum+1, 1, 0]
+      let item.len = 1
+      let item.head = [0, lnum, col([lnum, '$']), 0]
+      let item.tail = [0, lnum+1, 1, 0]
       let lnum += 1
     endif
   endfor
@@ -298,21 +296,21 @@ function! s:address_linewise(buffer, region) abort  "{{{
 endfunction "}}}
 
 
-function! s:address_blockwise(buffer, region) abort  "{{{
+function! s:address_blockwise(buffer) abort  "{{{
   let view = winsaveview()
-  let lnum = a:region.head[1]
-  let virtcol = a:region.head[2]
-  for item in a:buffer
+  let lnum = a:buffer.head[1]
+  let virtcol = a:buffer.head[2]
+  for item in a:buffer.all
     if item.attr is# 'item'
       let col = s:lib.virtcol2col(lnum, virtcol)
-      let len = strlen(item.string)
-      let item.region.len  = len
-      let item.region.head = [0, lnum, col, 0]
-      let item.region.tail = [0, lnum, col+len, 0]
+      let len = strlen(item.str)
+      let item.len  = len
+      let item.head = [0, lnum, col, 0]
+      let item.tail = [0, lnum, col+len, 0]
     elseif item.attr is# 'delimiter'
-      let item.region.len = 0
-      let item.region.head = [0, lnum, col+len, 0]
-      let item.region.tail = [0, lnum, col+len, 0]
+      let item.len = 0
+      let item.head = [0, lnum, col+len, 0]
+      let item.tail = [0, lnum, col+len, 0]
       let lnum += 1
     endif
   endfor
