@@ -1,5 +1,5 @@
 *swap.txt*	Reorder delimited items.
-						Last change:17-Nov-2017.
+						Last change:01-Nov-2018.
 
 Author  : machakann <mckn{at}outlook.jp>
 License : NYSL license
@@ -15,6 +15,8 @@ INDEX					*swap-index*
 
 INTRODUCTION				|swap-introduction|
 KEYMAPPINGS				|swap-keymappings|
+FUNCTIONS				|swap-functions|
+  SORT FUNCTIONS			|swap-sort-function-examples|
 CUSTOMIZATION				|swap-customization|
 HIGHLIGHT GROUPS			|swap-highlight-groups|
 CONFIGURATION				|swap-configuration|
@@ -139,25 +141,22 @@ operation in swap mode~
 
 `h`/`l`
 	Swap the current item with a neighbor.
-	These functions are defined as keymappings,
-	<Plug>(swap-mode-swap-prev)/<Plug>(swap-mode-swap-next).
 
 `j`/`k`
 	Change the current item to a neighbor.
-	These functions are defined as keymappings,
-	<Plug>(swap-mode-move-prev)/<Plug>(swap-mode-move-next).
+
+`s`/`S`
+	Sort all the items. `s` sorts the items in ascending order, while `S`
+	does in descending.
 
 Numbers `1` to `9`
-	Set `n`th item as the current. These functions are defined as
-	keymappings, <Plug>(swap-mode-1) to <Plug>(swap-mode-9).
+	Set `n`th item as the current.
 
 `u`/`<C-r>`
-	Simple undo/redo functions. These functions are defined as
-	keymappings, <Plug>(swap-mode-undo)/<Plug>(swap-mode-redo).
+	Simple undo/redo functions.
 
 `<Esc>`
-	Exit from swap mode to normal mode. The function is defined as
-	keymapping, <Plug>(swap-mode-Esc).
+	Exit from swap mode to normal mode.
 
 
 
@@ -170,26 +169,10 @@ Then numbers would not be fixed immediately, use `<CR>` to fix the number and
 
 `<CR>`
 	Fix the inputting number. If nothing has been input, then fix to the
-	current item. The function is defined as keymapping,
-	<Plug>(swap-mode-CR).
+	current item.
 
 `<BS>`
-	Correct the last input. The function is defined as keymapping,
-	<Plug>(swap-mode-BS).
-
-
-
-In addition to the aboves, the following supplementary keymappings are
-available.
-
-<Plug>(swap-mode-fix-nr)
-	Simply fix the inputting number.
-
-<Plug>(swap-mode-current)
-	Simply fix to the current item.
-
-<Plug>(swap-mode-echo)
-	Update cmd-line echoing.
+	Correct the last input.
 
 
 
@@ -197,89 +180,116 @@ The default layout is available with g:swap#key_layout_impatient again.
 >
 	let g:swap#keymappings = g:swap#key_layout_impatient
 <
-The detailed statement of g:swap#key_layout_impatient is:
+
+==============================================================================
+FUNCTIONS				*swap-functions*
+
+					*swap#region()*
+swap#region({start}, {end}, {type}, {inputlist}[, {rules}])
+	Swap items in the specific region on the current buffer.
+
+	{start} and {end} are the positions of both edges of the region. These
+	positions should be the same format either with the first argument of
+	|getpos()| or with the second argument of |setpos()|.
+
+	{type} represents the shape of the region;
+	  "char" (|characterwise|),
+	  "line" (|linewise|) or
+	  "block" (|blockwise-visual|).
+	A return value of |visualmode()| is also acceptable.
+
+	{inputlist} is a |List| of operations to swap items. An operation is a
+	|List| of 2 |Number|s, for example [1, 2]. Thus, if an {inputlist}
+	[[1, 2]] is given, this operation swap the 1st and the 2nd item.
 >
-	lhs	rhs
- -----------------------------------------------------------
-	1	<Plug>(swap-mode-1)<Plug>(swap-mode-fix-nr)
-	2	<Plug>(swap-mode-2)<Plug>(swap-mode-fix-nr)
-	3	<Plug>(swap-mode-3)<Plug>(swap-mode-fix-nr)
-	4	<Plug>(swap-mode-4)<Plug>(swap-mode-fix-nr)
-	5	<Plug>(swap-mode-5)<Plug>(swap-mode-fix-nr)
-	6	<Plug>(swap-mode-6)<Plug>(swap-mode-fix-nr)
-	7	<Plug>(swap-mode-7)<Plug>(swap-mode-fix-nr)
-	8	<Plug>(swap-mode-8)<Plug>(swap-mode-fix-nr)
-	9	<Plug>(swap-mode-9)<Plug>(swap-mode-fix-nr)
-	<CR>	<Plug>(swap-mode-CR)
-	<BS>	<Plug>(swap-mode-BS)
-	<C-h>	<Plug>(swap-mode-BS)
-	u	<Plug>(swap-mode-undo)
-	<C-r>	<Plug>(swap-mode-redo)
-	<Esc>	<Plug>(swap-mode-Esc)
-	h	<Plug>(swap-mode-swap-prev)
-	l	<Plug>(swap-mode-swap-next)
-	k	<Plug>(swap-mode-move-prev)
-	j	<Plug>(swap-mode-move-next)
-	<Left>	<Plug>(swap-mode-swap-prev)
-	<Right>	<Plug>(swap-mode-swap-next)
-	<Up>	<Plug>(swap-mode-move-prev)
-	<Down>	<Plug>(swap-mode-move-next)
- -----------------------------------------------------------
+	(foo, bar, baz) -> (bar, foo, baz)
+<
+	Multiple operations can be used; like [[1, 2], [2, 3]].
+>
+	(foo, bar, baz) -> (bar, foo, baz) -> (bar, baz, foo)
+<
+	An |expression| as a |String| is acceptable instead of a |Number|. The
+	expression should be a |Number| after evaluation. Some characters are
+	substituted to a |Number| before the evaluation.
+	  '^' : the index of the first non-blank item
+	  '#' : the index of the item under the cursor
+	  '$' : the index of the last item
+	For example, the operation ['#', '#-1'] swaps the item under the
+	cursor with the previous one.
+
+	Or an special operation to sort items is also valid. It is a |List|
+	which first item is a |String| "sort", that is, ["sort"]. The second
+	and third item is optional; these factors corresponds to the second
+	and third arguments of |sort()| built-in function. A |List| of items
+	are given to |sort()| function internally, an item is a |Dictionary|
+	which has the following keys:
+	  "str"  : The string of the item
+	  "head" : The start position of the item on the buffer
+	  "tail" : The end position of the item on the buffer
+	  "type" : The shape of the item; "char", "line" or "block"
+	For example, the operation
+	["sort", {x, y -> x.str is# y.str ? 0 : x.str < y.str ? -1 : 1}]
+	sorts the buffer items in ascending order.
+	NOTE: Do not change the items in the sort function!
+
+	{rules} is a |List| of rules. If it is assigned, the {rules} are used
+	instead of |g:swap#rules|.
+>
+	" swap the second and third items in the region from 1st to 10th
+	" column of the 1st line
+	call swap#region([0, 1, 1, 0], [0, 1, 10, 0], 'char', [[2, 3]])
+
+	" swap the first and the last item in the selected region
+	call swap#region("'<", "'>", visualmode(), [[1, '$']])
 <
 
-The detailed statement of g:swap#key_layout_discreet is:
->
-	lhs	rhs
- -----------------------------------------------------------
-	0	<Plug>(swap-mode-0)
-	1	<Plug>(swap-mode-1)
-	2	<Plug>(swap-mode-2)
-	3	<Plug>(swap-mode-3)
-	4	<Plug>(swap-mode-4)
-	5	<Plug>(swap-mode-5)
-	6	<Plug>(swap-mode-6)
-	7	<Plug>(swap-mode-7)
-	8	<Plug>(swap-mode-8)
-	9	<Plug>(swap-mode-9)
-	<CR>	<Plug>(swap-mode-CR)
-	<BS>	<Plug>(swap-mode-BS)
-	<C-h>	<Plug>(swap-mode-BS)
-	u	<Plug>(swap-mode-undo)
-	<C-r>	<Plug>(swap-mode-redo)
-	<Esc>	<Plug>(swap-mode-Esc)
-	h	<Plug>(swap-mode-swap-prev)
-	l	<Plug>(swap-mode-swap-next)
-	k	<Plug>(swap-mode-move-prev)
-	j	<Plug>(swap-mode-move-next)
-	<Left>	<Plug>(swap-mode-swap-prev)
-	<Right>	<Plug>(swap-mode-swap-next)
-	<Up>	<Plug>(swap-mode-move-prev)
-	<Down>	<Plug>(swap-mode-move-next)
- -----------------------------------------------------------
-<
+
+					*swap#region_interactively()*
+swap#region_interactively({start}, {end}, {type}[, {rules}])
+	Start swap mode to swap items interactively. The arguments are same as
+	those of |swap#region()|.
 
 
-swap#map({lhs}, {rhs})		*swap#map()*
-swap#noremap({lhs}, {rhs})	*swap#noremap()*
-	Define normal mode commands as swap mode keymappings. Give a normal
-	mode command sequence to {rhs} then call it via the key sequence
-	declared via {lhs} in swap mode.
 
-Normal mode commands could be available in swap mode if user declared. Use
-|swap#map()| or |swap#noremap()| in your vimrc.
->
-	call swap#noremap('zs', 'zs')
+					*swap#around_pos()*
+swap#around_pos({pos}, {inputlist}[, {rules}])
+	Search swappable items around the assigned position and swap them.
+
+	{pos} should be the same format either with the first argument of
+	|getpos()| or with the second argument of |setpos()|.
+
+	See |swap#region()| for {inputlist} and {rules}.
+
+
+
+					*swap#around_pos_interactively()*
+swap#around_pos_interactively({pos}[, {rules}])
+	Search swappable items around the assigned position and start swap
+	mode to swap items interactively.
+
+	{pos} should be the same format either with the first argument of
+	|getpos()| or with the second argument of |setpos()|.
+
+	See |swap#region()| for {rules}.
+
+
+
+------------------------------------------------------------------------------
+SORT FUNCTIONS				*swap-sort-function-examples*
+
+ `*` Sort items in ascending order >
+  call swap#region({start}, {end}, {type},
+  \ [['sort', {x, y -> x.str is# y.str ? 0 : x.str < y.str ? -1 : 1}]])
 <
-The |<>| description like <Space> would not be converted automatically. Use
-escape sequence to pass these special keys.
->
-	call swap#noreamp("\<space>", 'z.')
+ `*` Sort items in descending order >
+  call swap#region({start}, {end}, {type},
+  \ [['sort', {x, y -> x.str is# y.str ? 0 : x.str > y.str ? -1 : 1}]])
 <
-|swap#map()| expands mappings. Use it for custom mappings.
->
-	call swap#map("\<CR>", "\<Plug>(swap-mode-fix-nr)")
+ `*` Sort items by its length >
+  call swap#region({start}, {end}, {type},
+  \ [['sort', {x, y -> strlen(x.str) - strlen(y.str)}]])
 <
-NOTE if the buffer was changed, swapped result might not be as you expected.
+
 
 ==============================================================================
 CUSTOMIZATION				*swap-customization*

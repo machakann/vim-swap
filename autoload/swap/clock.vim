@@ -1,20 +1,24 @@
-" clock object - Measuring time.
+" Clock object - Measuring time.
 
 " features
 let s:has_reltime_and_float = has('reltime') && has('float')
 
+
 function! swap#clock#new() abort  "{{{
-  return deepcopy(s:clock_prototype)
+  return deepcopy(s:Clock)
 endfunction "}}}
 
-let s:clock_prototype = {
-      \   'started' : 0,
-      \   'paused'  : 0,
-      \   'losstime': 0,
-      \   'zerotime': reltime(),
-      \   'pause_at': reltime(),
-      \ }
-function! s:clock_prototype.start() dict abort  "{{{
+
+let s:Clock = {
+  \   'started' : 0,
+  \   'paused'  : 0,
+  \   'losstime': 0,
+  \   'zerotime': reltime(),
+  \   'pause_at': reltime(),
+  \ }
+
+
+function! s:Clock.start() abort  "{{{
   if self.started
     if self.paused
       let self.losstime += str2float(reltimestr(reltime(self.pause_at)))
@@ -27,23 +31,29 @@ function! s:clock_prototype.start() dict abort  "{{{
     endif
   endif
 endfunction "}}}
-function! s:clock_prototype.pause() dict abort "{{{
+
+
+function! s:Clock.pause() abort "{{{
   let self.pause_at = reltime()
   let self.paused   = 1
 endfunction "}}}
-function! s:clock_prototype.elapsed() dict abort "{{{
+
+
+function! s:Clock.elapsed() abort "{{{
   if self.started
     let total = str2float(reltimestr(reltime(self.zerotime)))
     return floor((total - self.losstime)*1000)
-  else
-    return 0
   endif
+  return 0
 endfunction "}}}
-function! s:clock_prototype.stop() dict abort  "{{{
+
+
+function! s:Clock.stop() abort  "{{{
   let self.started  = 0
   let self.paused   = 0
   let self.losstime = 0
 endfunction "}}}
+
 
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:

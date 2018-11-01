@@ -5,7 +5,7 @@ execute 'set runtimepath+=' . expand('<sfile>:p:h:h:h')
 source <sfile>:p:h:h:h/plugin/swap.vim
 
 function! s:assert(a1, a2, kind) abort
-  if type(a:a1) == type(a:a2) && string(a:a1) ==# string(a:a2)
+  if type(a:a1) == type(a:a2) && string(a:a1) is# string(a:a2)
     return
   endif
 

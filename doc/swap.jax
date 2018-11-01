@@ -1,5 +1,5 @@
 *swap.txt*	いれかえたりする。
-						Last change:17-Nov-2017.
+						Last change:01-Nov-2018.
 
 書いた人   : machakann <mckn{at}outlook.jp>
 ライセンス : NYSL ライセンス
@@ -15,6 +15,7 @@ INDEX					*swap-index*
 
 INTRODUCTION				|swap-introduction|
 KEYMAPPINGS				|swap-keymappings|
+FUNCTIONS				|swap-functions|
 CUSTOMIZATION				|swap-customization|
 HIGHLIGHT GROUPS			|swap-highlight-groups|
 CONFIGURATION				|swap-configuration|
@@ -134,29 +135,23 @@ g:swap_no_default_key_mappings を vimrc で定義してください。
 swap mode における操作~
 
 `h`/`l`
-	選択中の要素と隣接する要素を入れ替えます。この機能は次のキーマッピング
-	として定義されています。
-	<Plug>(swap-mode-swap-prev)/<Plug>(swap-mode-swap-next)
+	選択中の要素と隣接する要素を入れ替えます。
 
 `j`/`k`
-	隣接する要素へ選択を移します。この機能は次のキーマッピングとして定義さ
-	れています。
-	<Plug>(swap-mode-move-prev)/<Plug>(swap-mode-move-next)
+	隣接する要素へ選択を移します。
+
+`s`/`S`
+	要素の順番を並べ替えます。 `s` は要素を昇順に `S` は降順に並べ替えま
+	す。
 
 `1` から `9` の数字キー
-	`n` 番目の要素へ選択状態を移します。この機能は次のキーマッピングとして
-	定義されています。
-	<Plug>(swap-mode-1) から <Plug>(swap-mode-9)
+	`n` 番目の要素へ選択状態を移します。
 
 `u`/`<C-r>`
-	単純な undo/redo 機能を提供します。この機能は次のキーマッピングとして
-	定義されています。
-	<Plug>(swap-mode-undo)/<Plug>(swap-mode-redo)
+	単純な undo/redo 機能を提供します。
 
 `<Esc>`
-	Swap mode を終了しノーマルモードへ戻ります。この機能は次のキーマッピン
-	グとして定義されています。
-	<Plug>(swap-mode-Esc)
+	Swap mode を終了しノーマルモードへ戻ります。
 
 
 
@@ -169,26 +164,10 @@ swap mode における操作~
 
 `<CR>`
 	入力中の数字を決定します。なにも入力されていないと、現在選択中の要素に
-	決定されます。この機能は次のキーマッピングとして定義されています。
-	<Plug>(swap-mode-CR)
+	決定されます。
 
 `<BS>`
-	入力中の数値を一文字修正します。この機能は次のキーマッピングとして定義
-	されています。
-	<Plug>(swap-mode-BS)
-
-
-
-以上のキーマッピングに加え、以下の補助的な機能も提供されます。
-
-<Plug>(swap-mode-fix-nr)
-	入力中の数字を決定し、入れ替えの対象の一つとします。
-
-<Plug>(swap-mode-current)
-	現在選択中の要素を入れ替えの対象の一つとして決定します。
-
-<Plug>(swap-mode-echo)
-	コマンドラインの表示を更新します。
+	入力中の数値を一文字修正します。
 
 
 
@@ -196,91 +175,111 @@ swap mode における操作~
 >
 	let g:swap#keymappings = g:swap#key_layout_impatient
 <
-g:swap#key_layout_impatient の詳細な内訳を以下に示します。
+
+==============================================================================
+FUNCTIONS				*swap-functions*
+
+					*swap#region()*
+swap#region({start}, {end}, {type}, {inputlist}[, {rules}])
+	バッファ上の特定の範囲を対象に要素の順番の入れ替えを行います。
+
+	{start} と {end} はバッファ上の範囲の開始と終了位置です。これらは
+	|getpos()| 関数の第一引数か、あるいは |setpos()| 関数の第二引数と同じ
+	形式を取ります。
+
+	{type} はバッファ上の範囲の形状を指定します。
+	  "char" は文字単位 (|characterwise|)
+	  "line" は行単位 (|linewise|)
+	  "block" は矩形 (|blockwise-visual|) の範囲を指定します。
+	また、|visualmode()| の返り値を替わりに使うこともできます。
+
+	{inputlist} は要素入れ替え手順のリスト |List| です。ひとつの入れ替え手
+	順は二つの整数 |Number| を要素に持つリスト |List| です。
+	例えば [[1, 2]] という {inputlist} を与えると、最初の二つの要素を入れ
+	替えます。
 >
-	lhs	rhs
- -----------------------------------------------------------
-	1	<Plug>(swap-mode-1)<Plug>(swap-mode-fix-nr)
-	2	<Plug>(swap-mode-2)<Plug>(swap-mode-fix-nr)
-	3	<Plug>(swap-mode-3)<Plug>(swap-mode-fix-nr)
-	4	<Plug>(swap-mode-4)<Plug>(swap-mode-fix-nr)
-	5	<Plug>(swap-mode-5)<Plug>(swap-mode-fix-nr)
-	6	<Plug>(swap-mode-6)<Plug>(swap-mode-fix-nr)
-	7	<Plug>(swap-mode-7)<Plug>(swap-mode-fix-nr)
-	8	<Plug>(swap-mode-8)<Plug>(swap-mode-fix-nr)
-	9	<Plug>(swap-mode-9)<Plug>(swap-mode-fix-nr)
-	<CR>	<Plug>(swap-mode-CR)
-	<BS>	<Plug>(swap-mode-BS)
-	<C-h>	<Plug>(swap-mode-BS)
-	u	<Plug>(swap-mode-undo)
-	<C-r>	<Plug>(swap-mode-redo)
-	<Esc>	<Plug>(swap-mode-Esc)
-	h	<Plug>(swap-mode-swap-prev)
-	l	<Plug>(swap-mode-swap-next)
-	k	<Plug>(swap-mode-move-prev)
-	j	<Plug>(swap-mode-move-next)
-	<Left>	<Plug>(swap-mode-swap-prev)
-	<Right>	<Plug>(swap-mode-swap-next)
-	<Up>	<Plug>(swap-mode-move-prev)
-	<Down>	<Plug>(swap-mode-move-next)
- -----------------------------------------------------------
+	(foo, bar, baz) -> (bar, foo, baz)
+<
+	[[1, 2], [2, 3]] のように複数の手順を指定することもできます。
+>
+	(foo, bar, baz) -> (bar, foo, baz) -> (bar, baz, foo)
+<
+	整数の替わりに式 |expression| として文字列を渡すことも可能です。評価さ
+	れて整数を返すような式を指定してください。いくつかの文字は評価の前に対
+	応する整数に置換されます。
+	  '^' : 先頭から最初に現れる空でない要素の位置
+	  '#' : カーソル下の要素の位置
+	  '$' : 最後の要素の位置
+	例えば ['#', '#-1'] という手順はカーソル下の要素をその直前の要素と入れ
+	替えます。
+
+	さらに、要素をソートするための手順が使用できます。これは最初の要素が
+	"sort" であるリスト |List| 、すなわち ["sort"] です。二つ目以降の要素
+	は省略可能で、組み込み関数 |sort()| の第二第三引数に対応します。
+	バッファ上の要素のリストが内部で |sort()| に渡されて処理されます。この
+	要素は以下のキーと値を持つ辞書 |Dictionary| です。
+	  "str"  : 要素の文字列
+	  "head" : 要素の先頭位置
+	  "tail" : 要素の終端位置
+	  "type" : 要素の形状; "char", "line" あるいは "block"
+	例えば、次のような手順は要素をその文字列について昇順に並べます。
+	["sort", {x, y -> x.str is# y.str ? 0 : x.str < y.str ? -1 : 1}]
+	NOTE: sort() 関数の中で要素を変更しないように注意してください
+
+	{rules} はルールのリスト |List| です。{rules} が与えられると、
+	|g:swap#rules| のかわりに使われます。
+	ルールについては |swap-configuration| をご覧ください。
+>
+	" バッファ上 1 行目の 1 から 10 桁目の範囲を対象に二つ目と三つ目の要素
+	" を入れ替える
+	call swap#region([0, 1, 1, 0], [0, 1, 10, 0], 'char', [[2, 3]])
+
+	" 選択範囲の最初と最後の要素を入れ替える
+	call swap#region("'<", "'>", visualmode(), [[1, '$']])
 <
 
-同じように g:swap#key_layout_discreet の詳細な内訳を以下に示します。
->
-	lhs	rhs
- -----------------------------------------------------------
-	0	<Plug>(swap-mode-0)
-	1	<Plug>(swap-mode-1)
-	2	<Plug>(swap-mode-2)
-	3	<Plug>(swap-mode-3)
-	4	<Plug>(swap-mode-4)
-	5	<Plug>(swap-mode-5)
-	6	<Plug>(swap-mode-6)
-	7	<Plug>(swap-mode-7)
-	8	<Plug>(swap-mode-8)
-	9	<Plug>(swap-mode-9)
-	<CR>	<Plug>(swap-mode-CR)
-	<BS>	<Plug>(swap-mode-BS)
-	<C-h>	<Plug>(swap-mode-BS)
-	u	<Plug>(swap-mode-undo)
-	<C-r>	<Plug>(swap-mode-redo)
-	<Esc>	<Plug>(swap-mode-Esc)
-	h	<Plug>(swap-mode-swap-prev)
-	l	<Plug>(swap-mode-swap-next)
-	k	<Plug>(swap-mode-move-prev)
-	j	<Plug>(swap-mode-move-next)
-	<Left>	<Plug>(swap-mode-swap-prev)
-	<Right>	<Plug>(swap-mode-swap-next)
-	<Up>	<Plug>(swap-mode-move-prev)
-	<Down>	<Plug>(swap-mode-move-next)
- -----------------------------------------------------------
-<
+
+					*swap#region_interactively()*
+swap#region_interactively({start}, {end}, {type}[, {rules}])
+	|swap#region()| と同様ですが、swap mode に入り対話的に入れ替えを行いま
+	す。
 
 
-swap#map({lhs}, {rhs})			*swap#map()*
-swap#noremap({lhs}, {rhs})		*swap#noremap()*
-	ノーマルモードコマンドを swap mode におけるキーマッピングとして定義し
-	ます。ノーマルモードコマンドのキー入力を {rhs} に与えると swap mode で
-	{lhs} に与えたキー入力で呼び出すことができます。
 
-ユーザーが事前に宣言していれば、 swap mode でノーマルモードコマンドを使用でき
-ます。 |swap#map()| あるいは |swap#noremap()| をご使用ください。
->
-	call swap#noremap('zs', 'zs')
+					*swap#around_pos()*
+swap#around_pos({pos}, {inputlist}[, {rules}])
+	{pos} 付近で入れ替え可能な範囲を検索し、順番の入れ替えを実行すします。
+
+	{pos} は |getpos()| 関数の第一引数か、あるいは |setpos()| 関数の第二引
+	数と同じ形式を取ります。
+
+	{inputlist} と {rules} については |swap#region()| と同様です。
+
+
+
+					*swap#around_pos_interactively()*
+swap#around_pos_interactively({pos}[, {rules}])
+	|swap#around_pos()| と同様ですが、 swap mode に入り対話的に順番の入れ
+	替えを行います。
+
+
+
+------------------------------------------------------------------------------
+SORT FUNCTIONS				*swap-sort-function-examples*
+
+ `*` 昇順 >
+  call swap#region({start}, {end}, {type},
+  \ [['sort', {x, y -> x.str is# y.str ? 0 : x.str < y.str ? -1 : 1}]])
 <
-<Space> などのような |<>| 表記は自動的に変換されません。特殊キーはエスケープシ
-ーケンスを用いて渡してください。
->
-	call swap#noreamp("\<space>", 'z.')
+ `*` 降順 >
+  call swap#region({start}, {end}, {type},
+  \ [['sort', {x, y -> x.str is# y.str ? 0 : x.str > y.str ? -1 : 1}]])
 <
-|swap#map()| はキーマップを展開します。カスタムキーマッピングなど、展開する必
-要のあるものに使用してください。
->
-	call swap#map("\<CR>", "\<Plug>(swap-mode-fix-nr)")
+ `*` 文字列の長さ順 >
+  call swap#region({start}, {end}, {type},
+  \ [['sort', {x, y -> strlen(x.str) - strlen(y.str)}]])
 <
-NOTE: もし swap mode 内でバッファが変更された場合、必ずしも期待した通りの結果
-      にならないかもしれません。
+
 
 ==============================================================================
 CUSTOMIZATION				*swap-customization*

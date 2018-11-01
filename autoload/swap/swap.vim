@@ -1,165 +1,293 @@
-" swap object - Managing a whole action.
+" Swap object - Managing a whole action.
 
-call swap#constant#import(s:, ['TYPESTR', 'TYPENUM', 'NULLREGION'])
-call swap#lib#import(s:, ['get_buf_length', 'sort', 'is_valid_region',
-                        \ 'escape', 'motionwise2visualkey'])
+let s:const = swap#constant#import(s:, ['TYPESTR', 'TYPENUM', 'NULLREGION'])
+let s:lib = swap#lib#import()
 
-function! swap#swap#new(mode, order_list) abort "{{{
-  let swap = deepcopy(s:swap_prototype)
+let s:TRUE = 1
+let s:FALSE = 0
+let s:TYPESTR = s:const.TYPESTR
+let s:TYPENUM = s:const.TYPENUM
+let s:TYPEDICT = s:const.TYPEDICT
+let s:TYPEFUNC = s:const.TYPEFUNC
+let s:NULLREGION = s:const.NULLREGION
+let s:GUI_RUNNING = has('gui_running')
+
+
+function! swap#swap#new(mode, input_list, rules) abort "{{{
+  let swap = deepcopy(s:Swap)
   let swap.mode = a:mode
-  let swap.order_list = a:order_list
-  let swap.rules = s:get_rules(a:mode)
+  let swap.input_list = a:input_list
+  let swap.rules = s:get_rules(a:rules, a:mode)
   return swap
 endfunction "}}}
 
-let s:swap_prototype = {
-      \   'dotrepeat': 0,
-      \   'mode': '',
-      \   'undojoin': 0,
-      \   'rules': [],
-      \   'order_list': [],
-      \   'error': {
-      \     'catched': 0,
-      \     'message': '',
-      \   },
-      \ }
-function! s:swap_prototype.execute(motionwise) dict abort "{{{
-  if self.mode ==# 'n'
-    call self._normal(a:motionwise)
-  elseif self.mode ==# 'x'
-    call self._visual(a:motionwise)
-  endif
-  let self.dotrepeat = 1
+
+let s:Swap = {
+  \   'dotrepeat': s:FALSE,
+  \   'mode': '',
+  \   'rules': [],
+  \   'input_list': [],
+  \ }
+
+
+function! s:Swap.around(pos) abort "{{{
+  let options = s:displace_options()
+  try
+    let pos = s:getpos(a:pos)
+    call self._around(pos)
+  finally
+    call s:restore_options(options)
+  endtry
 endfunction "}}}
-function! s:swap_prototype.scan(motionwise, ...) abort "{{{
+
+
+function! s:Swap._around(pos) abort "{{{
   let rules = deepcopy(self.rules)
-  let textobj = get(a:000, 0, 0)
-  return s:scan(rules, a:motionwise, textobj)
-endfunction "}}}
-function! s:swap_prototype._normal(motionwise) dict abort  "{{{
+  let [buffer, rule] = s:search(rules, a:pos, 'char')
   if self.dotrepeat
-    let [buffer, _] = self.scan(a:motionwise)
     call self._swap_sequential(buffer)
   else
-    let [buffer, rule] = self.scan(a:motionwise)
-    if has_key(rule, 'initialize')
-      let self.rules = [rule.initialize()]
-      let self.order_list = self._swap(buffer)
+    if empty(rule)
+      return
+    endif
+    let self.rules = [rule.initialize()]
+    if self.input_list != []
+      call self._swap_sequential(buffer)
+    else
+      let self.input_list = self._swap_interactive(buffer)
     endif
   endif
 endfunction "}}}
-function! s:swap_prototype._visual(motionwise) dict abort  "{{{
-  let region = s:get_assigned_region(a:motionwise)
+
+
+function! s:Swap.region(start, end, type) abort "{{{
+  let options = s:displace_options()
+  try
+    let start = s:getpos(a:start)
+    let end = s:getpos(a:end)
+    let type = s:lib.v2type(a:type)
+    call self._region(start, end, type)
+  finally
+    call s:restore_options(options)
+  endtry
+endfunction "}}}
+
+
+function! s:Swap._region(start, end, type) abort "{{{
+  let region = s:get_region(a:start, a:end, a:type)
+  if region is# s:NULLREGION
+    return
+  endif
   let rules = deepcopy(self.rules)
+  let [buffer, rule] = s:match(region, rules)
   if self.dotrepeat
-    let [buffer, _] = s:check(region, rules)
     call self._swap_sequential(buffer)
   else
-    let [buffer, rule] = s:check(region, rules)
     let self.rules = [rule]
-    let self.order_list = self._swap(buffer)
+    if self.input_list != []
+      call self._swap_sequential(buffer)
+    else
+      let self.input_list = self._swap_interactive(buffer)
+    endif
   endif
 endfunction "}}}
-function! s:swap_prototype._swap(buffer) dict abort "{{{
-  if self.order_list != []
-    return self._swap_sequential(a:buffer)
-  else
-    return self._swap_interactive(a:buffer)
+
+
+function! s:Swap.operatorfunc(type) abort "{{{
+  if self.mode is# 'n'
+    call self.around(getpos('.'))
+  elseif self.mode is# 'x'
+    let start = getpos("'[")
+    let end = getpos("']")
+    let type = s:lib.v2type(a:type)
+    call self.region(start, end, type)
   endif
+  let self.dotrepeat = s:TRUE
 endfunction "}}}
-function! s:swap_prototype._swap_interactive(buffer) dict abort "{{{
+
+
+function! s:Swap._swap_interactive(buffer) abort "{{{
   if a:buffer == {}
     return []
   endif
 
-  let self.undojoin = 0
-  let interface = swap#interface#new()
-  try
-    while 1
-      let order = interface.query(a:buffer)
-      if order == [] | break | endif
-      call self._swap_once(a:buffer, order)
-    endwhile
-  catch /^Vim:Interrupt$/
-  finally
-    call a:buffer.clear_highlight()
-  endtry
-  return interface.history
+  let buffer = a:buffer
+  let undojoin = s:FALSE
+  let swapmode = swap#swapmode#new()
+  while s:TRUE
+    let input = swapmode.get_input(buffer)
+    if input == [] | break | endif
+    if input[0] is# 'undo'
+      let [buffer, undojoin] = self._restore_buffer(input, undojoin)
+    elseif input[0] is# 'sort'
+      let [buffer, undojoin] = self._sort_items(buffer, input, undojoin)
+    else
+      let [buffer, undojoin] = self._swap_once(buffer, input, undojoin)
+    endif
+  endwhile
+  return swapmode.export_history()
 endfunction "}}}
-function! s:swap_prototype._swap_sequential(buffer) dict abort  "{{{
-  if a:buffer != {}
-    let self.undojoin = 0
-    for order in self.order_list
-      call self._swap_once(a:buffer, order)
-    endfor
-  endif
-  return self.order_list
-endfunction "}}}
-function! s:swap_prototype._swap_once(buffer, order) dict abort "{{{
-  if a:order == []
+
+
+function! s:Swap._swap_sequential(buffer) abort  "{{{
+  if a:buffer == {}
     return
   endif
 
-  let order = deepcopy(a:order)
-
-  " substitute symbols
-  for symbol in ['#', '^', '$']
-    if stridx(order[0], symbol) > -1 || stridx(order[1], symbol) > -1
-      call s:substitute_symbol(order, symbol, a:buffer.symbols[symbol])
+  let buffer = a:buffer
+  let undojoin = s:FALSE
+  for input in self.input_list
+    if input[0] is# 'sort'
+      let [buffer, undojoin] = self._sort_items(buffer, input, undojoin)
+    else
+      let [buffer, undojoin] = self._swap_once(buffer, input, undojoin)
     endif
   endfor
+  return self.input_list
+endfunction "}}}
 
-  " evaluate after substituting symbols
-  call map(order, 'type(v:val) == s:TYPESTR ? eval(v:val) : v:val')
 
-  let n = len(a:buffer.items)
-  if type(order[0]) != s:TYPENUM || type(order[1]) != s:TYPENUM
-        \ || order[0] < 1 || order[0] > n || order[1] < 1 || order[1] > n
-    " the index is out of range
-    return
+function! s:Swap._swap_once(buffer, input, undojoin) abort "{{{
+  " substitute and eval symbols
+  let input = map(copy(a:input), 'a:buffer.get_pos(v:val)')
+  if !s:is_valid_input(input, a:buffer)
+    return [a:buffer, a:undojoin]
   endif
 
-  " swap items in buffer
-  call a:buffer.swap(order, self.undojoin)
-  let self.undojoin = 1
-endfunction "}}}
-function! s:swap_prototype.error.catch(msg, ...) dict abort  "{{{
-    let self.catched = 1
-    let self.message = a:msg
-    if a:0
-      throw a:1
-    endif
+  " swap items on the buffer
+  let newbuffer = s:swap(a:buffer, input)
+  call s:write(newbuffer, a:undojoin)
+
+  " update buffer information
+  let newbuffer.head = getpos("'[")
+  let newbuffer.tail = getpos("']")
+  call newbuffer.update_items()
+  call newbuffer.get_item(input[1], s:TRUE).cursor()
+  call newbuffer.update_sharp(getpos('.'))
+  call newbuffer.update_hat()
+  return [newbuffer, s:TRUE]
 endfunction "}}}
 
-function! s:get_rules(mode) abort  "{{{
-  let rules = deepcopy(get(g:, 'swap#rules', g:swap#default_rules))
+
+function! s:Swap._restore_buffer(input, undojoin) abort "{{{
+  if a:input[0] isnot# 'undo'
+    echoerr 'vim-swap: Invalid arguments for swap._restore_buffer()'
+  endif
+
+  " restore the buffer in input
+  let newbuffer = a:input[1]
+  call s:write(newbuffer, a:undojoin)
+
+  " update buffer information
+  let newbuffer.head = getpos("'[")
+  let newbuffer.tail = getpos("']")
+  call newbuffer.update_items()
+  call newbuffer.get_item(a:input[2], s:TRUE).cursor()
+  call newbuffer.update_sharp(getpos('.'))
+  call newbuffer.update_hat()
+  return [newbuffer, s:TRUE]
+endfunction "}}}
+
+
+function! s:Swap._sort_items(buffer, input, undojoin) abort "{{{
+  if a:input[0] isnot# 'sort'
+    echoerr 'vim-swap: Invalid arguments for swap._sort_items()'
+  endif
+  let curpos = getpos('.')
+
+  " sort items and reflect on the buffer
+  let args = a:input[1:]
+  let newbuffer = s:sort(a:buffer, args)
+  call s:write(newbuffer, a:undojoin)
+
+  " update buffer information
+  let newbuffer.head = getpos("'[")
+  let newbuffer.tail = getpos("']")
+  call newbuffer.update_items()
+  let pos = newbuffer.update_sharp(curpos)
+  call newbuffer.get_item(pos, s:TRUE).cursor()
+  call newbuffer.update_hat()
+  return [newbuffer, s:TRUE]
+endfunction "}}}
+
+
+" This method is mainly for textobjects
+function! s:Swap.search(pos, type, ...) abort "{{{
+  let rules = deepcopy(self.rules)
+  let pos = s:getpos(a:pos)
+  let type = s:lib.v2type(a:type)
+  let textobj = get(a:000, 0, 0)
+  return s:search(rules, pos, type, textobj)
+endfunction "}}}
+
+
+function! s:displace_options() abort  "{{{
+  let options = {}
+  let options.virtualedit = &virtualedit
+  let options.whichwrap = &whichwrap
+  let options.selection = &selection
+  let [&virtualedit, &whichwrap, &selection] = ['onemore', 'h,l', 'inclusive']
+  if s:GUI_RUNNING
+    let options.cursor = &guicursor
+    set guicursor+=n-o:block-NONE
+  else
+    let options.cursor = &t_ve
+    set t_ve=
+  endif
+  let options.cursorline = &l:cursorline
+  setlocal nocursorline
+  return options
+endfunction "}}}
+
+
+function! s:restore_options(options) abort "{{{
+  let &virtualedit = a:options.virtualedit
+  let &whichwrap = a:options.whichwrap
+  let &selection = a:options.selection
+  if s:GUI_RUNNING
+    set guicursor&
+    let &guicursor = a:options.cursor
+  else
+    let &t_ve = a:options.cursor
+  endif
+  let &l:cursorline = a:options.cursorline
+endfunction "}}}
+
+
+function! s:get_rules(rules, mode) abort  "{{{
+  let rules = deepcopy(a:rules)
   call map(rules, 'extend(v:val, {"priority": 0}, "keep")')
-  call s:sort(reverse(rules), function('s:compare_priority'))
+  call s:lib.sort(reverse(rules), function('s:compare_priority'))
   call filter(rules, 's:filter_filetype(v:val) && s:filter_mode(v:val, a:mode)')
-  if a:mode !=# 'x'
+  if a:mode isnot# 'x'
     call s:remove_duplicate_rules(rules)
   endif
   return map(rules, 'swap#rule#get(v:val)')
 endfunction "}}}
+
+
 function! s:filter_filetype(rule) abort  "{{{
   if !has_key(a:rule, 'filetype')
-    return 1
+    return s:TRUE
   endif
   let filetypes = split(&filetype, '\.')
   if filetypes == []
-    let filter = 'v:val ==# ""'
+    let filter = 'v:val is# ""'
   else
-    let filter = 'v:val !=# "" && count(filetypes, v:val) > 0'
+    let filter = 'v:val isnot# "" && count(filetypes, v:val) > 0'
   endif
   return filter(copy(a:rule['filetype']), filter) != []
 endfunction "}}}
+
+
 function! s:filter_mode(rule, mode) abort  "{{{
   if !has_key(a:rule, 'mode')
-    return 1
-  else
-    return stridx(a:rule.mode, a:mode) > -1
+    return s:TRUE
   endif
+  return stridx(a:rule.mode, a:mode) > -1
 endfunction "}}}
+
+
 function! s:remove_duplicate_rules(rules) abort "{{{
   let i = 0
   while i < len(a:rules)
@@ -186,34 +314,22 @@ function! s:remove_duplicate_rules(rules) abort "{{{
     let i += 1
   endwhile
 endfunction "}}}
-function! s:get_assigned_region(motionwise) abort "{{{
+
+
+function! s:get_region(start, end, type) abort "{{{
   let region = deepcopy(s:NULLREGION)
-  let region.head = getpos("'[")
-  let region.tail = getpos("']")
-  let region.type = a:motionwise
-  let region.visualkey = s:motionwise2visualkey(a:motionwise)
-
-  if !s:is_valid_region(region)
-    return deepcopy(s:NULLREGION)
+  let region.head = a:start
+  let region.tail = a:end
+  let region.type = a:type
+  if !s:lib.is_valid_region(region)
+    return s:NULLREGION
   endif
 
-  let endcol = col([region.tail[1], '$'])
-  if a:motionwise ==# 'V'
-    let region.head[2] = 1
-    let region.tail[2] = endcol
-  else
-    if region.tail[2] >= endcol
-      let region.tail[2] = endcol
-    endif
-  endif
-
-  if !s:is_valid_region(region)
-    return deepcopy(s:NULLREGION)
-  endif
-
-  let region.len = s:get_buf_length(region)
+  let region.len = s:lib.get_buf_length(region)
   return region
 endfunction "}}}
+
+
 function! s:get_priority_group(rules) abort "{{{
   " NOTE: This function move items in a:rules to priority_group.
   "       Thus it makes changes to a:rules also.
@@ -228,17 +344,19 @@ function! s:get_priority_group(rules) abort "{{{
   endwhile
   return priority_group
 endfunction "}}}
-function! s:scan(rules, motionwise, ...) abort "{{{
+
+
+function! s:search(rules, pos, type, ...) abort "{{{
   let view = winsaveview()
   let textobj = get(a:000, 0, 0)
-  let curpos = getpos('.')
   let buffer = {}
   let virtualedit = &virtualedit
   let &virtualedit = 'onemore'
   try
     while a:rules != []
       let priority_group = s:get_priority_group(a:rules)
-      let [buffer, rule] = s:scan_group(priority_group, curpos, a:motionwise, textobj)
+      let [buffer, rule] = s:search_by_group(priority_group, a:type,
+                                           \ a:pos, textobj)
       if buffer != {}
         break
       endif
@@ -249,14 +367,16 @@ function! s:scan(rules, motionwise, ...) abort "{{{
   call winrestview(view)
   return buffer != {} ? [buffer, rule] : [{}, {}]
 endfunction "}}}
-function! s:scan_group(priority_group, curpos, motionwise, ...) abort "{{{
+
+
+function! s:search_by_group(priority_group, type, curpos, ...) abort "{{{
   let textobj = get(a:000, 0, 0)
   while a:priority_group != []
     for rule in a:priority_group
-      call rule.search(a:curpos, a:motionwise)
+      call rule.search(a:curpos, a:type)
     endfor
-    call filter(a:priority_group, 's:is_valid_region(v:val.region)')
-    call s:sort(a:priority_group, function('s:compare_len'))
+    call filter(a:priority_group, 's:lib.is_valid_region(v:val.region)')
+    call s:lib.sort(a:priority_group, function('s:compare_len'))
 
     for rule in a:priority_group
       let region = rule.region
@@ -268,7 +388,9 @@ function! s:scan_group(priority_group, curpos, motionwise, ...) abort "{{{
   endwhile
   return [{}, {}]
 endfunction "}}}
-function! s:check(region, rules) abort  "{{{
+
+
+function! s:match(region, rules) abort  "{{{
   if a:region == s:NULLREGION
     return [{}, {}]
   endif
@@ -278,7 +400,7 @@ function! s:check(region, rules) abort  "{{{
   let buffer = {}
   while a:rules != []
     let priority_group = s:get_priority_group(a:rules)
-    let [buffer, rule] = s:check_group(a:region, priority_group, curpos)
+    let [buffer, rule] = s:match_group(a:region, priority_group, curpos)
     if buffer != {}
       break
     endif
@@ -286,9 +408,11 @@ function! s:check(region, rules) abort  "{{{
   call winrestview(view)
   return buffer != {} ? [buffer, rule] : [{}, {}]
 endfunction "}}}
-function! s:check_group(region, priority_group, curpos) abort "{{{
+
+
+function! s:match_group(region, priority_group, curpos) abort "{{{
   for rule in a:priority_group
-    if rule.check(a:region)
+    if rule.match(a:region)
       let buffer = swap#parser#parse(a:region, rule, a:curpos)
       if buffer.swappable()
         return [buffer, rule]
@@ -297,6 +421,8 @@ function! s:check_group(region, priority_group, curpos) abort "{{{
   endfor
   return [{}, {}]
 endfunction "}}}
+
+
 function! s:compare_priority(r1, r2) abort "{{{
   let priority_r1 = get(a:r1, 'priority', 0)
   let priority_r2 = get(a:r2, 'priority', 0)
@@ -308,12 +434,130 @@ function! s:compare_priority(r1, r2) abort "{{{
     return 0
   endif
 endfunction "}}}
+
+
 function! s:compare_len(r1, r2) abort "{{{
   return a:r1.region.len - a:r2.region.len
 endfunction "}}}
-function! s:substitute_symbol(order, symbol, symbol_idx) abort "{{{
-  let symbol = s:escape(a:symbol)
-  return map(a:order, 'type(v:val) == s:TYPESTR ? substitute(v:val, symbol, a:symbol_idx, "") : v:val')
+
+
+function! s:is_valid_input(input, buffer) abort "{{{
+  if type(a:input[0]) isnot# s:TYPENUM
+    return s:FALSE
+  endif
+  if type(a:input[1]) isnot# s:TYPENUM
+    return s:FALSE
+  endif
+  let n = len(a:buffer.items)
+  if a:input[0] < 1 || a:input[0] > n
+    return s:FALSE
+  endif
+  if a:input[1] < 1 || a:input[1] > n
+    return s:FALSE
+  endif
+  return s:TRUE
+endfunction "}}}
+
+
+function! s:new_empty_buffer(buffer) abort "{{{
+  let newbuffer = deepcopy(a:buffer)
+  call filter(newbuffer.all, 0)
+  call filter(newbuffer.items, 0)
+  return newbuffer
+endfunction "}}}
+
+
+function! s:swap(buffer, input) abort "{{{
+  let itemindexes = range(len(a:buffer.items))
+  let idx1 = a:input[0] - 1
+  let idx2 = a:input[1] - 1
+  call remove(itemindexes, idx1)
+  call insert(itemindexes, idx2, idx1)
+  call remove(itemindexes, idx2)
+  call insert(itemindexes, idx1, idx2)
+
+  let newbuffer = s:new_empty_buffer(a:buffer)
+  for item in a:buffer.all
+    if item.attr is# 'item'
+      let i = remove(itemindexes, 0)
+      let item = a:buffer.items[i]
+      call add(newbuffer.items, item)
+    endif
+    call add(newbuffer.all, item)
+  endfor
+  return newbuffer
+endfunction "}}}
+
+
+let s:INVALID = 0
+
+function! s:sort(buffer, args) abort "{{{
+  let items = deepcopy(a:buffer.items)
+  let items = s:lockall(items)
+  sandbox let sorted_items = call(s:lib.sort, [items] + a:args)
+  let sorted_items = s:unlockall(sorted_items)
+  if len(sorted_items) != len(a:buffer.items)
+    echoerr 'vim-swap: An Error occurred in sorting items; the number of items has been changed.'
+  endif
+
+  let newbuffer = s:new_empty_buffer(a:buffer)
+  for item in a:buffer.all
+    if item.attr is# 'item'
+      let item = remove(sorted_items, 0)
+      call add(newbuffer.items, item)
+    endif
+    call add(newbuffer.all, item)
+  endfor
+  return newbuffer
+endfunction "}}}
+
+
+function! s:lockall(list) abort "{{{
+  for item in a:list
+    call s:lock(item)
+  endfor
+  return a:list
+endfunction "}}}
+
+
+function! s:lock(item) abort "{{{
+  lockvar! a:item
+endfunction "}}}
+
+
+function! s:unlockall(list) abort "{{{
+  for item in a:list
+    unlockvar! item
+  endfor
+  return a:list
+endfunction "}}}
+
+
+function! s:string(buffer) abort "{{{
+  return join(map(copy(a:buffer.all), 'v:val.str'), '')
+endfunction "}}}
+
+
+function! s:write(buffer, undojoin) abort "{{{
+  let str = s:string(a:buffer)
+  let v = s:lib.type2v(a:buffer.type)
+  let view = winsaveview()
+  let undojoin_cmd = a:undojoin ? 'undojoin | ' : ''
+  let reg = ['"', getreg('"'), getregtype('"')]
+  call setreg('"', str, v)
+  call setpos('.', a:buffer.head)
+  silent execute printf('%snoautocmd normal! "_d%s:call setpos(".", %s)%s""P:',
+                      \ undojoin_cmd, v, string(a:buffer.tail), "\<CR>")
+  call call('setreg', reg)
+  call winrestview(view)
+endfunction "}}}
+
+
+function! s:getpos(pos) abort "{{{
+  if type(a:pos) is# s:TYPESTR
+    return getpos(a:pos)
+  endif
+  return a:pos
 endfunction "}}}
 
 

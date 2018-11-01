@@ -3,6 +3,7 @@ let s:suite = themis#suite('swap: ')
 let s:scope = themis#helper('scope')
 let s:parser = s:scope.funcs('autoload/swap/parser.vim')
 let s:lib = s:scope.funcs('autoload/swap/lib.vim')
+let s:swap = s:scope.funcs('autoload/swap/swap.vim')
 
 function! s:suite.before_each() abort "{{{
   %delete
@@ -266,256 +267,272 @@ function! s:suite.buf_byte_len() abort "{{{
   let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 8)
 endfunction "}}}
-function! s:suite.parse_charwise() dict abort  "{{{
+function! s:suite.parse_charwise() abort  "{{{
   let rule = {'surrounds': ['(', ')', 1], 'delimiter': [',\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']}
 
   " #1
   let stuffs = s:parser.parse_charwise('foo, bar', rule)
   call g:assert.equals(len(stuffs), 3, 'failed at #1-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',      'failed at #1-2')
-  call g:assert.equals(stuffs[0]['string'], 'foo',       'failed at #1-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter', 'failed at #1-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',        'failed at #1-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',      'failed at #1-6')
-  call g:assert.equals(stuffs[2]['string'], 'bar',       'failed at #1-7')
+  call g:assert.equals(stuffs[0]['attr'], 'item',      'failed at #1-2')
+  call g:assert.equals(stuffs[0]['str'],  'foo',       'failed at #1-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter', 'failed at #1-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',        'failed at #1-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',      'failed at #1-6')
+  call g:assert.equals(stuffs[2]['str'],  'bar',       'failed at #1-7')
 
   " #2
   let stuffs = s:parser.parse_charwise('foo, bar, baz', rule)
   call g:assert.equals(len(stuffs), 5, 'failed at #2-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',      'failed at #2-2')
-  call g:assert.equals(stuffs[0]['string'], 'foo',       'failed at #2-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter', 'failed at #2-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',        'failed at #2-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',      'failed at #2-6')
-  call g:assert.equals(stuffs[2]['string'], 'bar',       'failed at #2-7')
-  call g:assert.equals(stuffs[3]['attr'],   'delimiter', 'failed at #2-8')
-  call g:assert.equals(stuffs[3]['string'], ', ',        'failed at #2-9')
-  call g:assert.equals(stuffs[4]['attr'],   'item',      'failed at #2-10')
-  call g:assert.equals(stuffs[4]['string'], 'baz',       'failed at #2-11')
+  call g:assert.equals(stuffs[0]['attr'], 'item',      'failed at #2-2')
+  call g:assert.equals(stuffs[0]['str'],  'foo',       'failed at #2-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter', 'failed at #2-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',        'failed at #2-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',      'failed at #2-6')
+  call g:assert.equals(stuffs[2]['str'],  'bar',       'failed at #2-7')
+  call g:assert.equals(stuffs[3]['attr'], 'delimiter', 'failed at #2-8')
+  call g:assert.equals(stuffs[3]['str'],  ', ',        'failed at #2-9')
+  call g:assert.equals(stuffs[4]['attr'], 'item',      'failed at #2-10')
+  call g:assert.equals(stuffs[4]['str'],  'baz',       'failed at #2-11')
 
   " #3
   let stuffs = s:parser.parse_charwise('foo, (bar, baz)', rule)
   call g:assert.equals(len(stuffs), 3, 'failed at #3-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',       'failed at #3-2')
-  call g:assert.equals(stuffs[0]['string'], 'foo',        'failed at #3-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter',  'failed at #3-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',         'failed at #3-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',       'failed at #3-6')
-  call g:assert.equals(stuffs[2]['string'], '(bar, baz)', 'failed at #3-7')
+  call g:assert.equals(stuffs[0]['attr'], 'item',       'failed at #3-2')
+  call g:assert.equals(stuffs[0]['str'],  'foo',        'failed at #3-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter',  'failed at #3-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',         'failed at #3-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',       'failed at #3-6')
+  call g:assert.equals(stuffs[2]['str'],  '(bar, baz)', 'failed at #3-7')
 
   " #4
   let stuffs = s:parser.parse_charwise('foo, [bar, baz]', rule)
   call g:assert.equals(len(stuffs), 3, 'failed at #4-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',       'failed at #4-2')
-  call g:assert.equals(stuffs[0]['string'], 'foo',        'failed at #4-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter',  'failed at #4-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',         'failed at #4-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',       'failed at #4-6')
-  call g:assert.equals(stuffs[2]['string'], '[bar, baz]', 'failed at #4-7')
+  call g:assert.equals(stuffs[0]['attr'], 'item',       'failed at #4-2')
+  call g:assert.equals(stuffs[0]['str'],  'foo',        'failed at #4-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter',  'failed at #4-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',         'failed at #4-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',       'failed at #4-6')
+  call g:assert.equals(stuffs[2]['str'],  '[bar, baz]', 'failed at #4-7')
 
   " #5
   let stuffs = s:parser.parse_charwise('foo, {bar, baz}', rule)
   call g:assert.equals(len(stuffs), 3, 'failed at #5-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',       'failed at #5-2')
-  call g:assert.equals(stuffs[0]['string'], 'foo',        'failed at #5-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter',  'failed at #5-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',         'failed at #5-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',       'failed at #5-6')
-  call g:assert.equals(stuffs[2]['string'], '{bar, baz}', 'failed at #5-7')
+  call g:assert.equals(stuffs[0]['attr'], 'item',       'failed at #5-2')
+  call g:assert.equals(stuffs[0]['str'],  'foo',        'failed at #5-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter',  'failed at #5-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',         'failed at #5-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',       'failed at #5-6')
+  call g:assert.equals(stuffs[2]['str'],  '{bar, baz}', 'failed at #5-7')
 
   " #6
   let stuffs = s:parser.parse_charwise('foo, "bar, baz"', rule)
   call g:assert.equals(len(stuffs), 3, 'failed at #6-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',       'failed at #6-2')
-  call g:assert.equals(stuffs[0]['string'], 'foo',        'failed at #6-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter',  'failed at #6-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',         'failed at #6-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',       'failed at #6-6')
-  call g:assert.equals(stuffs[2]['string'], '"bar, baz"', 'failed at #6-7')
+  call g:assert.equals(stuffs[0]['attr'], 'item',       'failed at #6-2')
+  call g:assert.equals(stuffs[0]['str'],  'foo',        'failed at #6-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter',  'failed at #6-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',         'failed at #6-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',       'failed at #6-6')
+  call g:assert.equals(stuffs[2]['str'],  '"bar, baz"', 'failed at #6-7')
 
   " #7
   let stuffs = s:parser.parse_charwise("foo, 'bar, baz'", rule)
   call g:assert.equals(len(stuffs), 3, 'failed at #7-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',       'failed at #7-2')
-  call g:assert.equals(stuffs[0]['string'], 'foo',        'failed at #7-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter',  'failed at #7-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',         'failed at #7-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',       'failed at #7-6')
-  call g:assert.equals(stuffs[2]['string'], "'bar, baz'", 'failed at #7-7')
+  call g:assert.equals(stuffs[0]['attr'], 'item',       'failed at #7-2')
+  call g:assert.equals(stuffs[0]['str'],  'foo',        'failed at #7-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter',  'failed at #7-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',         'failed at #7-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',       'failed at #7-6')
+  call g:assert.equals(stuffs[2]['str'],  "'bar, baz'", 'failed at #7-7')
 
   " #8
   let stuffs = s:parser.parse_charwise('(foo, bar), baz, qux', rule)
   call g:assert.equals(len(stuffs), 5, 'failed at #8-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',       'failed at #8-2')
-  call g:assert.equals(stuffs[0]['string'], '(foo, bar)', 'failed at #8-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter',  'failed at #8-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',         'failed at #8-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',       'failed at #8-6')
-  call g:assert.equals(stuffs[2]['string'], 'baz',        'failed at #8-7')
-  call g:assert.equals(stuffs[3]['attr'],   'delimiter',  'failed at #8-8')
-  call g:assert.equals(stuffs[3]['string'], ', ',         'failed at #8-9')
-  call g:assert.equals(stuffs[4]['attr'],   'item',       'failed at #8-10')
-  call g:assert.equals(stuffs[4]['string'], 'qux',        'failed at #8-11')
+  call g:assert.equals(stuffs[0]['attr'], 'item',       'failed at #8-2')
+  call g:assert.equals(stuffs[0]['str'],  '(foo, bar)', 'failed at #8-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter',  'failed at #8-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',         'failed at #8-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',       'failed at #8-6')
+  call g:assert.equals(stuffs[2]['str'],  'baz',        'failed at #8-7')
+  call g:assert.equals(stuffs[3]['attr'], 'delimiter',  'failed at #8-8')
+  call g:assert.equals(stuffs[3]['str'],  ', ',         'failed at #8-9')
+  call g:assert.equals(stuffs[4]['attr'], 'item',       'failed at #8-10')
+  call g:assert.equals(stuffs[4]['str'],  'qux',        'failed at #8-11')
 
   " #9
   let stuffs = s:parser.parse_charwise('foo, (bar, baz), qux', rule)
   call g:assert.equals(len(stuffs), 5, 'failed at #9-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',       'failed at #9-2')
-  call g:assert.equals(stuffs[0]['string'], 'foo',        'failed at #9-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter',  'failed at #9-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',         'failed at #9-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',       'failed at #9-6')
-  call g:assert.equals(stuffs[2]['string'], '(bar, baz)', 'failed at #9-7')
-  call g:assert.equals(stuffs[3]['attr'],   'delimiter',  'failed at #9-8')
-  call g:assert.equals(stuffs[3]['string'], ', ',         'failed at #9-9')
-  call g:assert.equals(stuffs[4]['attr'],   'item',       'failed at #9-10')
-  call g:assert.equals(stuffs[4]['string'], 'qux',        'failed at #9-11')
+  call g:assert.equals(stuffs[0]['attr'], 'item',       'failed at #9-2')
+  call g:assert.equals(stuffs[0]['str'],  'foo',        'failed at #9-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter',  'failed at #9-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',         'failed at #9-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',       'failed at #9-6')
+  call g:assert.equals(stuffs[2]['str'],  '(bar, baz)', 'failed at #9-7')
+  call g:assert.equals(stuffs[3]['attr'], 'delimiter',  'failed at #9-8')
+  call g:assert.equals(stuffs[3]['str'],  ', ',         'failed at #9-9')
+  call g:assert.equals(stuffs[4]['attr'], 'item',       'failed at #9-10')
+  call g:assert.equals(stuffs[4]['str'],  'qux',        'failed at #9-11')
 
   " #10
   let stuffs = s:parser.parse_charwise('foo, bar, (baz, qux)', rule)
   call g:assert.equals(len(stuffs), 5, 'failed at #10-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',       'failed at #10-2')
-  call g:assert.equals(stuffs[0]['string'], 'foo',        'failed at #10-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter',  'failed at #10-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',         'failed at #10-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',       'failed at #10-6')
-  call g:assert.equals(stuffs[2]['string'], 'bar',        'failed at #10-7')
-  call g:assert.equals(stuffs[3]['attr'],   'delimiter',  'failed at #10-8')
-  call g:assert.equals(stuffs[3]['string'], ', ',         'failed at #10-9')
-  call g:assert.equals(stuffs[4]['attr'],   'item',       'failed at #10-10')
-  call g:assert.equals(stuffs[4]['string'], '(baz, qux)', 'failed at #10-11')
+  call g:assert.equals(stuffs[0]['attr'], 'item',       'failed at #10-2')
+  call g:assert.equals(stuffs[0]['str'],  'foo',        'failed at #10-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter',  'failed at #10-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',         'failed at #10-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',       'failed at #10-6')
+  call g:assert.equals(stuffs[2]['str'],  'bar',        'failed at #10-7')
+  call g:assert.equals(stuffs[3]['attr'], 'delimiter',  'failed at #10-8')
+  call g:assert.equals(stuffs[3]['str'],  ', ',         'failed at #10-9')
+  call g:assert.equals(stuffs[4]['attr'], 'item',       'failed at #10-10')
+  call g:assert.equals(stuffs[4]['str'],  '(baz, qux)', 'failed at #10-11')
 
   " #11
   let stuffs = s:parser.parse_charwise('"foo, bar", (baz, qux)', rule)
   call g:assert.equals(len(stuffs), 3, 'failed at #11-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',       'failed at #11-2')
-  call g:assert.equals(stuffs[0]['string'], '"foo, bar"', 'failed at #11-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter',  'failed at #11-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',         'failed at #11-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',       'failed at #11-6')
-  call g:assert.equals(stuffs[2]['string'], '(baz, qux)', 'failed at #11-7')
+  call g:assert.equals(stuffs[0]['attr'], 'item',       'failed at #11-2')
+  call g:assert.equals(stuffs[0]['str'],  '"foo, bar"', 'failed at #11-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter',  'failed at #11-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',         'failed at #11-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',       'failed at #11-6')
+  call g:assert.equals(stuffs[2]['str'],  '(baz, qux)', 'failed at #11-7')
 
   " #12
   let stuffs = s:parser.parse_charwise('"foo, (bar, baz)", qux', rule)
   call g:assert.equals(len(stuffs), 3, 'failed at #12-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',       'failed at #12-2')
-  call g:assert.equals(stuffs[0]['string'], '"foo, (bar, baz)"', 'failed at #12-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter',  'failed at #12-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',         'failed at #12-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',       'failed at #12-6')
-  call g:assert.equals(stuffs[2]['string'], 'qux',        'failed at #12-7')
+  call g:assert.equals(stuffs[0]['attr'], 'item',       'failed at #12-2')
+  call g:assert.equals(stuffs[0]['str'],  '"foo, (bar, baz)"', 'failed at #12-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter',  'failed at #12-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',         'failed at #12-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',       'failed at #12-6')
+  call g:assert.equals(stuffs[2]['str'],  'qux',        'failed at #12-7')
 
   " #13
   let stuffs = s:parser.parse_charwise('(foo, "bar, baz"), qux', rule)
   call g:assert.equals(len(stuffs), 3, 'failed at #13-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',       'failed at #13-2')
-  call g:assert.equals(stuffs[0]['string'], '(foo, "bar, baz")', 'failed at #13-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter',  'failed at #13-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',         'failed at #13-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',       'failed at #13-6')
-  call g:assert.equals(stuffs[2]['string'], 'qux',        'failed at #13-7')
+  call g:assert.equals(stuffs[0]['attr'], 'item',       'failed at #13-2')
+  call g:assert.equals(stuffs[0]['str'],  '(foo, "bar, baz")', 'failed at #13-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter',  'failed at #13-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',         'failed at #13-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',       'failed at #13-6')
+  call g:assert.equals(stuffs[2]['str'],  'qux',        'failed at #13-7')
 
   " #14
   let stuffs = s:parser.parse_charwise("foo, bar,\n baz, qux", rule)
   call g:assert.equals(len(stuffs), 8, 'failed at #14-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',       'failed at #14-2')
-  call g:assert.equals(stuffs[0]['string'], 'foo',        'failed at #14-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter',  'failed at #14-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',         'failed at #14-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',       'failed at #14-6')
-  call g:assert.equals(stuffs[2]['string'], 'bar',        'failed at #14-7')
-  call g:assert.equals(stuffs[3]['attr'],   'delimiter',  'failed at #14-8')
-  call g:assert.equals(stuffs[3]['string'], ',',          'failed at #14-9')
-  call g:assert.equals(stuffs[4]['attr'],   'immutable',  'failed at #14-10')
-  call g:assert.equals(stuffs[4]['string'], "\n ",        'failed at #14-11')
-  call g:assert.equals(stuffs[5]['attr'],   'item',       'failed at #14-12')
-  call g:assert.equals(stuffs[5]['string'], 'baz',        'failed at #14-13')
-  call g:assert.equals(stuffs[6]['attr'],   'delimiter',  'failed at #14-14')
-  call g:assert.equals(stuffs[6]['string'], ', ',         'failed at #14-15')
-  call g:assert.equals(stuffs[7]['attr'],   'item',       'failed at #14-16')
-  call g:assert.equals(stuffs[7]['string'], 'qux',        'failed at #14-17')
+  call g:assert.equals(stuffs[0]['attr'], 'item',       'failed at #14-2')
+  call g:assert.equals(stuffs[0]['str'],  'foo',        'failed at #14-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter',  'failed at #14-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',         'failed at #14-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',       'failed at #14-6')
+  call g:assert.equals(stuffs[2]['str'],  'bar',        'failed at #14-7')
+  call g:assert.equals(stuffs[3]['attr'], 'delimiter',  'failed at #14-8')
+  call g:assert.equals(stuffs[3]['str'],  ',',          'failed at #14-9')
+  call g:assert.equals(stuffs[4]['attr'], 'immutable',  'failed at #14-10')
+  call g:assert.equals(stuffs[4]['str'],  "\n ",        'failed at #14-11')
+  call g:assert.equals(stuffs[5]['attr'], 'item',       'failed at #14-12')
+  call g:assert.equals(stuffs[5]['str'],  'baz',        'failed at #14-13')
+  call g:assert.equals(stuffs[6]['attr'], 'delimiter',  'failed at #14-14')
+  call g:assert.equals(stuffs[6]['str'],  ', ',         'failed at #14-15')
+  call g:assert.equals(stuffs[7]['attr'], 'item',       'failed at #14-16')
+  call g:assert.equals(stuffs[7]['str'],  'qux',        'failed at #14-17')
 
   " #15
   let stuffs = s:parser.parse_charwise("foo, bar\n    , baz, qux", rule)
   call g:assert.equals(len(stuffs), 8, 'failed at #14-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',       'failed at #15-2')
-  call g:assert.equals(stuffs[0]['string'], 'foo',        'failed at #15-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter',  'failed at #15-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',         'failed at #15-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',       'failed at #15-6')
-  call g:assert.equals(stuffs[2]['string'], 'bar',        'failed at #15-7')
-  call g:assert.equals(stuffs[3]['attr'],   'immutable',  'failed at #15-8')
-  call g:assert.equals(stuffs[3]['string'], "\n    ",     'failed at #15-9')
-  call g:assert.equals(stuffs[4]['attr'],   'delimiter',  'failed at #15-10')
-  call g:assert.equals(stuffs[4]['string'], ', ',         'failed at #15-11')
-  call g:assert.equals(stuffs[5]['attr'],   'item',       'failed at #15-12')
-  call g:assert.equals(stuffs[5]['string'], 'baz',        'failed at #15-13')
-  call g:assert.equals(stuffs[6]['attr'],   'delimiter',  'failed at #15-14')
-  call g:assert.equals(stuffs[6]['string'], ', ',         'failed at #15-15')
-  call g:assert.equals(stuffs[7]['attr'],   'item',       'failed at #15-16')
-  call g:assert.equals(stuffs[7]['string'], 'qux',        'failed at #15-17')
+  call g:assert.equals(stuffs[0]['attr'], 'item',       'failed at #15-2')
+  call g:assert.equals(stuffs[0]['str'],  'foo',        'failed at #15-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter',  'failed at #15-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',         'failed at #15-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',       'failed at #15-6')
+  call g:assert.equals(stuffs[2]['str'],  'bar',        'failed at #15-7')
+  call g:assert.equals(stuffs[3]['attr'], 'immutable',  'failed at #15-8')
+  call g:assert.equals(stuffs[3]['str'],  "\n    ",     'failed at #15-9')
+  call g:assert.equals(stuffs[4]['attr'], 'delimiter',  'failed at #15-10')
+  call g:assert.equals(stuffs[4]['str'],  ', ',         'failed at #15-11')
+  call g:assert.equals(stuffs[5]['attr'], 'item',       'failed at #15-12')
+  call g:assert.equals(stuffs[5]['str'],  'baz',        'failed at #15-13')
+  call g:assert.equals(stuffs[6]['attr'], 'delimiter',  'failed at #15-14')
+  call g:assert.equals(stuffs[6]['str'],  ', ',         'failed at #15-15')
+  call g:assert.equals(stuffs[7]['attr'], 'item',       'failed at #15-16')
+  call g:assert.equals(stuffs[7]['str'],  'qux',        'failed at #15-17')
 
   " #16
   let stuffs = s:parser.parse_charwise("foo, bar, , baz", rule)
   call g:assert.equals(len(stuffs), 7, 'failed at #14-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',       'failed at #16-2')
-  call g:assert.equals(stuffs[0]['string'], 'foo',        'failed at #16-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter',  'failed at #16-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',         'failed at #16-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',       'failed at #16-6')
-  call g:assert.equals(stuffs[2]['string'], 'bar',        'failed at #16-7')
-  call g:assert.equals(stuffs[3]['attr'],   'delimiter',  'failed at #16-8')
-  call g:assert.equals(stuffs[3]['string'], ', ',         'failed at #16-9')
-  call g:assert.equals(stuffs[4]['attr'],   'item',       'failed at #16-10')
-  call g:assert.equals(stuffs[4]['string'], '',           'failed at #16-11')
-  call g:assert.equals(stuffs[5]['attr'],   'delimiter',  'failed at #16-12')
-  call g:assert.equals(stuffs[5]['string'], ', ',         'failed at #16-13')
-  call g:assert.equals(stuffs[6]['attr'],   'item',       'failed at #16-14')
-  call g:assert.equals(stuffs[6]['string'], 'baz',        'failed at #16-15')
+  call g:assert.equals(stuffs[0]['attr'], 'item',       'failed at #16-2')
+  call g:assert.equals(stuffs[0]['str'],  'foo',        'failed at #16-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter',  'failed at #16-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',         'failed at #16-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',       'failed at #16-6')
+  call g:assert.equals(stuffs[2]['str'],  'bar',        'failed at #16-7')
+  call g:assert.equals(stuffs[3]['attr'], 'delimiter',  'failed at #16-8')
+  call g:assert.equals(stuffs[3]['str'],  ', ',         'failed at #16-9')
+  call g:assert.equals(stuffs[4]['attr'], 'item',       'failed at #16-10')
+  call g:assert.equals(stuffs[4]['str'],  '',           'failed at #16-11')
+  call g:assert.equals(stuffs[5]['attr'], 'delimiter',  'failed at #16-12')
+  call g:assert.equals(stuffs[5]['str'],  ', ',         'failed at #16-13')
+  call g:assert.equals(stuffs[6]['attr'], 'item',       'failed at #16-14')
+  call g:assert.equals(stuffs[6]['str'],  'baz',        'failed at #16-15')
 
   " #17
   let stuffs = s:parser.parse_charwise("foo, bar,", rule)
   call g:assert.equals(len(stuffs), 5, 'failed at #14-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',       'failed at #17-2')
-  call g:assert.equals(stuffs[0]['string'], 'foo',        'failed at #17-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter',  'failed at #17-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',         'failed at #17-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',       'failed at #17-6')
-  call g:assert.equals(stuffs[2]['string'], 'bar',        'failed at #17-7')
-  call g:assert.equals(stuffs[3]['attr'],   'delimiter',  'failed at #17-8')
-  call g:assert.equals(stuffs[3]['string'], ',',          'failed at #17-9')
-  call g:assert.equals(stuffs[4]['attr'],   'item',       'failed at #17-10')
-  call g:assert.equals(stuffs[4]['string'], '',           'failed at #17-11')
+  call g:assert.equals(stuffs[0]['attr'], 'item',       'failed at #17-2')
+  call g:assert.equals(stuffs[0]['str'],  'foo',        'failed at #17-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter',  'failed at #17-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',         'failed at #17-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',       'failed at #17-6')
+  call g:assert.equals(stuffs[2]['str'],  'bar',        'failed at #17-7')
+  call g:assert.equals(stuffs[3]['attr'], 'delimiter',  'failed at #17-8')
+  call g:assert.equals(stuffs[3]['str'],  ',',          'failed at #17-9')
+  call g:assert.equals(stuffs[4]['attr'], 'item',       'failed at #17-10')
+  call g:assert.equals(stuffs[4]['str'],  '',           'failed at #17-11')
 
   " #18
   let stuffs = s:parser.parse_charwise(", foo, bar", rule)
   call g:assert.equals(len(stuffs), 5, 'failed at #14-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',       'failed at #18-2')
-  call g:assert.equals(stuffs[0]['string'], '',           'failed at #18-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter',  'failed at #18-4')
-  call g:assert.equals(stuffs[1]['string'], ', ',         'failed at #18-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',       'failed at #18-6')
-  call g:assert.equals(stuffs[2]['string'], 'foo',        'failed at #18-7')
-  call g:assert.equals(stuffs[3]['attr'],   'delimiter',  'failed at #18-8')
-  call g:assert.equals(stuffs[3]['string'], ', ',         'failed at #18-9')
-  call g:assert.equals(stuffs[4]['attr'],   'item',       'failed at #18-10')
-  call g:assert.equals(stuffs[4]['string'], 'bar',        'failed at #18-11')
+  call g:assert.equals(stuffs[0]['attr'], 'item',       'failed at #18-2')
+  call g:assert.equals(stuffs[0]['str'],  '',           'failed at #18-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter',  'failed at #18-4')
+  call g:assert.equals(stuffs[1]['str'],  ', ',         'failed at #18-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',       'failed at #18-6')
+  call g:assert.equals(stuffs[2]['str'],  'foo',        'failed at #18-7')
+  call g:assert.equals(stuffs[3]['attr'], 'delimiter',  'failed at #18-8')
+  call g:assert.equals(stuffs[3]['str'],  ', ',         'failed at #18-9')
+  call g:assert.equals(stuffs[4]['attr'], 'item',       'failed at #18-10')
+  call g:assert.equals(stuffs[4]['str'],  'bar',        'failed at #18-11')
 
   " #19
   " zero-width delimiter
   let rule = {'body': '\a\+', 'delimiter': ['\C\ze[A-Z]'],}
   let stuffs = s:parser.parse_charwise('FooBarBaz', rule)
   call g:assert.equals(len(stuffs), 5, 'failed at #14-1')
-  call g:assert.equals(stuffs[0]['attr'],   'item',       'failed at #18-2')
-  call g:assert.equals(stuffs[0]['string'], 'Foo',        'failed at #18-3')
-  call g:assert.equals(stuffs[1]['attr'],   'delimiter',  'failed at #18-4')
-  call g:assert.equals(stuffs[1]['string'], '',           'failed at #18-5')
-  call g:assert.equals(stuffs[2]['attr'],   'item',       'failed at #18-6')
-  call g:assert.equals(stuffs[2]['string'], 'Bar',        'failed at #18-7')
-  call g:assert.equals(stuffs[3]['attr'],   'delimiter',  'failed at #18-8')
-  call g:assert.equals(stuffs[3]['string'], '',           'failed at #18-9')
-  call g:assert.equals(stuffs[4]['attr'],   'item',       'failed at #18-10')
-  call g:assert.equals(stuffs[4]['string'], 'Baz',        'failed at #18-11')
+  call g:assert.equals(stuffs[0]['attr'], 'item',       'failed at #18-2')
+  call g:assert.equals(stuffs[0]['str'],  'Foo',        'failed at #18-3')
+  call g:assert.equals(stuffs[1]['attr'], 'delimiter',  'failed at #18-4')
+  call g:assert.equals(stuffs[1]['str'],  '',           'failed at #18-5')
+  call g:assert.equals(stuffs[2]['attr'], 'item',       'failed at #18-6')
+  call g:assert.equals(stuffs[2]['str'],  'Bar',        'failed at #18-7')
+  call g:assert.equals(stuffs[3]['attr'], 'delimiter',  'failed at #18-8')
+  call g:assert.equals(stuffs[3]['str'],  '',           'failed at #18-9')
+  call g:assert.equals(stuffs[4]['attr'], 'item',       'failed at #18-10')
+  call g:assert.equals(stuffs[4]['str'],  'Baz',        'failed at #18-11')
+endfunction "}}}
+function! s:suite.sort() abort "{{{
+  let rule = {'delimiter': [',\s*']}
+  let buf = {}
+  let buf.all = s:parser.parse_charwise('dd, aa, bb, cc', rule)
+  let buf.items = filter(copy(buf.all), 'v:val.attr is# "item"')
+
+  " #1
+  let newbuf = s:swap.sort(buf, [s:lib.compare_ascend])
+  let newstr = s:swap.string(newbuf)
+  call g:assert.equals(newstr, 'aa, bb, cc, dd', 'failed at #1')
+
+  " #2
+  let newbuf = s:swap.sort(buf, [s:lib.compare_descend])
+  let newstr = s:swap.string(newbuf)
+  call g:assert.equals(newstr, 'dd, cc, bb, aa', 'failed at #2')
 endfunction "}}}
 
 " integration test
@@ -670,6 +687,37 @@ function! s:suite.integration_normal() abort  "{{{
   execute "normal 2G6lg<"
   call g:assert.equals(getline('.'), 'bar, foo, baz)', 'failed at #28')
   %delete
+
+  " #29
+  call setline(1, '(dd, bb, cc, aa)')
+  execute "normal 1Glgss\<Esc>"
+  call g:assert.equals(getline('.'), '(aa, bb, cc, dd)', 'failed at #29')
+
+  " #30
+  call setline(1, '(dd, bb, cc, aa)')
+  execute "normal 1GlgsS\<Esc>"
+  call g:assert.equals(getline('.'), '(dd, cc, bb, aa)', 'failed at #30')
+
+  " #31
+  call setline(1, '(dd, bb, cc, aa)')
+  let saved = g:swap#swapmode#sortfunc
+  let g:swap#swapmode#sortfunc = [s:lib.compare_descend]
+  execute "normal 1Glgss\<Esc>"
+  call g:assert.equals(getline('.'), '(dd, cc, bb, aa)', 'failed at #31')
+  let g:swap#swapmode#sortfunc = saved
+
+  " #32
+  call setline(1, '(dd, bb, cc, aa)')
+  let saved = g:swap#swapmode#SORTFUNC
+  let g:swap#swapmode#SORTFUNC = [s:lib.compare_ascend]
+  execute "normal 1GlgsS\<Esc>"
+  call g:assert.equals(getline('.'), '(aa, bb, cc, dd)', 'failed at #32')
+  let g:swap#swapmode#SORTFUNC = saved
+
+  " #33
+  call setline(1, '(dd, bb, cc, aa)')
+  execute "normal 1Glgss12\<Esc>"
+  call g:assert.equals(getline('.'), '(bb, aa, cc, dd)', 'failed at #33')
 endfunction "}}}
 function! s:suite.integration_normal_selection_option() abort  "{{{
   " #1
@@ -729,6 +777,16 @@ function! s:suite.integration_visual() abort  "{{{
   call g:assert.equals(getline(2), 'for', 'failed at #3')
   call g:assert.equals(getline(3), 'baz', 'failed at #3')
   %delete
+
+  " #4
+  call setline(1, 'dd, bb, cc, aa')
+  execute "normal ggv$gss\<Esc>"
+  call g:assert.equals(getline('.'), 'aa, bb, cc, dd', 'failed at #4')
+
+  " #5
+  call setline(1, 'dd, bb, cc, aa')
+  execute "normal ggv$gsS\<Esc>"
+  call g:assert.equals(getline('.'), 'dd, cc, bb, aa', 'failed at #5')
 endfunction "}}}
 function! s:suite.integration_textobj_i() abort "{{{
   " #1
@@ -963,6 +1021,143 @@ endfunction "}}}
 function! s:suite.integration_textobj_a_exclusive() abort "{{{
   set selection=exclusive
   call self.integration_textobj_a()
+endfunction "}}}
+
+
+" functions
+function! s:suite.swap_region() abort "{{{
+  " #1
+  call setline(1, '(foo, bar, baz)')
+  let start = [0, 1, 2, 0]
+  let end = [0, 1, 14, 0]
+  let type = 'char'
+  call swap#region(start, end, type, [[1, 2]])
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #1')
+
+  " #2
+  call setline(1, '(foo, bar, baz)')
+  call setpos("'a", [0, 1, 2, 0])
+  call setpos("'b", [0, 1, 14, 0])
+  call swap#region("'a", "'b", 'v', [[1, 2]])
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #2')
+
+  " #3
+  call setline(1, '(foo, bar; baz)')
+  let start = [0, 1, 2, 0]
+  let end = [0, 1, 14, 0]
+  let type = 'char'
+  let g:swap#rules = [{
+  \     'description': 'Reorder the selected comma-delimited word in visual mode.',
+  \     'mode': 'x',
+  \     'delimiter': ['\s*,\s*'],
+  \   }]
+  let rules = [{
+  \     'description': 'Reorder the selected semicolon-delimited word in visual mode.',
+  \     'mode': 'x',
+  \     'delimiter': ['\s*;\s*'],
+  \   }]
+  call swap#region(start, end, type, [[1, 2]], rules)
+  call g:assert.equals(getline('.'), '(baz; foo, bar)', 'failed at #3')
+  unlet! g:swap#rules
+endfunction "}}}
+function! s:suite.swap_region_interactively() abort "{{{
+  " #1
+  call setline(1, '(foo, bar, baz)')
+  let start = [0, 1, 2, 0]
+  let end = [0, 1, 14, 0]
+  let type = 'char'
+  execute "normal! :\<C-u>call swap#region_interactively(start, end, type)\<CR>12\<Esc>"
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #1')
+
+  " #2
+  call setline(1, '(foo, bar, baz)')
+  call setpos("'a", [0, 1, 2, 0])
+  call setpos("'b", [0, 1, 14, 0])
+  execute "normal! :\<C-u>call swap#region_interactively(\"'a\", \"'b\", 'v')\<CR>12\<Esc>"
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #2')
+
+  " #3
+  call setline(1, '(foo, bar; baz)')
+  let start = [0, 1, 2, 0]
+  let end = [0, 1, 14, 0]
+  let type = 'char'
+  let g:swap#rules = [{
+  \     'description': 'Reorder the selected comma-delimited word in visual mode.',
+  \     'mode': 'x',
+  \     'delimiter': ['\s*,\s*'],
+  \   }]
+  let rules = [{
+  \     'description': 'Reorder the selected semicolon-delimited word in visual mode.',
+  \     'mode': 'x',
+  \     'delimiter': ['\s*;\s*'],
+  \   }]
+  execute "normal! :\<C-u>call swap#region_interactively(start, end, type, rules)\<CR>12\<Esc>"
+  call g:assert.equals(getline('.'), '(baz; foo, bar)', 'failed at #3')
+  unlet! g:swap#rules
+endfunction "}}}
+function! s:suite.swap_around_pos() abort "{{{
+  " #1
+  call setline(1, '(foo, bar, baz)')
+  let pos = [0, 1, 2, 0]
+  call swap#around_pos(pos, [[1, 2]])
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #1')
+
+  " #2
+  call setline(1, '(foo, bar, baz)')
+  call setpos("'a", [0, 1, 2, 0])
+  call swap#around_pos("'a", [[1, 2]])
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #2')
+
+  " #3
+  call setline(1, '(foo, bar; baz)')
+  let pos = [0, 1, 2, 0]
+  let g:swap#rules = [{
+  \     'description': 'Reorder the selected comma-delimited word in visual mode.',
+  \     'mode': 'n',
+  \     'surrounds': ['(', ')'],
+  \     'delimiter': ['\s*,\s*'],
+  \   }]
+  let rules = [{
+  \     'description': 'Reorder the selected semicolon-delimited word in visual mode.',
+  \     'mode': 'n',
+  \     'surrounds': ['(', ')'],
+  \     'delimiter': ['\s*;\s*'],
+  \   }]
+  call swap#around_pos(pos, [[1, 2]], rules)
+  call g:assert.equals(getline('.'), '(baz; foo, bar)', 'failed at #3')
+  unlet! g:swap#rules
+endfunction "}}}
+function! s:suite.swap_around_pos_interactively() abort "{{{
+  " #1
+  call setline(1, '(foo, bar, baz)')
+  let pos = [0, 1, 2, 0]
+  execute "normal! :\<C-u>call swap#around_pos_interactively(pos)\<CR>12\<Esc>"
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #1')
+
+  " #2
+  call setline(1, '(foo, bar, baz)')
+  call setpos("'a", [0, 1, 2, 0])
+  execute "normal! :\<C-u>call swap#around_pos_interactively(\"'a\")\<CR>12\<Esc>"
+  call g:assert.equals(getline('.'), '(bar, foo, baz)', 'failed at #2')
+
+  " #3
+  call setline(1, '(foo, bar; baz)')
+  let pos = [0, 1, 2, 0]
+  let g:swap#rules = [{
+  \     'description': 'Reorder the selected comma-delimited word in visual mode.',
+  \     'mode': 'n',
+  \     'surrounds': ['(', ')'],
+  \     'delimiter': ['\s*,\s*'],
+  \   }]
+  let rules = [{
+  \     'description': 'Reorder the selected semicolon-delimited word in visual mode.',
+  \     'mode': 'n',
+  \     'surrounds': ['(', ')'],
+  \     'delimiter': ['\s*;\s*'],
+  \   }]
+  execute "normal! :\<C-u>call swap#around_pos_interactively(pos, rules)\<CR>12\<Esc>"
+  call g:assert.equals(getline('.'), '(baz; foo, bar)', 'failed at #3')
+  unlet! g:swap#rules
 endfunction "}}}
 
 
