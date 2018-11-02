@@ -2,9 +2,15 @@
 
 let s:Const = swap#constant#import()
 let s:Lib = swap#lib#import()
+let s:Buffers = swap#buffer#import()
 
 
-function! swap#parser#parse(region, rule, curpos) abort "{{{
+function! swap#parser#import() abort "{{{
+  return s:Parser
+endfunction "}}}
+
+
+function! s:parse(region, rule, curpos) abort "{{{
   " s:parse_{type}wise() functions return a list of dictionaries which have two keys at least, attr and str.
   "   attr : 'item' or 'delimiter' or 'immutable'.
   "          'item' means that the string is an item reordered.
@@ -16,7 +22,7 @@ function! swap#parser#parse(region, rule, curpos) abort "{{{
   " In case that motionwise is# 'V' or "\<C-v>", delimiter string should be "\n".
   let text = s:get_buf_text(a:region)
   let parseditems = s:parse_{a:region.type}wise(text, a:rule)
-  let buffer = swap#buffer#new(a:region, parseditems)
+  let buffer = s:Buffers.Buffer(a:region, parseditems)
   call buffer.update_items()
   call buffer.update_sharp(a:curpos)
   call buffer.update_hat()
@@ -498,6 +504,10 @@ endfunction "}}}
 function! s:compare_idx(i1, i2) abort "{{{
   return a:i1[0] - a:i2[0]
 endfunction "}}}
+
+
+let s:Parser = {}
+let s:Parser.parse = function('s:parse')
 
 
 " vim:set foldmethod=marker:

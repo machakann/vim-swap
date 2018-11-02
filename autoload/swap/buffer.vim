@@ -10,12 +10,8 @@ let s:TYPESTR = s:Const.TYPESTR
 let s:NULLREGION = s:Const.NULLREGION
 
 
-function! swap#buffer#new(region, parseditems) abort "{{{
-  let buffer = deepcopy(s:Buffer)
-  let buffer.all = map(copy(a:parseditems), 's:Item(v:key, v:val)')
-  let buffer.items = filter(copy(buffer.all), 'v:val.attr is# "item"')
-  call extend(buffer, deepcopy(a:region))
-  return buffer
+function! swap#buffer#import() abort "{{{
+  return s:Buffers
 endfunction "}}}
 
 
@@ -329,6 +325,18 @@ function! s:clamp(x, lo, hi) abort "{{{
   return max([a:lo, min(a:x, a:hi)])
 endfunction "}}}
 "}}}
+
+
+let s:Buffers = {}
+
+
+function! s:Buffers.Buffer(region, parseditems) abort "{{{
+  let buffer = deepcopy(s:Buffer)
+  let buffer.all = map(copy(a:parseditems), 's:Item(v:key, v:val)')
+  let buffer.items = filter(copy(buffer.all), 'v:val.attr is# "item"')
+  call extend(buffer, deepcopy(a:region))
+  return buffer
+endfunction "}}}
 
 
 " vim:set foldmethod=marker:

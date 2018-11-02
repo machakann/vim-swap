@@ -2,6 +2,7 @@
 
 let s:Const = swap#constant#import()
 let s:Lib = swap#lib#import()
+let s:Clocks = swap#clock#import()
 
 let s:TRUE = 1
 let s:FALSE = 0
@@ -23,14 +24,14 @@ endif
 
 
 " sort functions
-let g:swap#swapmode#sortfunc =
-  \ get(g:, 'swap#swapmode#sortfunc', [s:Lib.compare_ascend])
-let g:swap#swapmode#SORTFUNC =
-  \ get(g:, 'swap#swapmode#SORTFUNC', [s:Lib.compare_descend])
+let g:swap#mode#sortfunc =
+  \ get(g:, 'swap#mode#sortfunc', [s:Lib.compare_ascend])
+let g:swap#mode#SORTFUNC =
+  \ get(g:, 'swap#mode#SORTFUNC', [s:Lib.compare_descend])
 
 
-function! swap#swapmode#new() abort  "{{{
-  return deepcopy(s:Swapmode)
+function! swap#mode#import() abort  "{{{
+  return s:Mode
 endfunction "}}}
 
 
@@ -71,7 +72,6 @@ endfunction "}}}
 
 
 " Swapmode object - for interactive determination of swap actions
-" swap#swapmode#new() returns a instance of this object
 let s:Swapmode = {
   \   'pos': {
   \     'current': 0,
@@ -414,7 +414,7 @@ endfunction "}}}
 
 function! s:prompt(key_map) abort "{{{
   let key_map = insert(copy(a:key_map), {'input': "\<Esc>", 'output': ['Esc']})   " for safety
-  let clock = swap#clock#new()
+  let clock = s:Clocks.Clock()
   let timeoutlen = g:swap#timeoutlen
 
   let input = ''
@@ -754,7 +754,7 @@ function! s:Swapmode.key_sort(phase, input) abort "{{{
     return [a:phase, a:input]
   endif
 
-  let input = ['sort'] + g:swap#swapmode#sortfunc
+  let input = ['sort'] + g:swap#mode#sortfunc
   let phase = s:DONE
   return [phase, input]
 endfunction "}}}
@@ -765,7 +765,7 @@ function! s:Swapmode.key_SORT(phase, input) abort "{{{
     return [a:phase, a:input]
   endif
 
-  let input = ['sort'] + g:swap#swapmode#SORTFUNC
+  let input = ['sort'] + g:swap#mode#SORTFUNC
   let phase = s:DONE
   return [phase, input]
 endfunction "}}}
@@ -775,6 +775,14 @@ function! s:Swapmode.key_Esc(phase, input) abort  "{{{
   call self.echo(a:phase, a:input)
   let phase = s:CANCELLED
   return [phase, a:input]
+endfunction "}}}
+
+
+let s:Mode = {}
+
+
+function! s:Mode.Swapmode() abort "{{{
+  return deepcopy(s:Swapmode)
 endfunction "}}}
 
 

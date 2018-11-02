@@ -1,5 +1,5 @@
 *swap.txt*	いれかえたりする。
-						Last change:01-Nov-2018.
+						Last change:02-Nov-2018.
 
 書いた人   : machakann <mckn{at}outlook.jp>
 ライセンス : NYSL ライセンス
@@ -274,12 +274,11 @@ SORT FUNCTIONS				*swap-sort-function-examples*
 NOTE: sort() 関数の中で要素を変更しないように注意してください
 
 
-					*g:swap#swapmode#sortfunc*
-					*g:swap#swapmode#SORTFUNC*
+					*g:swap#mode#sortfunc*
+					*g:swap#mode#SORTFUNC*
 同様に、スワップモードにおける `s`/`S` キーの挙動も変更することができます。
-|g:swap#swapmode#sortfunc| / |g:swap#swapmode#sortfunc| に 1 あるいは 2 要素の
-リストを設定してください。それぞれの要素が |sort()| の第二第三引数に対応してい
-ます。
+|g:swap#mode#sortfunc| / |g:swap#mode#sortfunc| に 1 あるいは 2 要素のリストを
+設定してください。それぞれの要素が |sort()| の第二第三引数に対応しています。
 
 
  swap#region() を使った場合~
@@ -301,15 +300,15 @@ NOTE: sort() 関数の中で要素を変更しないように注意してくだ�
  スワップモードにおける s キーを使う場合~
 
  `*` 昇順 >
-  let g:swap#swapmode#sortfunc =
+  let g:swap#mode#sortfunc =
   \ [{x, y -> x.str is# y.str ? 0 : x.str < y.str ? -1 : 1}]
 <
  `*` 降順 >
-  let g:swap#swapmode#sortfunc =
+  let g:swap#mode#sortfunc =
   \ [{x, y -> x.str is# y.str ? 0 : x.str > y.str ? -1 : 1}]
 <
  `*` 文字列の長さの順 >
-  let g:swap#swapmode#sortfunc =
+  let g:swap#mode#sortfunc =
   \ [{x, y -> strlen(x.str) - strlen(y.str)}]
 <
 

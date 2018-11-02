@@ -700,19 +700,19 @@ function! s:suite.integration_normal() abort  "{{{
 
   " #31
   call setline(1, '(dd, bb, cc, aa)')
-  let saved = g:swap#swapmode#sortfunc
-  let g:swap#swapmode#sortfunc = [s:Lib.compare_descend]
+  let saved = g:swap#mode#sortfunc
+  let g:swap#mode#sortfunc = [s:Lib.compare_descend]
   execute "normal 1Glgss\<Esc>"
   call g:assert.equals(getline('.'), '(dd, cc, bb, aa)', 'failed at #31')
-  let g:swap#swapmode#sortfunc = saved
+  let g:swap#mode#sortfunc = saved
 
   " #32
   call setline(1, '(dd, bb, cc, aa)')
-  let saved = g:swap#swapmode#SORTFUNC
-  let g:swap#swapmode#SORTFUNC = [s:Lib.compare_ascend]
+  let saved = g:swap#mode#SORTFUNC
+  let g:swap#mode#SORTFUNC = [s:Lib.compare_ascend]
   execute "normal 1GlgsS\<Esc>"
   call g:assert.equals(getline('.'), '(aa, bb, cc, dd)', 'failed at #32')
-  let g:swap#swapmode#SORTFUNC = saved
+  let g:swap#mode#SORTFUNC = saved
 
   " #33
   call setline(1, '(dd, bb, cc, aa)')

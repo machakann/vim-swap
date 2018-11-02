@@ -4,8 +4,8 @@
 let s:has_reltime_and_float = has('reltime') && has('float')
 
 
-function! swap#clock#new() abort  "{{{
-  return deepcopy(s:Clock)
+function! swap#clock#import() abort  "{{{
+  return s:Clocks
 endfunction "}}}
 
 
@@ -52,6 +52,14 @@ function! s:Clock.stop() abort  "{{{
   let self.started  = 0
   let self.paused   = 0
   let self.losstime = 0
+endfunction "}}}
+
+
+let s:Clocks = {}
+
+
+function! s:Clocks.Clock() abort "{{{
+  return deepcopy(s:Clock)
 endfunction "}}}
 
 

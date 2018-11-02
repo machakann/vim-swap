@@ -2,6 +2,8 @@
 
 let s:Const = swap#constant#import(s:, ['TYPESTR', 'TYPENUM', 'NULLREGION'])
 let s:Lib = swap#lib#import()
+let s:Parser = swap#parser#import()
+let s:Mode = swap#mode#import()
 
 let s:TRUE = 1
 let s:FALSE = 0
@@ -113,7 +115,7 @@ function! s:Swap._swap_interactive(buffer) abort "{{{
 
   let buffer = a:buffer
   let undojoin = s:FALSE
-  let swapmode = swap#swapmode#new()
+  let swapmode = s:Mode.Swapmode()
   while s:TRUE
     let input = swapmode.get_input(buffer)
     if input == [] | break | endif
@@ -380,7 +382,7 @@ function! s:search_by_group(priority_group, type, curpos, ...) abort "{{{
 
     for rule in a:priority_group
       let region = rule.region
-      let buffer = swap#parser#parse(region, rule, a:curpos)
+      let buffer = s:Parser.parse(region, rule, a:curpos)
       if buffer.swappable() || (textobj && buffer.selectable())
         return [buffer, rule]
       endif
@@ -413,7 +415,7 @@ endfunction "}}}
 function! s:match_group(region, priority_group, curpos) abort "{{{
   for rule in a:priority_group
     if rule.match(a:region)
-      let buffer = swap#parser#parse(a:region, rule, a:curpos)
+      let buffer = s:Parser.parse(a:region, rule, a:curpos)
       if buffer.swappable()
         return [buffer, rule]
       endif
