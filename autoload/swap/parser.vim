@@ -1,7 +1,7 @@
 " parser - parse a buffer text into swappable items
 
-let s:const = swap#constant#import()
-let s:lib = swap#lib#import()
+let s:Const = swap#constant#import()
+let s:Lib = swap#lib#import()
 
 
 function! swap#parser#parse(region, rule, curpos) abort "{{{
@@ -169,7 +169,7 @@ function! s:get_buf_text(region) abort  "{{{
   "       Because it causes confusions for the unit of dot-repeating.
   "       Use visual selection+operator as following.
   let text = ''
-  let v = s:lib.type2v(a:region.type)
+  let v = s:Lib.type2v(a:region.type)
   let visual = [getpos("'<"), getpos("'>")]
   let registers = s:saveregisters()
   let selection = &selection
@@ -253,7 +253,7 @@ function! s:shift_to_something_start(text, targets, idx) abort  "{{{
   call map(a:targets, 's:click(a:text, v:val, a:idx)')
   call filter(a:targets, 'v:val[0] > -1')
   if a:targets != []
-    call s:lib.sort(a:targets, function('s:compare_idx'))
+    call s:Lib.sort(a:targets, function('s:compare_idx'))
     let result = a:targets[0]
   endif
   return result
@@ -352,7 +352,7 @@ function! s:shift_to_quote_end(text, pair, idx) abort  "{{{
     else
       let idx = quote
       if idx > 1 && idx <= end && stridx(&quoteescape, a:text[idx-2]) > -1
-        let n = strchars(matchstr(a:text[: idx-2], printf('%s\+$', s:lib.escape(a:text[idx-2]))))
+        let n = strchars(matchstr(a:text[: idx-2], printf('%s\+$', s:Lib.escape(a:text[idx-2]))))
         if n%2 == 1
           continue
         endif

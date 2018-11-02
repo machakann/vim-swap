@@ -2,7 +2,7 @@ let s:suite = themis#suite('swap: ')
 
 let s:scope = themis#helper('scope')
 let s:parser = s:scope.funcs('autoload/swap/parser.vim')
-let s:lib = s:scope.funcs('autoload/swap/lib.vim')
+let s:Lib = s:scope.funcs('autoload/swap/lib.vim')
 let s:swap = s:scope.funcs('autoload/swap/swap.vim')
 
 function! s:suite.before_each() abort "{{{
@@ -194,77 +194,77 @@ endfunction "}}}
 function! s:suite.buf_byte_len() abort "{{{
   call append(0, ['abc'])
   normal! 1G
-  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  let l = s:Lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 0)
 
   call append(0, ['abc'])
   normal! 1Gl
-  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  let l = s:Lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 1)
 
   call append(0, ['abc'])
   normal! 1G2l
-  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  let l = s:Lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 2)
 
   call append(0, ['abc', 'def'])
   normal! 2G
-  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  let l = s:Lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 4)
 
   call append(0, ['abc', 'def'])
   normal! 2Gl
-  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  let l = s:Lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 5)
 
   call append(0, ['abc', 'def'])
   normal! 2G2l
-  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  let l = s:Lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 6)
 
   call append(0, ['abc', 'def', 'ghi'])
   normal! 3G
-  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  let l = s:Lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 8)
 
   call append(0, ['abc', 'def', 'ghi'])
   normal! 3Gl
-  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  let l = s:Lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 9)
 
   call append(0, ['abc', 'def', 'ghi'])
   normal! 3G2l
-  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  let l = s:Lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 10)
 
   call append(0, ['', 'def', 'ghi'])
   normal! 1G
-  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  let l = s:Lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 0)
 
   call append(0, ['', 'def', 'ghi'])
   normal! 2G
-  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  let l = s:Lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 1)
 
   call append(0, ['', 'def', 'ghi'])
   normal! 3G
-  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  let l = s:Lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 5)
 
   call append(0, ['abc', '', 'ghi'])
   normal! 2G
-  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  let l = s:Lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 4)
 
   call append(0, ['abc', '', 'ghi'])
   normal! 3G
-  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  let l = s:Lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 5)
 
   call append(0, ['abc', 'def', ''])
   normal! 3G
-  let l = s:lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
+  let l = s:Lib.buf_byte_len([0, 1, 1, 0], getpos('.'))
   call g:assert.equals(l, 8)
 endfunction "}}}
 function! s:suite.parse_charwise() abort  "{{{
@@ -525,12 +525,12 @@ function! s:suite.sort() abort "{{{
   let buf.items = filter(copy(buf.all), 'v:val.attr is# "item"')
 
   " #1
-  let newbuf = s:swap.sort(buf, [s:lib.compare_ascend])
+  let newbuf = s:swap.sort(buf, [s:Lib.compare_ascend])
   let newstr = s:swap.string(newbuf)
   call g:assert.equals(newstr, 'aa, bb, cc, dd', 'failed at #1')
 
   " #2
-  let newbuf = s:swap.sort(buf, [s:lib.compare_descend])
+  let newbuf = s:swap.sort(buf, [s:Lib.compare_descend])
   let newstr = s:swap.string(newbuf)
   call g:assert.equals(newstr, 'dd, cc, bb, aa', 'failed at #2')
 endfunction "}}}
@@ -701,7 +701,7 @@ function! s:suite.integration_normal() abort  "{{{
   " #31
   call setline(1, '(dd, bb, cc, aa)')
   let saved = g:swap#swapmode#sortfunc
-  let g:swap#swapmode#sortfunc = [s:lib.compare_descend]
+  let g:swap#swapmode#sortfunc = [s:Lib.compare_descend]
   execute "normal 1Glgss\<Esc>"
   call g:assert.equals(getline('.'), '(dd, cc, bb, aa)', 'failed at #31')
   let g:swap#swapmode#sortfunc = saved
@@ -709,7 +709,7 @@ function! s:suite.integration_normal() abort  "{{{
   " #32
   call setline(1, '(dd, bb, cc, aa)')
   let saved = g:swap#swapmode#SORTFUNC
-  let g:swap#swapmode#SORTFUNC = [s:lib.compare_ascend]
+  let g:swap#swapmode#SORTFUNC = [s:Lib.compare_ascend]
   execute "normal 1GlgsS\<Esc>"
   call g:assert.equals(getline('.'), '(aa, bb, cc, dd)', 'failed at #32')
   let g:swap#swapmode#SORTFUNC = saved

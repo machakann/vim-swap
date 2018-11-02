@@ -1,11 +1,11 @@
 " Rule object - Describe the rule of swapping action.
 
-let s:const = swap#constant#import()
-let s:lib = swap#lib#import()
+let s:Const = swap#constant#import()
+let s:Lib = swap#lib#import()
 
-let s:NULLCOORD = s:const.NULLCOORD
-let s:NULLPOS = s:const.NULLPOS
-let s:NULLREGION = s:const.NULLREGION
+let s:NULLCOORD = s:Const.NULLCOORD
+let s:NULLPOS = s:Const.NULLPOS
+let s:NULLREGION = s:Const.NULLREGION
 
 
 function! swap#rule#get(rule) abort "{{{
@@ -23,8 +23,8 @@ function! s:Rule.search(curpos, type) abort  "{{{
   if has_key(self, 'body')
     if self.region == s:NULLREGION
       let self.region = s:search_body(self.body, a:curpos, timeout)
-      if self.region != s:NULLREGION && s:lib.is_in_between(a:curpos, self.region.head, self.region.tail)
-        let self.region.len = s:lib.get_buf_length(self.region)
+      if self.region != s:NULLREGION && s:Lib.is_in_between(a:curpos, self.region.head, self.region.tail)
+        let self.region.len = s:Lib.get_buf_length(self.region)
         let self.region.type = a:type
         return self.region
       endif
@@ -39,8 +39,8 @@ function! s:Rule.search(curpos, type) abort  "{{{
     let self.region = s:search_surrounds(self.surrounds, pos, nest, timeout)
     if self.region != s:NULLREGION
       let [head, tail] = s:get_outer_pos(self.surrounds, self.region)
-      if s:lib.is_in_between(a:curpos, head, tail)
-        let self.region.len = s:lib.get_buf_length(self.region)
+      if s:Lib.is_in_between(a:curpos, head, tail)
+        let self.region.len = s:Lib.get_buf_length(self.region)
         let self.region.type = a:type
         return self.region
       endif
@@ -86,11 +86,11 @@ function! s:search_body(body, pos, timeout) abort "{{{
   call setpos('.', a:pos)
   let head = searchpos(a:body, 'cbW',  0, a:timeout)
   if head == s:NULLCOORD | return deepcopy(s:NULLREGION) | endif
-  let head = s:lib.c2p(head)
+  let head = s:Lib.c2p(head)
   let tail = searchpos(a:body, 'eW', 0, a:timeout)
   if tail == s:NULLCOORD | return deepcopy(s:NULLREGION) | endif
-  let tail = s:lib.c2p(tail)
-  if s:lib.in_order_of(head, tail) && s:lib.is_in_between(a:pos, head, tail)
+  let tail = s:Lib.c2p(tail)
+  if s:Lib.in_order_of(head, tail) && s:Lib.is_in_between(a:pos, head, tail)
     let target = extend(deepcopy(s:NULLREGION), {'head': head, 'tail': tail}, 'force')
   else
     let target = deepcopy(s:NULLREGION)
@@ -120,8 +120,8 @@ function! s:search_surrounds(surrounds, pos, nest, timeout) abort "{{{
   endif
   if head == s:NULLCOORD | return deepcopy(s:NULLREGION) | endif
 
-  let tail = s:lib.get_left_pos(s:lib.c2p(tail))
-  let head = s:lib.get_right_pos(s:lib.c2p(head))
+  let tail = s:Lib.get_left_pos(s:Lib.c2p(tail))
+  let head = s:Lib.get_right_pos(s:Lib.c2p(head))
   return extend(deepcopy(s:NULLREGION), {'head': head, 'tail': tail}, 'force')
 endfunction "}}}
 
@@ -175,10 +175,10 @@ function! s:match_surrounds(surrounds, region, timeout) abort "{{{
   "       Maybe it is reasonable considering use cases.
   let is_matched = 1
   let cur_pos = getpos('.')
-  if s:lib.get_left_pos(a:region.head)[1:2] != searchpos(a:surrounds[0], 'cenW', 0, a:timeout)
+  if s:Lib.get_left_pos(a:region.head)[1:2] != searchpos(a:surrounds[0], 'cenW', 0, a:timeout)
     let is_matched = 0
   endif
-  if is_matched && s:lib.get_right_pos(a:region.tail)[1:2] != searchpos(a:surrounds[1], 'bcnW', 0, a:timeout)
+  if is_matched && s:Lib.get_right_pos(a:region.tail)[1:2] != searchpos(a:surrounds[1], 'bcnW', 0, a:timeout)
     let is_matched = 0
   endif
   call setpos('.', cur_pos)
@@ -189,15 +189,15 @@ endfunction "}}}
 function! s:get_outer_pos(surrounds, region) abort  "{{{
   let timeout = g:swap#stimeoutlen
   call setpos('.', a:region.head)
-  let head = s:lib.c2p(searchpos(a:surrounds[0], 'bW', 0, timeout))
+  let head = s:Lib.c2p(searchpos(a:surrounds[0], 'bW', 0, timeout))
   if head != s:NULLPOS
-    let head = s:lib.get_left_pos(head)
+    let head = s:Lib.get_left_pos(head)
   endif
 
   call setpos('.', a:region.tail)
-  let tail = s:lib.c2p(searchpos(a:surrounds[1], 'eW', 0, timeout))
+  let tail = s:Lib.c2p(searchpos(a:surrounds[1], 'eW', 0, timeout))
   if tail != s:NULLPOS
-    let tail = s:lib.get_right_pos(tail)
+    let tail = s:Lib.get_right_pos(tail)
   endif
   return [head, tail]
 endfunction "}}}

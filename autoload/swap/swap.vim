@@ -1,15 +1,15 @@
 " Swap object - Managing a whole action.
 
-let s:const = swap#constant#import(s:, ['TYPESTR', 'TYPENUM', 'NULLREGION'])
-let s:lib = swap#lib#import()
+let s:Const = swap#constant#import(s:, ['TYPESTR', 'TYPENUM', 'NULLREGION'])
+let s:Lib = swap#lib#import()
 
 let s:TRUE = 1
 let s:FALSE = 0
-let s:TYPESTR = s:const.TYPESTR
-let s:TYPENUM = s:const.TYPENUM
-let s:TYPEDICT = s:const.TYPEDICT
-let s:TYPEFUNC = s:const.TYPEFUNC
-let s:NULLREGION = s:const.NULLREGION
+let s:TYPESTR = s:Const.TYPESTR
+let s:TYPENUM = s:Const.TYPENUM
+let s:TYPEDICT = s:Const.TYPEDICT
+let s:TYPEFUNC = s:Const.TYPEFUNC
+let s:NULLREGION = s:Const.NULLREGION
 let s:GUI_RUNNING = has('gui_running')
 
 
@@ -65,7 +65,7 @@ function! s:Swap.region(start, end, type) abort "{{{
   try
     let start = s:getpos(a:start)
     let end = s:getpos(a:end)
-    let type = s:lib.v2type(a:type)
+    let type = s:Lib.v2type(a:type)
     call self._region(start, end, type)
   finally
     call s:restore_options(options)
@@ -99,7 +99,7 @@ function! s:Swap.operatorfunc(type) abort "{{{
   elseif self.mode is# 'x'
     let start = getpos("'[")
     let end = getpos("']")
-    let type = s:lib.v2type(a:type)
+    let type = s:Lib.v2type(a:type)
     call self.region(start, end, type)
   endif
   let self.dotrepeat = s:TRUE
@@ -215,7 +215,7 @@ endfunction "}}}
 function! s:Swap.search(pos, type, ...) abort "{{{
   let rules = deepcopy(self.rules)
   let pos = s:getpos(a:pos)
-  let type = s:lib.v2type(a:type)
+  let type = s:Lib.v2type(a:type)
   let textobj = get(a:000, 0, 0)
   return s:search(rules, pos, type, textobj)
 endfunction "}}}
@@ -257,7 +257,7 @@ endfunction "}}}
 function! s:get_rules(rules, mode) abort  "{{{
   let rules = deepcopy(a:rules)
   call map(rules, 'extend(v:val, {"priority": 0}, "keep")')
-  call s:lib.sort(reverse(rules), function('s:compare_priority'))
+  call s:Lib.sort(reverse(rules), function('s:compare_priority'))
   call filter(rules, 's:filter_filetype(v:val) && s:filter_mode(v:val, a:mode)')
   if a:mode isnot# 'x'
     call s:remove_duplicate_rules(rules)
@@ -321,11 +321,11 @@ function! s:get_region(start, end, type) abort "{{{
   let region.head = a:start
   let region.tail = a:end
   let region.type = a:type
-  if !s:lib.is_valid_region(region)
+  if !s:Lib.is_valid_region(region)
     return s:NULLREGION
   endif
 
-  let region.len = s:lib.get_buf_length(region)
+  let region.len = s:Lib.get_buf_length(region)
   return region
 endfunction "}}}
 
@@ -375,8 +375,8 @@ function! s:search_by_group(priority_group, type, curpos, ...) abort "{{{
     for rule in a:priority_group
       call rule.search(a:curpos, a:type)
     endfor
-    call filter(a:priority_group, 's:lib.is_valid_region(v:val.region)')
-    call s:lib.sort(a:priority_group, function('s:compare_len'))
+    call filter(a:priority_group, 's:Lib.is_valid_region(v:val.region)')
+    call s:Lib.sort(a:priority_group, function('s:compare_len'))
 
     for rule in a:priority_group
       let region = rule.region
@@ -494,7 +494,7 @@ let s:INVALID = 0
 function! s:sort(buffer, args) abort "{{{
   let items = deepcopy(a:buffer.items)
   let items = s:lockall(items)
-  sandbox let sorted_items = call(s:lib.sort, [items] + a:args)
+  sandbox let sorted_items = call(s:Lib.sort, [items] + a:args)
   let sorted_items = s:unlockall(sorted_items)
   if len(sorted_items) != len(a:buffer.items)
     echoerr 'vim-swap: An Error occurred in sorting items; the number of items has been changed.'
@@ -540,7 +540,7 @@ endfunction "}}}
 
 function! s:write(buffer, undojoin) abort "{{{
   let str = s:string(a:buffer)
-  let v = s:lib.type2v(a:buffer.type)
+  let v = s:Lib.type2v(a:buffer.type)
   let view = winsaveview()
   let undojoin_cmd = a:undojoin ? 'undojoin | ' : ''
   let reg = ['"', getreg('"'), getregtype('"')]

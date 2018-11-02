@@ -1,12 +1,12 @@
 " Swapmode object - Interactive order determination.
 
-let s:const = swap#constant#import()
-let s:lib = swap#lib#import()
+let s:Const = swap#constant#import()
+let s:Lib = swap#lib#import()
 
 let s:TRUE = 1
 let s:FALSE = 0
-let s:TYPENUM = s:const.TYPENUM
-let s:TYPESTR = s:const.TYPESTR
+let s:TYPENUM = s:Const.TYPENUM
+let s:TYPESTR = s:Const.TYPESTR
 
 " phase enum
 let s:FIRST = 0       " in the first target determination
@@ -24,9 +24,9 @@ endif
 
 " sort functions
 let g:swap#swapmode#sortfunc =
-  \ get(g:, 'swap#swapmode#sortfunc', [s:lib.compare_ascend])
+  \ get(g:, 'swap#swapmode#sortfunc', [s:Lib.compare_ascend])
 let g:swap#swapmode#SORTFUNC =
-  \ get(g:, 'swap#swapmode#SORTFUNC', [s:lib.compare_descend])
+  \ get(g:, 'swap#swapmode#SORTFUNC', [s:Lib.compare_descend])
 
 
 function! swap#swapmode#new() abort  "{{{
@@ -226,7 +226,7 @@ function! s:Swapmode.revise_cursor_pos() abort  "{{{
   let curpos = getpos('.')
   let item = self.get_current_item()
   if !empty(item) &&
-      \ s:lib.is_in_between(curpos, item.head, item.tail) &&
+      \ s:Lib.is_in_between(curpos, item.head, item.tail) &&
       \ curpos != item.tail
     " no problem!
     return
@@ -235,9 +235,9 @@ function! s:Swapmode.revise_cursor_pos() abort  "{{{
   let head = self.get_first_item().head
   let tail = self.get_last_item().tail
   let self.pos.last_current = self.pos.current
-  if s:lib.in_order_of(curpos, head)
+  if s:Lib.in_order_of(curpos, head)
     let self.pos.current = 0
-  elseif curpos == tail || s:lib.in_order_of(tail, curpos)
+  elseif curpos == tail || s:Lib.in_order_of(tail, curpos)
     let self.pos.current = self.pos.end + 1
   else
     let self.pos.current = self.buffer.update_sharp(curpos)
