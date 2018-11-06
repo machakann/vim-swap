@@ -2,6 +2,7 @@
 
 let s:Const = swap#constant#import(s:, ['TYPESTR', 'TYPENUM', 'NULLREGION'])
 let s:Lib = swap#lib#import()
+let s:Searcher = swap#searcher#import()
 let s:Parser = swap#parser#import()
 let s:Mode = swap#mode#import()
 
@@ -46,18 +47,19 @@ endfunction "}}}
 function! s:Swap._around(pos) abort "{{{
   let rules = deepcopy(self.rules)
   let [buffer, rule] = s:search(rules, a:pos, 'char')
+  if empty(buffer)
+    return
+  endif
   if self.dotrepeat
     call self._swap_sequential(buffer)
   else
-    if empty(rule)
-      return
-    endif
-    let self.rules = [rule.initialize()]
-    if self.input_list != []
-      call self._swap_sequential(buffer)
-    else
+    if empty(self.input_list)
       let self.input_list = self._swap_interactive(buffer)
+    else
+      call self._swap_sequential(buffer)
     endif
+    " Use the same rule in dot-repeatings
+    let self.rules = [rule]
   endif
 endfunction "}}}
 
@@ -82,15 +84,19 @@ function! s:Swap._region(start, end, type) abort "{{{
   endif
   let rules = deepcopy(self.rules)
   let [buffer, rule] = s:match(region, rules)
+  if empty(buffer)
+    return
+  endif
   if self.dotrepeat
     call self._swap_sequential(buffer)
   else
-    let self.rules = [rule]
-    if self.input_list != []
-      call self._swap_sequential(buffer)
-    else
+    if empty(self.input_list)
       let self.input_list = self._swap_interactive(buffer)
+    else
+      call self._swap_sequential(buffer)
     endif
+    " Use the same rule in dot-repeatings
+    let self.rules = [rule]
   endif
 endfunction "}}}
 
@@ -264,7 +270,7 @@ function! s:get_rules(rules, mode) abort  "{{{
   if a:mode isnot# 'x'
     call s:remove_duplicate_rules(rules)
   endif
-  return map(rules, 'swap#rule#get(v:val)')
+  return rules
 endfunction "}}}
 
 
@@ -373,20 +379,31 @@ endfunction "}}}
 
 function! s:search_by_group(priority_group, type, curpos, ...) abort "{{{
   let textobj = get(a:000, 0, 0)
-  while a:priority_group != []
-    for rule in a:priority_group
-      call rule.search(a:curpos, a:type)
+  let searchitems = map(copy(a:priority_group), '{
+  \   "rule": v:val,
+  \   "region": deepcopy(s:NULLREGION),
+  \ }')
+  while searchitems != []
+    let done_list = []
+    for sitem in searchitems
+      let rule = sitem.rule
+      let region = sitem.region
+      let [region, done] = s:Searcher.search(rule, region, a:curpos)
+      let sitem.region = region
+      call add(done_list, done)
     endfor
-    call filter(a:priority_group, 's:Lib.is_valid_region(v:val.region)')
-    call s:Lib.sort(a:priority_group, function('s:compare_len'))
+    call filter(searchitems, 'v:val.region isnot# s:NULLREGION')
+    call s:Lib.sort(searchitems, function('s:compare_len'))
 
-    for rule in a:priority_group
-      let region = rule.region
+    for sitem in searchitems
+      let rule = sitem.rule
+      let region = sitem.region
       let buffer = s:Parser.parse(region, rule, a:curpos)
       if buffer.swappable() || (textobj && buffer.selectable())
         return [buffer, rule]
       endif
     endfor
+    call filter(searchitems, '!done_list[v:key]')
   endwhile
   return [{}, {}]
 endfunction "}}}
@@ -414,7 +431,7 @@ endfunction "}}}
 
 function! s:match_group(region, priority_group, curpos) abort "{{{
   for rule in a:priority_group
-    if rule.match(a:region)
+    if s:Searcher.match(rule, a:region)
       let buffer = s:Parser.parse(a:region, rule, a:curpos)
       if buffer.swappable()
         return [buffer, rule]
