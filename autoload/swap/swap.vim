@@ -46,7 +46,7 @@ endfunction "}}}
 
 function! s:Swap._around(pos) abort "{{{
   let rules = deepcopy(self.rules)
-  let [buffer, rule] = s:search(rules, a:pos, 'char')
+  let [buffer, rule] = s:search(rules, a:pos)
   if empty(buffer)
     return
   endif
@@ -220,12 +220,11 @@ endfunction "}}}
 
 
 " This method is mainly for textobjects
-function! s:Swap.search(pos, type, ...) abort "{{{
+function! s:Swap.search(pos, ...) abort "{{{
   let rules = deepcopy(self.rules)
   let pos = s:getpos(a:pos)
-  let type = s:Lib.v2type(a:type)
   let textobj = get(a:000, 0, 0)
-  return s:search(rules, pos, type, textobj)
+  return s:search(rules, pos, textobj)
 endfunction "}}}
 
 
@@ -354,7 +353,7 @@ function! s:get_priority_group(rules) abort "{{{
 endfunction "}}}
 
 
-function! s:search(rules, pos, type, ...) abort "{{{
+function! s:search(rules, pos, ...) abort "{{{
   let view = winsaveview()
   let textobj = get(a:000, 0, 0)
   let buffer = {}
@@ -363,8 +362,7 @@ function! s:search(rules, pos, type, ...) abort "{{{
   try
     while a:rules != []
       let priority_group = s:get_priority_group(a:rules)
-      let [buffer, rule] = s:search_by_group(priority_group, a:type,
-                                           \ a:pos, textobj)
+      let [buffer, rule] = s:search_by_group(priority_group, a:pos, textobj)
       if buffer != {}
         break
       endif
@@ -377,7 +375,7 @@ function! s:search(rules, pos, type, ...) abort "{{{
 endfunction "}}}
 
 
-function! s:search_by_group(priority_group, type, curpos, ...) abort "{{{
+function! s:search_by_group(priority_group, curpos, ...) abort "{{{
   let textobj = get(a:000, 0, 0)
   let searchitems = map(copy(a:priority_group), '{
   \   "rule": v:val,
