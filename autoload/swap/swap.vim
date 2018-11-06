@@ -223,7 +223,7 @@ endfunction "}}}
 function! s:Swap.search(pos, ...) abort "{{{
   let rules = deepcopy(self.rules)
   let pos = s:getpos(a:pos)
-  let textobj = get(a:000, 0, 0)
+  let textobj = get(a:000, 0, s:FALSE)
   return s:search(rules, pos, textobj)
 endfunction "}}}
 
@@ -355,7 +355,7 @@ endfunction "}}}
 
 function! s:search(rules, pos, ...) abort "{{{
   let view = winsaveview()
-  let textobj = get(a:000, 0, 0)
+  let textobj = get(a:000, 0, s:FALSE)
   let buffer = {}
   let virtualedit = &virtualedit
   let &virtualedit = 'onemore'
@@ -375,8 +375,7 @@ function! s:search(rules, pos, ...) abort "{{{
 endfunction "}}}
 
 
-function! s:search_by_group(priority_group, curpos, ...) abort "{{{
-  let textobj = get(a:000, 0, 0)
+function! s:search_by_group(priority_group, curpos, textobj) abort "{{{
   let searchitems = map(copy(a:priority_group), '{
   \   "rule": v:val,
   \   "region": deepcopy(s:NULLREGION),
@@ -397,7 +396,7 @@ function! s:search_by_group(priority_group, curpos, ...) abort "{{{
       let rule = sitem.rule
       let region = sitem.region
       let buffer = s:Parser.parse(region, rule, a:curpos)
-      if buffer.swappable() || (textobj && buffer.selectable())
+      if buffer.swappable() || (a:textobj && buffer.selectable())
         return [buffer, rule]
       endif
     endfor
