@@ -1,10 +1,16 @@
 " parser - parse a buffer text into swappable items
 
-let s:const = swap#constant#import()
-let s:lib = swap#lib#import()
+let s:Const = swap#constant#import()
+let s:Lib = swap#lib#import()
+let s:Buffers = swap#buffer#import()
 
 
-function! swap#parser#parse(region, rule, curpos) abort "{{{
+function! swap#parser#import() abort "{{{
+  return s:Parser
+endfunction "}}}
+
+
+function! s:parse(region, rule, curpos) abort "{{{
   " s:parse_{type}wise() functions return a list of dictionaries which have two keys at least, attr and str.
   "   attr : 'item' or 'delimiter' or 'immutable'.
   "          'item' means that the string is an item reordered.
@@ -16,7 +22,7 @@ function! swap#parser#parse(region, rule, curpos) abort "{{{
   " In case that motionwise is# 'V' or "\<C-v>", delimiter string should be "\n".
   let text = s:get_buf_text(a:region)
   let parseditems = s:parse_{a:region.type}wise(text, a:rule)
-  let buffer = swap#buffer#new(a:region, parseditems)
+  let buffer = s:Buffers.Buffer(a:region, parseditems)
   call buffer.update_items()
   call buffer.update_sharp(a:curpos)
   call buffer.update_hat()
@@ -169,7 +175,7 @@ function! s:get_buf_text(region) abort  "{{{
   "       Because it causes confusions for the unit of dot-repeating.
   "       Use visual selection+operator as following.
   let text = ''
-  let v = s:lib.type2v(a:region.type)
+  let v = s:Lib.type2v(a:region.type)
   let visual = [getpos("'<"), getpos("'>")]
   let registers = s:saveregisters()
   let selection = &selection
@@ -253,7 +259,7 @@ function! s:shift_to_something_start(text, targets, idx) abort  "{{{
   call map(a:targets, 's:click(a:text, v:val, a:idx)')
   call filter(a:targets, 'v:val[0] > -1')
   if a:targets != []
-    call s:lib.sort(a:targets, function('s:compare_idx'))
+    call s:Lib.sort(a:targets, function('s:compare_idx'))
     let result = a:targets[0]
   endif
   return result
@@ -352,7 +358,7 @@ function! s:shift_to_quote_end(text, pair, idx) abort  "{{{
     else
       let idx = quote
       if idx > 1 && idx <= end && stridx(&quoteescape, a:text[idx-2]) > -1
-        let n = strchars(matchstr(a:text[: idx-2], printf('%s\+$', s:lib.escape(a:text[idx-2]))))
+        let n = strchars(matchstr(a:text[: idx-2], printf('%s\+$', s:Lib.escape(a:text[idx-2]))))
         if n%2 == 1
           continue
         endif
@@ -498,6 +504,10 @@ endfunction "}}}
 function! s:compare_idx(i1, i2) abort "{{{
   return a:i1[0] - a:i2[0]
 endfunction "}}}
+
+
+let s:Parser = {}
+let s:Parser.parse = function('s:parse')
 
 
 " vim:set foldmethod=marker:

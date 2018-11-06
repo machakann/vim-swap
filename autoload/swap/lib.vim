@@ -1,7 +1,7 @@
 " Lib - Miscellaneous functions library.
 
-let s:const = swap#constant#import()
-let s:NULLPOS = s:const.NULLPOS
+let s:Const = swap#constant#import()
+let s:NULLPOS = s:Const.NULLPOS
 
 " patches
 if v:version > 704 || (v:version == 704 && has('patch237'))
@@ -75,7 +75,7 @@ endfunction "}}}
 
 
 function! s:is_valid_region(region) abort "{{{
-  return a:region.head != s:const.NULLPOS && a:region.tail != s:const.NULLPOS
+  return a:region.head != s:Const.NULLPOS && a:region.tail != s:Const.NULLPOS
         \ && (a:region.type is# 'line' || s:in_order_of(a:region.head, a:region.tail))
 endfunction "}}}
 

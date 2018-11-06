@@ -1,21 +1,17 @@
 " Buffer - represents a region of the buffer swappped as delimited items
 
-let s:const = swap#constant#import()
-let s:lib = swap#lib#import()
+let s:Const = swap#constant#import()
+let s:Lib = swap#lib#import()
 
 let s:TRUE = 1
 let s:FALSE = 0
-let s:TYPENUM = s:const.TYPENUM
-let s:TYPESTR = s:const.TYPESTR
-let s:NULLREGION = s:const.NULLREGION
+let s:TYPENUM = s:Const.TYPENUM
+let s:TYPESTR = s:Const.TYPESTR
+let s:NULLREGION = s:Const.NULLREGION
 
 
-function! swap#buffer#new(region, parseditems) abort "{{{
-  let buffer = deepcopy(s:Buffer)
-  let buffer.all = map(copy(a:parseditems), 's:Item(v:key, v:val)')
-  let buffer.items = filter(copy(buffer.all), 'v:val.attr is# "item"')
-  call extend(buffer, deepcopy(a:region))
-  return buffer
+function! swap#buffer#import() abort "{{{
+  return s:Buffers
 endfunction "}}}
 
 
@@ -159,12 +155,12 @@ endfunction "}}}
 function! s:Buffer.update_sharp(curpos) abort "{{{
   let sharp = 0
   if self.all != []
-    if s:lib.in_order_of(a:curpos, self.head)
+    if s:Lib.in_order_of(a:curpos, self.head)
       let sharp = 1
     else
       for text in self.items
         let sharp += 1
-        if s:lib.in_order_of(a:curpos, text.tail)
+        if s:Lib.in_order_of(a:curpos, text.tail)
           break
         endif
       endfor
@@ -302,7 +298,7 @@ function! s:address_blockwise(buffer) abort  "{{{
   let virtcol = a:buffer.head[2]
   for item in a:buffer.all
     if item.attr is# 'item'
-      let col = s:lib.virtcol2col(lnum, virtcol)
+      let col = s:Lib.virtcol2col(lnum, virtcol)
       let len = strlen(item.str)
       let item.len  = len
       let item.head = [0, lnum, col, 0]
@@ -320,7 +316,7 @@ endfunction "}}}
 
 
 function! s:substitute_symbol(str, symbol, symbol_idx) abort "{{{
-  let symbol = s:lib.escape(a:symbol)
+  let symbol = s:Lib.escape(a:symbol)
   return substitute(a:str, symbol, a:symbol_idx, '')
 endfunction "}}}
 
@@ -329,6 +325,18 @@ function! s:clamp(x, lo, hi) abort "{{{
   return max([a:lo, min(a:x, a:hi)])
 endfunction "}}}
 "}}}
+
+
+let s:Buffers = {}
+
+
+function! s:Buffers.Buffer(region, parseditems) abort "{{{
+  let buffer = deepcopy(s:Buffer)
+  let buffer.all = map(copy(a:parseditems), 's:Item(v:key, v:val)')
+  let buffer.items = filter(copy(buffer.all), 'v:val.attr is# "item"')
+  call extend(buffer, deepcopy(a:region))
+  return buffer
+endfunction "}}}
 
 
 " vim:set foldmethod=marker:

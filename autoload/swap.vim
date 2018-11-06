@@ -76,6 +76,17 @@ let g:swap#default_rules = [
   \   {
   \     'description': 'Reorder the comma-separated items in [] for Vim script, with taking into account line continuations by backslashes.',
   \     'filetype': ['vim'],
+  \     'mode': 'x',
+  \     'delimiter': ['\s*,\s*'],
+  \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+  \     'quotes': [['"', '"']],
+  \     'literal_quotes': [["'", "'"]],
+  \     'immutable': ['\%(^\_s\|\n\)\s*\\\s*', '\s\+$']
+  \   },
+  \
+  \   {
+  \     'description': 'Reorder the comma-separated items in [] for Vim script, with taking into account line continuations by backslashes.',
+  \     'filetype': ['vim'],
   \     'mode': 'n',
   \     'surrounds': ['\[', '\]', 1],
   \     'delimiter': ['\s*,\s*'],
@@ -119,6 +130,27 @@ let g:swap#default_rules = [
   \     'quotes': [['"', '"']],
   \     'literal_quotes': [["'", "'"]],
   \     'immutable': ['\s*&\s*\%(!.\{-}\)\?\n\s*\%(&\s*\)\?', '\s\+$']
+  \   },
+  \
+  \   {
+  \     'description': 'Reorder the comma-separated items in () for fortran, with taking into account line continuations by ampersand.',
+  \     'filetype': ['fortran'],
+  \     'mode': 'x',
+  \     'delimiter': ['\s*,\s*'],
+  \     'braket': [['(', ')'], ['[', ']']],
+  \     'quotes': [['"', '"']],
+  \     'literal_quotes': [["'", "'"]],
+  \     'immutable': ['\s*&\s*\%(!.\{-}\)\?\n\s*\%(&\s*\)\?', '\s\+$']
+  \   },
+  \
+  \   {
+  \     'description': 'Reorder the comma-separated items in [] for matlab, with taking into account line continuations by dots.',
+  \     'filetype': ['matlab'],
+  \     'mode': 'x',
+  \     'delimiter': ['\s*[,;[:space:]]\s*'],
+  \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+  \     'immutable': ['\s*\.\{3}\s*\n\s*',
+  \     '\s\+$']
   \   },
   \
   \   {

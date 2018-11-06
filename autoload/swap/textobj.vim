@@ -8,7 +8,7 @@ function! swap#textobj#select(type, ...) abort "{{{
   let TEXTOBJ = !!1
   let rules = get(a:000, 0, get(g:, 'swap#rules', g:swap#default_rules))
   let swap = swap#swap#new('n', [], rules)
-  let [buffer, rule] = swap.search(getpos('.'), 'char', TEXTOBJ)
+  let [buffer, rule] = swap.search(getpos('.'), TEXTOBJ)
   if empty(buffer) || empty(buffer.items)
     return
   endif

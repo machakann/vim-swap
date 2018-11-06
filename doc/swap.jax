@@ -1,5 +1,5 @@
 *swap.txt*	いれかえたりする。
-						Last change:01-Nov-2018.
+						Last change:02-Nov-2018.
 
 書いた人   : machakann <mckn{at}outlook.jp>
 ライセンス : NYSL ライセンス
@@ -216,15 +216,7 @@ swap#region({start}, {end}, {type}, {inputlist}[, {rules}])
 	さらに、要素をソートするための手順が使用できます。これは最初の要素が
 	"sort" であるリスト |List| 、すなわち ["sort"] です。二つ目以降の要素
 	は省略可能で、組み込み関数 |sort()| の第二第三引数に対応します。
-	バッファ上の要素のリストが内部で |sort()| に渡されて処理されます。この
-	要素は以下のキーと値を持つ辞書 |Dictionary| です。
-	  "str"  : 要素の文字列
-	  "head" : 要素の先頭位置
-	  "tail" : 要素の終端位置
-	  "type" : 要素の形状; "char", "line" あるいは "block"
-	例えば、次のような手順は要素をその文字列について昇順に並べます。
-	["sort", {x, y -> x.str is# y.str ? 0 : x.str < y.str ? -1 : 1}]
-	NOTE: sort() 関数の中で要素を変更しないように注意してください
+	|swap-sort-function-examples| にいくつかの例があります。
 
 	{rules} はルールのリスト |List| です。{rules} が与えられると、
 	|g:swap#rules| のかわりに使われます。
@@ -267,6 +259,30 @@ swap#around_pos_interactively({pos}[, {rules}])
 ------------------------------------------------------------------------------
 SORT FUNCTIONS				*swap-sort-function-examples*
 
+|swap#region()| の項にあるとおり並べ替えのための手順はその第二第三要素を使って
+挙動を変更することができます。この第二項は関数参照 |Funcref| であり、二つの引
+数を取って 0, 1 あるいは -1 を返します。つまり、|sort()| の第二引数と同じ仕様
+です。
+
+バッファ上の要素のリストが内部で |sort()| に渡されて処理されます。この要素は
+以下のキーと値を持つ辞書 |Dictionary| です。
+  "str"  : 要素の文字列
+  "head" : 要素の先頭位置
+  "tail" : 要素の終端位置
+  "type" : 要素の形状; "char", "line" あるいは "block"
+
+NOTE: sort() 関数の中で要素を変更しないように注意してください
+
+
+					*g:swap#mode#sortfunc*
+					*g:swap#mode#SORTFUNC*
+同様に、スワップモードにおける `s`/`S` キーの挙動も変更することができます。
+|g:swap#mode#sortfunc| / |g:swap#mode#sortfunc| に 1 あるいは 2 要素のリストを
+設定してください。それぞれの要素が |sort()| の第二第三引数に対応しています。
+
+
+ swap#region() を使った場合~
+
  `*` 昇順 >
   call swap#region({start}, {end}, {type},
   \ [['sort', {x, y -> x.str is# y.str ? 0 : x.str < y.str ? -1 : 1}]])
@@ -275,9 +291,25 @@ SORT FUNCTIONS				*swap-sort-function-examples*
   call swap#region({start}, {end}, {type},
   \ [['sort', {x, y -> x.str is# y.str ? 0 : x.str > y.str ? -1 : 1}]])
 <
- `*` 文字列の長さ順 >
+ `*` 文字列の長さの順 >
   call swap#region({start}, {end}, {type},
   \ [['sort', {x, y -> strlen(x.str) - strlen(y.str)}]])
+<
+
+
+ スワップモードにおける s キーを使う場合~
+
+ `*` 昇順 >
+  let g:swap#mode#sortfunc =
+  \ [{x, y -> x.str is# y.str ? 0 : x.str < y.str ? -1 : 1}]
+<
+ `*` 降順 >
+  let g:swap#mode#sortfunc =
+  \ [{x, y -> x.str is# y.str ? 0 : x.str > y.str ? -1 : 1}]
+<
+ `*` 文字列の長さの順 >
+  let g:swap#mode#sortfunc =
+  \ [{x, y -> strlen(x.str) - strlen(y.str)}]
 <
 
 
