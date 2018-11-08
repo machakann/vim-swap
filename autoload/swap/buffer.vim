@@ -77,9 +77,11 @@ function! s:Item.clear_highlight() abort  "{{{
 endfunction "}}}
 
 
-function! s:Item(idx, item) abort "{{{
-  let item = extend(a:item, deepcopy(s:Item), 'keep')
+function! s:Item(idx, attr, str) abort "{{{
+  let item = deepcopy(s:Item)
   let item.idx = a:idx
+  let item.attr = a:attr
+  let item.str = a:str
   return item
 endfunction "}}}
 
@@ -332,7 +334,8 @@ let s:Buffers = {}
 
 function! s:Buffers.Buffer(region, parseditems) abort "{{{
   let buffer = deepcopy(s:Buffer)
-  let buffer.all = map(copy(a:parseditems), 's:Item(v:key, v:val)')
+  let buffer.all = map(copy(a:parseditems),
+  \                    's:Item(v:key, v:val.attr, v:val.str)')
   let buffer.items = filter(copy(buffer.all), 'v:val.attr is# "item"')
   call extend(buffer, deepcopy(a:region))
   return buffer
