@@ -475,24 +475,6 @@ function! s:next_nonblank(items, currentpos) abort  "{{{
 endfunction "}}}
 
 
-function! s:msg_hist(input) abort "{{{
-  if a:input[0] is# 'sort'
-    return [
-      \ [a:input[0], g:swap#hl_itemnr],
-      \ [', ', 'NONE']]
-  endif
-  return [
-    \ [a:input[0], g:swap#hl_itemnr],
-    \ [g:swap#arrow, g:swap#hl_arrow],
-    \ [a:input[1], g:swap#hl_itemnr],
-    \ [', ', 'NONE']]
-endfunction "}}}
-
-
-function! s:msg_input(input) abort "{{{
-endfunction "}}}
-
-
 " NOTE: Key function list
 "    {0~9} : Input {0~9} to specify an item.
 "    CR    : Fix the input number. If nothing has been input, fix to the item under the cursor.
