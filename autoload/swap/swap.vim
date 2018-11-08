@@ -302,16 +302,8 @@ function! s:remove_duplicate_rules(rules) abort "{{{
     let j = i + 1
     while j < len(a:rules)
       let target = a:rules[j]
-      let duplicate_body = 0
-      let duplicate_surrounds = 0
-      if (has_key(representative, 'body') && has_key(target, 'body') && representative.body == target.body) ||
-      \  (!has_key(representative, 'body') && !has_key(target, 'body'))
-        let duplicate_body = 1
-      endif
-      if (has_key(representative, 'surrounds') && has_key(target, 'surrounds') && representative.surrounds[0:1] == target.surrounds[0:1] && get(representative, 2, 1) == get(target, 2, 1)) ||
-      \  (!has_key(representative, 'surrounds') && !has_key(target, 'surrounds'))
-        let duplicate_surrounds = 1
-      endif
+      let duplicate_body = s:is_duplicate_body(representative, target)
+      let duplicate_surrounds = s:is_duplicate_surrounds(representative, target)
       if duplicate_body && duplicate_surrounds
         call remove(a:rules, j)
       else
@@ -320,6 +312,30 @@ function! s:remove_duplicate_rules(rules) abort "{{{
     endwhile
     let i += 1
   endwhile
+endfunction "}}}
+
+
+function! s:is_duplicate_body(a, b) abort "{{{
+  if !has_key(a:a, 'body') && !has_key(a:b, 'body')
+    return s:TRUE
+  endif
+  if has_key(a:a, 'body') && has_key(a:b, 'body') && a:a.body == a:b.body
+    return s:TRUE
+  endif
+  return s:FALSE
+endfunction "}}}
+
+
+function! s:is_duplicate_surrounds(a, b) abort "{{{
+  if !has_key(a:a, 'surrounds') && !has_key(a:b, 'surrounds')
+    return s:TRUE
+  endif
+  if has_key(a:a, 'surrounds') && has_key(a:b, 'surrounds') &&
+  \  a:a.surrounds[0:1] == a:b.surrounds[0:1] &&
+  \  get(a:a, 2, 1) == get(a:b, 2, 1)
+    return s:TRUE
+  endif
+  return s:FALSE
 endfunction "}}}
 
 
