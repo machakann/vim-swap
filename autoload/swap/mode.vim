@@ -43,7 +43,6 @@ let s:Swapmode = {
   \     'last_current': 0,
   \     'selected': 0,
   \   },
-  \   'buffer': {},
   \   'history': [],
   \   'undolevel': 0,
   \ }
@@ -58,25 +57,24 @@ function! s:Swapmode.get_input(buffer) abort "{{{
   let phase = 0
   let input = ['', '']
   let key_map = deepcopy(get(g:, 'swap#keymappings', g:swap#default_keymappings))
-  let self.buffer = a:buffer
   let self.pos.current = 0
   let self.pos.last_current = 0
   let self.pos.selected = 0
-  let self.pos.end = len(self.buffer.items)
+  let self.pos.end = len(a:buffer.items)
 
-  let pos = self.get_nonblank_pos('#')
-  call self.set_current(pos)
+  let pos = self.get_nonblank_pos('#', a:buffer)
+  call self.set_current(pos, a:buffer)
   call self.echo(phase, input)
-  call self.highlight()
+  call self.highlight(a:buffer)
   redraw
   try
     while phase < s:DONE
       let key = s:prompt(key_map)
-      let [phase, input] = self.execute(key, phase, input)
+      let [phase, input] = self.execute(key, phase, input, a:buffer)
     endwhile
   catch /^Vim:Interrupt$/
   finally
-    call self.clear_highlight()
+    call self.clear_highlight(a:buffer)
     " clear messages
     echo ''
   endtry
@@ -86,7 +84,7 @@ function! s:Swapmode.get_input(buffer) abort "{{{
   endif
 
   if input[0] isnot# 'undo'
-    call self.add_history(input)
+    call self.add_history(input, a:buffer)
   endif
   return input
 endfunction "}}}
@@ -186,9 +184,9 @@ function! s:Swapmode._fit_msg(message) abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.revise_cursor_pos() abort  "{{{
+function! s:Swapmode.revise_cursor_pos(buffer) abort  "{{{
   let curpos = getpos('.')
-  let item = self.get_current_item()
+  let item = a:buffer.get_item(self.pos.current)
   if !empty(item) &&
       \ s:Lib.is_in_between(curpos, item.head, item.tail) &&
       \ curpos != item.tail
@@ -196,31 +194,31 @@ function! s:Swapmode.revise_cursor_pos() abort  "{{{
     return
   endif
 
-  let head = self.get_first_item().head
-  let tail = self.get_last_item().tail
+  let head = a:buffer.head
+  let tail = a:buffer.tail
   let self.pos.last_current = self.pos.current
   if s:Lib.in_order_of(curpos, head)
     let self.pos.current = 0
   elseif curpos == tail || s:Lib.in_order_of(tail, curpos)
     let self.pos.current = self.pos.end + 1
   else
-    let self.pos.current = self.buffer.update_sharp(curpos)
+    let self.pos.current = a:buffer.update_sharp(curpos)
   endif
-  call self.update_highlight()
+  call self.update_highlight(a:buffer)
 endfunction "}}}
 
 
-function! s:Swapmode.execute(funclist, phase, input) abort "{{{
+function! s:Swapmode.execute(funclist, phase, input, buffer) abort "{{{
   let phase = a:phase
   let input = a:input
   for name in a:funclist
     let fname = 'key_' . name
-    let [phase, input] = self[fname](a:phase, input)
+    let [phase, input] = self[fname](phase, input, a:buffer)
     if phase is# s:DONE
       break
     endif
   endfor
-  call self.revise_cursor_pos()
+  call self.revise_cursor_pos(a:buffer)
   redraw
   return [phase, input]
 endfunction "}}}
@@ -230,11 +228,11 @@ endfunction "}}}
 "   input : the determined input
 "   buffer: the buffer before changed by the input
 "   cursor: the positional number of cursor when the buffer is restored
-function! s:Swapmode.add_history(input) abort  "{{{
+function! s:Swapmode.add_history(input, buffer) abort  "{{{
   call self._truncate_history()
   let histitem = {
     \ 'input': copy(a:input),
-    \ 'buffer': deepcopy(self.buffer),
+    \ 'buffer': deepcopy(a:buffer),
     \ 'cursor': self.pos.current,
     \ }
   call add(self.history, histitem)
@@ -257,8 +255,8 @@ function! s:Swapmode.export_history() abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.set_current(pos) abort "{{{
-  let item = self.get_item(a:pos)
+function! s:Swapmode.set_current(pos, buffer) abort "{{{
+  let item = a:buffer.get_item(a:pos)
   if empty(item)
     return
   endif
@@ -275,45 +273,25 @@ function! s:Swapmode.set_current(pos) abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.get_item(pos) abort "{{{
-  return self.buffer.get_item(a:pos)
-endfunction "}}}
-
-
-function! s:Swapmode.get_current_item() abort "{{{
-  return self.get_item(self.pos.current)
-endfunction "}}}
-
-
-function! s:Swapmode.get_first_item() abort "{{{
-  return self.get_item(1)
-endfunction "}}}
-
-
-function! s:Swapmode.get_last_item() abort "{{{
-  return self.get_item(self.pos.end)
-endfunction "}}}
-
-
-function! s:Swapmode.get_nonblank_pos(pos) abort "{{{
-  let item = self.get_item(a:pos)
+function! s:Swapmode.get_nonblank_pos(pos, buffer) abort "{{{
+  let item = a:buffer.get_item(a:pos, a:buffer)
   if empty(item)
     return self.pos.end
   endif
   if item.str isnot# ''
-    return self.buffer.get_pos(a:pos)
+    return a:buffer.get_pos(a:pos)
   endif
-  return s:next_nonblank(self.buffer.items, self.buffer.get_pos(a:pos))
+  return s:next_nonblank(a:buffer.items, a:buffer.get_pos(a:pos))
 endfunction "}}}
 
 
-function! s:Swapmode.highlight() abort "{{{
+function! s:Swapmode.highlight(buffer) abort "{{{
   if !g:swap#highlight
     return
   endif
 
   let pos = 1
-  for item in self.buffer.items
+  for item in a:buffer.items
     if pos == self.pos.current
       call item.highlight('SwapCurrentItem')
     else
@@ -324,13 +302,13 @@ function! s:Swapmode.highlight() abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.clear_highlight() abort  "{{{
+function! s:Swapmode.clear_highlight(buffer) abort  "{{{
   " NOTE: This function itself does not redraw.
   if !g:swap#highlight
     return
   endif
 
-  for item in self.buffer.items
+  for item in a:buffer.items
     if item.highlightid != []
       call item.clear_highlight()
     endif
@@ -338,24 +316,24 @@ function! s:Swapmode.clear_highlight() abort  "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.update_highlight() abort  "{{{
+function! s:Swapmode.update_highlight(buffer) abort  "{{{
   if !g:swap#highlight
     return
   endif
 
-  let last_current = self.get_item(self.pos.last_current)
+  let last_current = a:buffer.get_item(self.pos.last_current)
   if !empty(last_current)
     call last_current.clear_highlight()
     call last_current.highlight('SwapItem')
   endif
 
-  let selected = self.get_item(self.pos.selected)
+  let selected = a:buffer.get_item(self.pos.selected)
   if !empty(selected)
     call selected.clear_highlight()
     call selected.highlight('SwapSelectedItem')
   endif
 
-  let current = self.get_item(self.pos.current)
+  let current = a:buffer.get_item(self.pos.current)
   if !empty(current)
     call current.clear_highlight()
     call current.highlight('SwapCurrentItem')
@@ -486,7 +464,7 @@ endfunction "}}}
 "    move_next : Move to the next item.
 "    swap_prev : Swap the current item with the previous item.
 "    swap_next : Swap the current item with the next item.
-function! s:Swapmode.key_nr(nr, phase, input) abort  "{{{
+function! s:Swapmode.key_nr(nr, phase, input, buffer) abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
@@ -495,52 +473,52 @@ function! s:Swapmode.key_nr(nr, phase, input) abort  "{{{
   call self.echo(a:phase, input)
   return [a:phase, input]
 endfunction "}}}
-function! s:Swapmode.key_0(phase, input) abort "{{{
-  return self.key_nr(0, a:phase, a:input)
+function! s:Swapmode.key_0(phase, input, buffer) abort "{{{
+  return self.key_nr(0, a:phase, a:input, a:buffer)
 endfunction "}}}
-function! s:Swapmode.key_1(phase, input) abort "{{{
-  return self.key_nr(1, a:phase, a:input)
+function! s:Swapmode.key_1(phase, input, buffer) abort "{{{
+  return self.key_nr(1, a:phase, a:input, a:buffer)
 endfunction "}}}
-function! s:Swapmode.key_2(phase, input) abort "{{{
-  return self.key_nr(2, a:phase, a:input)
+function! s:Swapmode.key_2(phase, input, buffer) abort "{{{
+  return self.key_nr(2, a:phase, a:input, a:buffer)
 endfunction "}}}
-function! s:Swapmode.key_3(phase, input) abort "{{{
-  return self.key_nr(3, a:phase, a:input)
+function! s:Swapmode.key_3(phase, input, buffer) abort "{{{
+  return self.key_nr(3, a:phase, a:input, a:buffer)
 endfunction "}}}
-function! s:Swapmode.key_4(phase, input) abort "{{{
-  return self.key_nr(4, a:phase, a:input)
+function! s:Swapmode.key_4(phase, input, buffer) abort "{{{
+  return self.key_nr(4, a:phase, a:input, a:buffer)
 endfunction "}}}
-function! s:Swapmode.key_5(phase, input) abort "{{{
-  return self.key_nr(5, a:phase, a:input)
+function! s:Swapmode.key_5(phase, input, buffer) abort "{{{
+  return self.key_nr(5, a:phase, a:input, a:buffer)
 endfunction "}}}
-function! s:Swapmode.key_6(phase, input) abort "{{{
-  return self.key_nr(6, a:phase, a:input)
+function! s:Swapmode.key_6(phase, input, buffer) abort "{{{
+  return self.key_nr(6, a:phase, a:input, a:buffer)
 endfunction "}}}
-function! s:Swapmode.key_7(phase, input) abort "{{{
-  return self.key_nr(7, a:phase, a:input)
+function! s:Swapmode.key_7(phase, input, buffer) abort "{{{
+  return self.key_nr(7, a:phase, a:input, a:buffer)
 endfunction "}}}
-function! s:Swapmode.key_8(phase, input) abort "{{{
-  return self.key_nr(8, a:phase, a:input)
+function! s:Swapmode.key_8(phase, input, buffer) abort "{{{
+  return self.key_nr(8, a:phase, a:input, a:buffer)
 endfunction "}}}
-function! s:Swapmode.key_9(phase, input) abort "{{{
-  return self.key_nr(9, a:phase, a:input)
+function! s:Swapmode.key_9(phase, input, buffer) abort "{{{
+  return self.key_nr(9, a:phase, a:input, a:buffer)
 endfunction "}}}
 
 
-function! s:Swapmode.key_CR(phase, input) abort  "{{{
+function! s:Swapmode.key_CR(phase, input, buffer) abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
 
   let input = a:input[a:phase]
   if input is# ''
-    return self.key_current(a:phase, a:input)
+    return self.key_current(a:phase, a:input, a:buffer)
   endif
-  return self.key_fix_nr(a:phase, a:input)
+  return self.key_fix_nr(a:phase, a:input, a:buffer)
 endfunction "}}}
 
 
-function! s:Swapmode.key_BS(phase, input) abort  "{{{
+function! s:Swapmode.key_BS(phase, input, buffer) abort  "{{{
   let phase = a:phase
   let input = a:input
   if phase is# s:FIRST
@@ -555,7 +533,7 @@ function! s:Swapmode.key_BS(phase, input) abort  "{{{
       let input = s:truncate(a:input, s:FIRST)
       let phase = s:FIRST
       call self.select(s:NOTHING)
-      call self.update_highlight()
+      call self.update_highlight(a:buffer)
     endif
     call self.echo(phase, input)
   endif
@@ -563,7 +541,7 @@ function! s:Swapmode.key_BS(phase, input) abort  "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_undo(phase, input) abort "{{{
+function! s:Swapmode.key_undo(phase, input, buffer) abort "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
@@ -581,7 +559,7 @@ function! s:Swapmode.key_undo(phase, input) abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_redo(phase, input) abort "{{{
+function! s:Swapmode.key_redo(phase, input, buffer) abort "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
@@ -598,7 +576,7 @@ function! s:Swapmode.key_redo(phase, input) abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_current(phase, input) abort "{{{
+function! s:Swapmode.key_current(phase, input, buffer) abort "{{{
   let phase = a:phase
   let input = s:set(a:input, phase, string(self.pos.current))
   if phase is# s:FIRST
@@ -612,16 +590,16 @@ function! s:Swapmode.key_current(phase, input) abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_fix_nr(phase, input) abort "{{{
+function! s:Swapmode.key_fix_nr(phase, input, buffer) abort "{{{
   let phase = a:phase
   if phase is# s:FIRST
     let pos = str2nr(a:input[s:FIRST])
     if self.pos.is_valid(pos)
-      call self.set_current(pos)
+      call self.set_current(pos, a:buffer)
       let phase = s:SECOND
       call self.select(a:input[0])
       call self.echo(phase, a:input)
-      call self.update_highlight()
+      call self.update_highlight(a:buffer)
     endif
   elseif phase is# s:SECOND
     let pos = str2nr(a:input[s:SECOND])
@@ -635,7 +613,7 @@ function! s:Swapmode.key_fix_nr(phase, input) abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_move_prev(phase, input) abort  "{{{
+function! s:Swapmode.key_move_prev(phase, input, buffer) abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
@@ -643,15 +621,15 @@ function! s:Swapmode.key_move_prev(phase, input) abort  "{{{
     return [a:phase, a:input]
   endif
 
-  let pos = s:prev_nonblank(self.buffer.items,
+  let pos = s:prev_nonblank(a:buffer.items,
             \ min([self.pos.current, self.pos.end+1]))
-  call self.set_current(pos)
-  call self.update_highlight()
+  call self.set_current(pos, a:buffer)
+  call self.update_highlight(a:buffer)
   return [a:phase, a:input]
 endfunction "}}}
 
 
-function! s:Swapmode.key_move_next(phase, input) abort  "{{{
+function! s:Swapmode.key_move_next(phase, input, buffer) abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
@@ -659,15 +637,15 @@ function! s:Swapmode.key_move_next(phase, input) abort  "{{{
     return [a:phase, a:input]
   endif
 
-  let pos = s:next_nonblank(self.buffer.items,
+  let pos = s:next_nonblank(a:buffer.items,
             \ max([0, self.pos.current]))
-  call self.set_current(pos)
-  call self.update_highlight()
+  call self.set_current(pos, a:buffer)
+  call self.update_highlight(a:buffer)
   return [a:phase, a:input]
 endfunction "}}}
 
 
-function! s:Swapmode.key_swap_prev(phase, input) abort  "{{{
+function! s:Swapmode.key_swap_prev(phase, input, buffer) abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
@@ -681,7 +659,7 @@ function! s:Swapmode.key_swap_prev(phase, input) abort  "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_swap_next(phase, input) abort  "{{{
+function! s:Swapmode.key_swap_next(phase, input, buffer) abort  "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
@@ -695,7 +673,7 @@ function! s:Swapmode.key_swap_next(phase, input) abort  "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_sort(phase, input) abort "{{{
+function! s:Swapmode.key_sort(phase, input, buffer) abort "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
@@ -706,7 +684,7 @@ function! s:Swapmode.key_sort(phase, input) abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_SORT(phase, input) abort "{{{
+function! s:Swapmode.key_SORT(phase, input, buffer) abort "{{{
   if a:phase >= s:DONE
     return [a:phase, a:input]
   endif
@@ -717,7 +695,7 @@ function! s:Swapmode.key_SORT(phase, input) abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_Esc(phase, input) abort  "{{{
+function! s:Swapmode.key_Esc(phase, input, buffer) abort  "{{{
   call self.echo(a:phase, a:input)
   let phase = s:CANCELLED
   return [phase, a:input]
