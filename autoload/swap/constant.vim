@@ -9,11 +9,11 @@ let s:Const = {}
 let s:Const.NULLCOORD = [0, 0]
 let s:Const.NULLPOS = [0, 0, 0, 0]
 let s:Const.NULLREGION = {
-  \ 'head': copy(s:Const.NULLPOS),
-  \ 'tail': copy(s:Const.NULLPOS),
-  \ 'len': -1,
-  \ 'type': '',
-  \ }
+\   'head': copy(s:Const.NULLPOS),
+\   'tail': copy(s:Const.NULLPOS),
+\   'len': -1,
+\   'type': '',
+\ }
 
 if exists('v:t_number')
   let s:Const.TYPESTR = v:t_string

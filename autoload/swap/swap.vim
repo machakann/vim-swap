@@ -26,11 +26,11 @@ endfunction "}}}
 
 
 let s:Swap = {
-  \   'dotrepeat': s:FALSE,
-  \   'mode': '',
-  \   'rules': [],
-  \   'input_list': [],
-  \ }
+\   'dotrepeat': s:FALSE,
+\   'mode': '',
+\   'rules': [],
+\   'input_list': [],
+\ }
 
 
 function! s:Swap.around(pos) abort "{{{
@@ -304,12 +304,12 @@ function! s:remove_duplicate_rules(rules) abort "{{{
       let target = a:rules[j]
       let duplicate_body = 0
       let duplicate_surrounds = 0
-      if (has_key(representative, 'body') && has_key(target, 'body') && representative.body == target.body)
-            \ || (!has_key(representative, 'body') && !has_key(target, 'body'))
+      if (has_key(representative, 'body') && has_key(target, 'body') && representative.body == target.body) ||
+      \  (!has_key(representative, 'body') && !has_key(target, 'body'))
         let duplicate_body = 1
       endif
-      if (has_key(representative, 'surrounds') && has_key(target, 'surrounds') && representative.surrounds[0:1] == target.surrounds[0:1] && get(representative, 2, 1) == get(target, 2, 1))
-            \ || (!has_key(representative, 'surrounds') && !has_key(target, 'surrounds'))
+      if (has_key(representative, 'surrounds') && has_key(target, 'surrounds') && representative.surrounds[0:1] == target.surrounds[0:1] && get(representative, 2, 1) == get(target, 2, 1)) ||
+      \  (!has_key(representative, 'surrounds') && !has_key(target, 'surrounds'))
         let duplicate_surrounds = 1
       endif
       if duplicate_body && duplicate_surrounds
@@ -563,7 +563,7 @@ function! s:write(buffer, undojoin) abort "{{{
   call setreg('"', str, v)
   call setpos('.', a:buffer.head)
   silent execute printf('%snoautocmd normal! "_d%s:call setpos(".", %s)%s""P:',
-                      \ undojoin_cmd, v, string(a:buffer.tail), "\<CR>")
+  \                     undojoin_cmd, v, string(a:buffer.tail), "\<CR>")
   call call('setreg', reg)
   call winrestview(view)
 endfunction "}}}

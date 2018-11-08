@@ -75,8 +75,8 @@ endfunction "}}}
 
 
 function! s:is_valid_region(region) abort "{{{
-  return a:region.head != s:Const.NULLPOS && a:region.tail != s:Const.NULLPOS
-        \ && (a:region.type is# 'line' || s:in_order_of(a:region.head, a:region.tail))
+  return a:region.head != s:Const.NULLPOS && a:region.tail != s:Const.NULLPOS &&
+  \     (a:region.type is# 'line' || s:in_order_of(a:region.head, a:region.tail))
 endfunction "}}}
 
 
@@ -88,9 +88,9 @@ endfunction "}}}
 
 
 function! s:is_in_between(pos, head, tail) abort  "{{{
-  return a:pos != s:NULLPOS && a:head != s:NULLPOS && a:tail != s:NULLPOS
-    \ && ((a:pos[1] > a:head[1]) || ((a:pos[1] == a:head[1]) && (a:pos[2] >= a:head[2])))
-    \ && ((a:pos[1] < a:tail[1]) || ((a:pos[1] == a:tail[1]) && (a:pos[2] <= a:tail[2])))
+  return a:pos != s:NULLPOS && a:head != s:NULLPOS && a:tail != s:NULLPOS &&
+  \     (a:pos[1] > a:head[1] || (a:pos[1] == a:head[1] && a:pos[2] >= a:head[2])) &&
+  \     (a:pos[1] < a:tail[1] || (a:pos[1] == a:tail[1] && a:pos[2] <= a:tail[2]))
 endfunction "}}}
 
 

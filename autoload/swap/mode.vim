@@ -25,9 +25,9 @@ endif
 
 " sort functions
 let g:swap#mode#sortfunc =
-  \ get(g:, 'swap#mode#sortfunc', [s:Lib.compare_ascend])
+\ get(g:, 'swap#mode#sortfunc', [s:Lib.compare_ascend])
 let g:swap#mode#SORTFUNC =
-  \ get(g:, 'swap#mode#SORTFUNC', [s:Lib.compare_descend])
+\ get(g:, 'swap#mode#SORTFUNC', [s:Lib.compare_descend])
 
 
 function! swap#mode#import() abort  "{{{
@@ -37,15 +37,15 @@ endfunction "}}}
 
 " Swapmode object - for interactive determination of swap actions
 let s:Swapmode = {
-  \   'pos': {
-  \     'current': 0,
-  \     'end': 0,
-  \     'last_current': 0,
-  \     'selected': 0,
-  \   },
-  \   'history': [],
-  \   'undolevel': 0,
-  \ }
+\   'pos': {
+\     'current': 0,
+\     'end': 0,
+\     'last_current': 0,
+\     'selected': 0,
+\   },
+\   'history': [],
+\   'undolevel': 0,
+\ }
 
 
 " This function asks user to input keys to determine an operation
@@ -118,26 +118,26 @@ endfunction "}}}
 function! s:Swapmode._msg_hist(input) abort "{{{
   if a:input[0] is# 'sort'
     return [['sort', g:swap#hl_itemnr],
-          \ [', ', 'NONE']]
+    \       [', ', 'NONE']]
   endif
   return [[a:input[0], g:swap#hl_itemnr],
-        \ [g:swap#arrow, g:swap#hl_arrow],
-        \ [a:input[1], g:swap#hl_itemnr],
-        \ [', ', 'NONE']]
+  \       [g:swap#arrow, g:swap#hl_arrow],
+  \       [a:input[1], g:swap#hl_itemnr],
+  \       [', ', 'NONE']]
 endfunction "}}}
 
 
 function! s:Swapmode._msg_input(phase, input) abort "{{{
   if a:input[0] is# 'sort'
     return [[', ', 'NONE'],
-          \ ['sort', g:swap#hl_itemnr]]
+    \       ['sort', g:swap#hl_itemnr]]
   endif
 
   let message = []
   if a:phase is# s:FIRST
     if a:input[0] isnot# ''
       let higoup = self.pos.is_valid(a:input[0])
-               \ ? g:swap#hl_itemnr : 'ErrorMsg'
+      \          ? g:swap#hl_itemnr : 'ErrorMsg'
       let message += [[', ', 'NONE']]
       let message += [[a:input[0], higoup]]
     endif
@@ -147,7 +147,7 @@ function! s:Swapmode._msg_input(phase, input) abort "{{{
       let message += [[a:input[0], g:swap#hl_itemnr]]
       let message += [[g:swap#arrow, g:swap#hl_arrow]]
       let higoup = self.pos.is_valid(a:input[1])
-               \ ? g:swap#hl_itemnr : 'ErrorMsg'
+      \          ? g:swap#hl_itemnr : 'ErrorMsg'
       let message += [[a:input[1], higoup]]
     else
       let message += [[a:input[0], g:swap#hl_itemnr]]
@@ -188,8 +188,8 @@ function! s:Swapmode.revise_cursor_pos(buffer) abort  "{{{
   let curpos = getpos('.')
   let item = a:buffer.get_item(self.pos.current)
   if !empty(item) &&
-      \ s:Lib.is_in_between(curpos, item.head, item.tail) &&
-      \ curpos != item.tail
+  \  s:Lib.is_in_between(curpos, item.head, item.tail) &&
+  \  curpos != item.tail
     " no problem!
     return
   endif
@@ -231,10 +231,10 @@ endfunction "}}}
 function! s:Swapmode.add_history(input, buffer) abort  "{{{
   call self._truncate_history()
   let histitem = {
-    \ 'input': copy(a:input),
-    \ 'buffer': deepcopy(a:buffer),
-    \ 'cursor': self.pos.current,
-    \ }
+  \   'input': copy(a:input),
+  \   'buffer': deepcopy(a:buffer),
+  \   'cursor': self.pos.current,
+  \ }
   call add(self.history, histitem)
 endfunction "}}}
 
@@ -622,7 +622,7 @@ function! s:Swapmode.key_move_prev(phase, input, buffer) abort  "{{{
   endif
 
   let pos = s:prev_nonblank(a:buffer.items,
-            \ min([self.pos.current, self.pos.end+1]))
+  \                         min([self.pos.current, self.pos.end+1]))
   call self.set_current(pos, a:buffer)
   call self.update_highlight(a:buffer)
   return [a:phase, a:input]
@@ -638,7 +638,7 @@ function! s:Swapmode.key_move_next(phase, input, buffer) abort  "{{{
   endif
 
   let pos = s:next_nonblank(a:buffer.items,
-            \ max([0, self.pos.current]))
+  \                         max([0, self.pos.current]))
   call self.set_current(pos, a:buffer)
   call self.update_highlight(a:buffer)
   return [a:phase, a:input]

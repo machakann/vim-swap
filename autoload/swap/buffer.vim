@@ -17,11 +17,11 @@ endfunction "}}}
 
 " Item object - represents an swappable item on the buffer {{{
 let s:Item = extend({
-  \   'idx': -1,
-  \   'attr': '',
-  \   'str': '',
-  \   'highlightid': [],
-  \ }, deepcopy(s:NULLREGION))
+\   'idx': -1,
+\   'attr': '',
+\   'str': '',
+\   'highlightid': [],
+\ }, deepcopy(s:NULLREGION))
 function! s:Item.cursor(...) abort "{{{
   let to_tail = get(a:000, 0, 0)
   if to_tail
@@ -118,10 +118,10 @@ endfunction "}}}
 
 " Buffer object - represents a swapping region of buffer {{{
 let s:Buffer = extend({
-  \   'all': [],
-  \   'items': [],
-  \   'mark': {'#': 0, '^': 0, '$': 0},
-  \ }, deepcopy(s:NULLREGION))
+\   'all': [],
+\   'items': [],
+\   'mark': {'#': 0, '^': 0, '$': 0},
+\ }, deepcopy(s:NULLREGION))
 
 
 function! s:Buffer.swappable() abort  "{{{
@@ -239,7 +239,7 @@ function! s:Buffer.get_pos(pos, ...) abort "{{{
     endif
   endif
   echoerr printf('vim-swap: Invalid argument for Buffer.get_pos(); %s [type: %d]',
-          \ string(a:pos), type(a:pos))
+  \              string(a:pos), type(a:pos))
 endfunction "}}}
 
 
