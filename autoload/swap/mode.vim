@@ -35,42 +35,6 @@ function! swap#mode#import() abort  "{{{
 endfunction "}}}
 
 
-function! s:set(input, phase, v) abort "{{{
-  if a:phase is# s:FIRST
-    let a:input[0] = a:v
-  elseif a:phase is# s:SECOND
-    let a:input[1] = a:v
-  else
-    echoerr 'vim-swap: Invalid argument for s:set() in autoload/swap/swapmode.vim'
-  endif
-  return a:input
-endfunction "}}}
-
-
-function! s:append(input, phase, v) abort "{{{
-  if a:phase is# s:FIRST
-    let a:input[0] .= a:v
-  elseif a:phase is# s:SECOND
-    let a:input[1] .= a:v
-  else
-    echoerr 'vim-swap: Invalid argument for s:append() in autoload/swap/swapmode.vim'
-  endif
-  return a:input
-endfunction "}}}
-
-
-function! s:truncate(input, phase) abort "{{{
-  if a:phase is# s:FIRST
-    let a:input[0] = a:input[0][0:-2]
-  elseif a:phase is# s:SECOND
-    let a:input[1] = a:input[1][0:-2]
-  else
-    echoerr 'vim-swap: Invalid argument for s:truncate() in autoload/swap/swapmode.vim'
-  endif
-  return a:input
-endfunction "}}}
-
-
 " Swapmode object - for interactive determination of swap actions
 let s:Swapmode = {
   \   'pos': {
@@ -775,6 +739,42 @@ function! s:Swapmode.key_Esc(phase, input) abort  "{{{
   call self.echo(a:phase, a:input)
   let phase = s:CANCELLED
   return [phase, a:input]
+endfunction "}}}
+
+
+function! s:set(input, phase, v) abort "{{{
+  if a:phase is# s:FIRST
+    let a:input[0] = a:v
+  elseif a:phase is# s:SECOND
+    let a:input[1] = a:v
+  else
+    echoerr 'vim-swap: Invalid argument for s:set() in autoload/swap/swapmode.vim'
+  endif
+  return a:input
+endfunction "}}}
+
+
+function! s:append(input, phase, v) abort "{{{
+  if a:phase is# s:FIRST
+    let a:input[0] .= a:v
+  elseif a:phase is# s:SECOND
+    let a:input[1] .= a:v
+  else
+    echoerr 'vim-swap: Invalid argument for s:append() in autoload/swap/swapmode.vim'
+  endif
+  return a:input
+endfunction "}}}
+
+
+function! s:truncate(input, phase) abort "{{{
+  if a:phase is# s:FIRST
+    let a:input[0] = a:input[0][0:-2]
+  elseif a:phase is# s:SECOND
+    let a:input[1] = a:input[1][0:-2]
+  else
+    echoerr 'vim-swap: Invalid argument for s:truncate() in autoload/swap/swapmode.vim'
+  endif
+  return a:input
 endfunction "}}}
 
 
