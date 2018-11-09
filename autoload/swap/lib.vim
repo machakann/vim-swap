@@ -11,11 +11,6 @@ else
 endif
 
 
-function! swap#lib#import() abort "{{{
-  return s:Lib
-endfunction "}}}
-
-
 function! s:get_buf_length(region) abort  "{{{
   return s:buf_byte_len(a:region.head, a:region.tail) + 1
 endfunction "}}}
@@ -157,6 +152,11 @@ let s:Lib.v2type = function('s:v2type')
 let s:Lib.get_left_pos = function('s:get_left_pos')
 let s:Lib.get_right_pos = function('s:get_right_pos')
 lockvar! s:Lib
+
+
+function! swap#lib#import() abort "{{{
+  return s:Lib
+endfunction "}}}
 
 
 " vim:set foldmethod=marker:

@@ -10,11 +10,6 @@ let s:TYPESTR = s:Const.TYPESTR
 let s:NULLREGION = s:Const.NULLREGION
 
 
-function! swap#buffer#import() abort "{{{
-  return s:Buffers
-endfunction "}}}
-
-
 " Item object - represents an swappable item on the buffer {{{
 let s:Item = extend({
 \   'idx': -1,
@@ -339,6 +334,11 @@ function! s:Buffers.Buffer(region, parseditems) abort "{{{
   let buffer.items = filter(copy(buffer.all), 'v:val.attr is# "item"')
   call extend(buffer, deepcopy(a:region))
   return buffer
+endfunction "}}}
+
+
+function! swap#buffer#import() abort "{{{
+  return s:Buffers
 endfunction "}}}
 
 

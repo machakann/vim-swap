@@ -5,11 +5,6 @@ let s:Lib = swap#lib#import()
 let s:Buffers = swap#buffer#import()
 
 
-function! swap#parser#import() abort "{{{
-  return s:Parser
-endfunction "}}}
-
-
 function! s:parse(region, rule, curpos) abort "{{{
   " s:parse_{type}wise() functions return a list of dictionaries which have two keys at least, attr and str.
   "   attr : 'item' or 'delimiter' or 'immutable'.
@@ -508,6 +503,11 @@ endfunction "}}}
 
 let s:Parser = {}
 let s:Parser.parse = function('s:parse')
+
+
+function! swap#parser#import() abort "{{{
+  return s:Parser
+endfunction "}}}
 
 
 " vim:set foldmethod=marker:

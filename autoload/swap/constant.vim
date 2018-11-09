@@ -1,9 +1,5 @@
 " Constant object - Hold constants
 
-function! swap#constant#import(...) abort "{{{
-  return s:Const
-endfunction "}}}
-
 unlet! s:Const
 let s:Const = {}
 let s:Const.NULLCOORD = [0, 0]
@@ -31,6 +27,11 @@ else
   let s:Const.TYPEFUNC = type(function('tr'))
 endif
 lockvar! s:Const
+
+
+function! swap#constant#import(...) abort "{{{
+  return s:Const
+endfunction "}}}
 
 " vim:set foldmethod=marker:
 " vim:set commentstring="%s:

@@ -3,21 +3,15 @@
 let s:Const = swap#constant#import()
 let s:Lib = swap#lib#import()
 
+let s:TRUE = 1
+let s:FALSE = 0
 let s:NULLCOORD = s:Const.NULLCOORD
 let s:NULLPOS = s:Const.NULLPOS
 let s:NULLREGION = s:Const.NULLREGION
 
 
-function! swap#searcher#import() abort "{{{
-  return s:Seacher
-endfunction "}}}
-
-
-let s:TRUE = 1
-let s:FALSE = 0
 let s:CONTINUE = 0
 let s:DONE = 1
-
 
 function! s:search(rule, region, curpos) abort  "{{{
   let region = a:region
@@ -195,6 +189,11 @@ endfunction "}}}
 let s:Seacher = {}
 let s:Seacher.search = function('s:search')
 let s:Seacher.match = function('s:match')
+
+
+function! swap#searcher#import() abort "{{{
+  return s:Seacher
+endfunction "}}}
 
 
 " vim:set foldmethod=marker:

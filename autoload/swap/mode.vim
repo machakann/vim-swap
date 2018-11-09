@@ -30,11 +30,6 @@ let g:swap#mode#SORTFUNC =
 \ get(g:, 'swap#mode#SORTFUNC', [s:Lib.compare_descend])
 
 
-function! swap#mode#import() abort  "{{{
-  return s:Mode
-endfunction "}}}
-
-
 " Swapmode object - for interactive determination of swap actions
 let s:Swapmode = {
 \   'pos': {
@@ -743,6 +738,11 @@ let s:Mode = {}
 
 function! s:Mode.Swapmode() abort "{{{
   return deepcopy(s:Swapmode)
+endfunction "}}}
+
+
+function! swap#mode#import() abort  "{{{
+  return s:Mode
 endfunction "}}}
 
 
