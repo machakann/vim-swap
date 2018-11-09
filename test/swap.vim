@@ -16,6 +16,7 @@ function! s:suite.after() abort "{{{
 endfunction "}}}
 
 " unit tests
+"" autoload/swap/parser.vim
 function! s:suite.shift_to_something_start() abort  "{{{
   let rule = {'surrounds': ['(', ')', 1], 'delimiter': [',\s*'], 'braket': [['(', ')'], ['[', ']'], ['{', '}']], 'quotes': [['"', '"']], 'literal_quotes': [["'", "'"]], 'immutable': ['\%(^\s\|\n\)\s*']}
   let targets = []
@@ -518,6 +519,8 @@ function! s:suite.parse_charwise() abort  "{{{
   call g:assert.equals(stuffs[4]['attr'], 'item',       'failed at #18-10')
   call g:assert.equals(stuffs[4]['str'],  'Baz',        'failed at #18-11')
 endfunction "}}}
+
+" autoload/swap/swap.vim
 function! s:suite.sort() abort "{{{
   let rule = {'delimiter': [',\s*']}
   let buf = {}
@@ -533,6 +536,65 @@ function! s:suite.sort() abort "{{{
   let newbuf = s:swap.sort(buf, [s:Lib.compare_descend])
   let newstr = s:swap.string(newbuf)
   call g:assert.equals(newstr, 'dd, cc, bb, aa', 'failed at #2')
+endfunction "}}}
+function! s:suite.get_rules() abort "{{{
+  " #1
+  let rules = [{'body': 'a,b', 'delimiter': ','}]
+  let got = s:swap.get_rules(rules, '', 'n')
+  call g:assert.length_of(got, 1, 'failed at #1')
+
+  " #2
+  " Filter the rule which does not have neither 'body' nor 'surrounds'
+  let rules = [{'delimiter': ','}]
+  let got = s:swap.get_rules(rules, '', 'n')
+  call g:assert.length_of(got, 0, 'failed at #2')
+
+  " #3
+  " Do not filter the rule which does not have neither 'body' nor 'surrounds'
+  let rules = [{'delimiter': ','}]
+  let got = s:swap.get_rules(rules, '', 'x')
+  call g:assert.length_of(got, 1, 'failed at #3')
+
+  " #4
+  " test filetype filter
+  let rules = [
+  \   {'body': 'a,b', 'delimiter': ',', 'filetype': ['foo']},
+  \   {'body': 'c,d', 'delimiter': ',', 'filetype': ['foo']},
+  \   {'body': 'e,f', 'delimiter': ',', 'filetype': ['bar']},
+  \ ]
+  let got = s:swap.get_rules(rules, 'foo', 'n')
+  call g:assert.length_of(got, 2, 'failed at #4')
+
+  " #5
+  " test mode filter
+  let rules = [
+  \   {'body': 'a,b', 'delimiter': ',', 'mode': 'n'},
+  \   {'body': 'c,d', 'delimiter': ',', 'mode': 'n'},
+  \   {'body': 'e,f', 'delimiter': ',', 'mode': 'x'},
+  \ ]
+  let got = s:swap.get_rules(rules, '', 'n')
+  call g:assert.length_of(got, 2, 'failed at #5')
+
+  " #6
+  " test filters
+  let rules = [
+  \   {'body': 'a,b', 'delimiter': ',', 'filetype': ['foo'], 'mode': 'n'},
+  \   {'body': 'c,d', 'delimiter': ',', 'filetype': ['bar'], 'mode': 'n'},
+  \   {'body': 'e,f', 'delimiter': ',', 'filetype': ['foo'], 'mode': 'x'},
+  \ ]
+  let got = s:swap.get_rules(rules, 'foo', 'n')
+  call g:assert.length_of(got, 1, 'failed at #6')
+
+  " #7
+  " Remove duplicates
+  let rules = [
+  \   {'body': 'a,b', 'delimiter': ','},
+  \   {'body': 'a,b', 'delimiter': ';'},
+  \   {'surrounds': ['c', 'd'], 'delimiter': ','},
+  \   {'surrounds': ['c', 'd'], 'delimiter': ';'},
+  \ ]
+  let got = s:swap.get_rules(rules, '', 'n')
+  call g:assert.length_of(got, 2, 'failed at #7')
 endfunction "}}}
 
 " integration test
