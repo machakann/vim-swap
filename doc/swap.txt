@@ -1,5 +1,5 @@
 *swap.txt*	Reorder delimited items.
-						Last change:02-Nov-2018.
+						Last change:09-Nov-2018.
 
 Author  : machakann <mckn{at}outlook.jp>
 License : NYSL license
@@ -329,12 +329,14 @@ CUSTOMIZATION				*swap-customization*
 To recognize/parse a target string exactly, a plugin should have a
 particular implementation for each language. However, it is too cumbersome to
 write tons of language-dependent codes. Thus |swap.vim| makes use of common
-features among many languages. Some features may need to be taken into account
-but others may not, the combination of those considerable features makes a
-"rule." |swap.vim| works based on the simplified rules.
-Anyone can extend the kinds of targets by adding the "rule"s.
+features among many languages in default.
 
-The "rule" is a |Dictionary| which has the keys described below.
+Some features may need to be taken into account but others may not; the
+set of those essential features makes a "rule." |swap.vim| works based on
+the rules to swap delimited items on a buffer, thus, it is possible to extend
+the behavior by adding the "rule"s.
+
+The "rule" is, actually, a |Dictionary| which has the keys described below.
 At least, it should have a "delimiter" key to define the delimiter pattern.
 In addition, either "body" or "surrounds" key is required to search a target
 string from the buffer in |Normal| mode, although it is not necessary in
