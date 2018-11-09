@@ -20,7 +20,7 @@ function! swap#swap#new(mode, input_list, rules) abort "{{{
   let swap = deepcopy(s:Swap)
   let swap.mode = a:mode
   let swap.input_list = a:input_list
-  let swap.rules = s:get_rules(a:rules, a:mode)
+  let swap.rules = s:get_rules(a:rules, &l:filetype, a:mode)
   return swap
 endfunction "}}}
 
@@ -261,21 +261,22 @@ function! s:restore_options(options) abort "{{{
 endfunction "}}}
 
 
-function! s:get_rules(rules, mode) abort  "{{{
+function! s:get_rules(rules, filetype, mode) abort  "{{{
   let rules = deepcopy(a:rules)
   call map(rules, 'extend(v:val, {"priority": 0}, "keep")')
   call s:Lib.sort(reverse(rules), function('s:compare_priority'))
-  call filter(rules, 's:filter_filetype(v:val) && s:filter_mode(v:val, a:mode)')
+  call filter(rules,
+  \ 's:filter_filetype(v:val, a:filetype) && s:filter_mode(v:val, a:mode)')
   call s:remove_duplicate_rules(rules)
   return rules
 endfunction "}}}
 
 
-function! s:filter_filetype(rule) abort  "{{{
+function! s:filter_filetype(rule, filetype) abort  "{{{
   if !has_key(a:rule, 'filetype')
     return s:TRUE
   endif
-  let filetypes = split(&filetype, '\.')
+  let filetypes = split(a:filetype, '\.')
   if filetypes == []
     let filter = 'v:val is# ""'
   else
