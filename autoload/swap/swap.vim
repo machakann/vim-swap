@@ -263,10 +263,13 @@ endfunction "}}}
 
 function! s:get_rules(rules, filetype, mode) abort  "{{{
   let rules = deepcopy(a:rules)
-  call map(rules, 'extend(v:val, {"priority": 0}, "keep")')
-  call s:Lib.sort(reverse(rules), function('s:compare_priority'))
+  if a:mode is# 'n'
+    call filter(rules, 'has_key(v:val, "body") || has_key(v:val, "surrounds")')
+  endif
   call filter(rules,
   \ 's:filter_filetype(v:val, a:filetype) && s:filter_mode(v:val, a:mode)')
+  call map(rules, 'extend(v:val, {"priority": 0}, "keep")')
+  call s:Lib.sort(reverse(rules), function('s:compare_priority'))
   call s:remove_duplicate_rules(rules)
   return rules
 endfunction "}}}
