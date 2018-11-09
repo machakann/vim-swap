@@ -266,9 +266,7 @@ function! s:get_rules(rules, mode) abort  "{{{
   call map(rules, 'extend(v:val, {"priority": 0}, "keep")')
   call s:Lib.sort(reverse(rules), function('s:compare_priority'))
   call filter(rules, 's:filter_filetype(v:val) && s:filter_mode(v:val, a:mode)')
-  if a:mode isnot# 'x'
-    call s:remove_duplicate_rules(rules)
-  endif
+  call s:remove_duplicate_rules(rules)
   return rules
 endfunction "}}}
 
