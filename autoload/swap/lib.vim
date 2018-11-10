@@ -135,6 +135,7 @@ function! s:get_right_pos(pos, ...) abort  "{{{
 endfunction "}}}
 
 
+unlet! s:Lib
 let s:Lib = {}
 let s:Lib.get_buf_length = function('s:get_buf_length')
 let s:Lib.buf_byte_len = function('s:buf_byte_len')
