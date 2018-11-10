@@ -1,0 +1,1327 @@
+let s:suite = themis#suite('swap: ')
+let s:scope = themis#helper('scope')
+let s:Lib = s:scope.funcs('autoload/swap/lib.vim')
+
+" unit tests
+Describe [unit test]
+  Before each
+    %delete
+  End
+
+  After
+    %delete
+  End
+
+  Context autoload/swap/parser.vim
+    Before
+      let parser = s:scope.funcs('autoload/swap/parser.vim')
+    End
+
+    Context s:shift_to_something_start()
+      Before
+        let rule = {
+        \ 'surrounds': ['(', ')', 1],
+        \ 'delimiter': [',\s*'],
+        \ 'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+        \ 'quotes': [['"', '"']],
+        \ 'literal_quotes': [["'", "'"]],
+        \ 'immutable': ['\%(^\s\|\n\)\s*']}
+        let targets = []
+        let targets += map(copy(get(rule, 'delimiter', [])), '[-1, v:val, 0, "delimiter"]')
+        let targets += map(copy(get(rule, 'immutable', [])), '[-1, v:val, 0, "immutable"]')
+        let targets += map(copy(get(rule, 'braket', [])), '[-1, v:val, 0, "braket"]')
+        let targets += map(copy(get(rule, 'quotes', [])), '[-1, v:val, 0, "quotes"]')
+        let targets += map(copy(get(rule, 'literal_quotes', [])), '[-1, v:val, 0, "literal_quotes"]')
+      End
+
+      It searches a beginning of the braket
+        let [idx, pattern, occurence, kind] =
+        \ parser.shift_to_something_start('foo(bar)', deepcopy(targets), 0)
+        Assert Equals(idx, 3)
+        Assert Equals(kind, 'braket')
+        Assert Equals(pattern, ['(', ')'])
+        unlet! pattern
+
+        let [idx, pattern, occurence, kind] =
+        \ parser.shift_to_something_start('(foo)', deepcopy(targets), 0)
+        Assert Equals(idx, 0)
+        Assert Equals(kind, 'braket')
+        Assert Equals(pattern, ['(', ')'])
+        unlet! pattern
+      End
+
+      It searches a beginning of the quoted text
+        let [idx, pattern, occurence, kind] =
+        \ parser.shift_to_something_start('foo"bar"', deepcopy(targets), 0)
+        Assert Equals(idx, 3)
+        Assert Equals(kind, 'quotes')
+        Assert Equals(pattern, ['"', '"'])
+        unlet! pattern
+
+        let [idx, pattern, occurence, kind] =
+        \ parser.shift_to_something_start('"foo"', deepcopy(targets), 0)
+        Assert Equals(idx, 0)
+        Assert Equals(kind, 'quotes')
+        Assert Equals(pattern, ['"', '"'])
+        unlet! pattern
+      End
+
+      It searches a beginning of the literal-quoted text
+        let [idx, pattern, occurence, kind] =
+        \ parser.shift_to_something_start("foo'bar'", deepcopy(targets), 0)
+        Assert Equals(idx, 3)
+        Assert Equals(kind, 'literal_quotes')
+        Assert Equals(pattern, ["'", "'"])
+        unlet! pattern
+
+        let [idx, pattern, occurence, kind] =
+        \ parser.shift_to_something_start("'foo'", deepcopy(targets), 0)
+        Assert Equals(idx, 0)
+        Assert Equals(kind, 'literal_quotes')
+        Assert Equals(pattern, ["'", "'"])
+        unlet! pattern
+      End
+
+      It searches a beginning of the delimiter
+        let [idx, pattern, occurence, kind] =
+        \ parser.shift_to_something_start('foo, bar', deepcopy(targets), 0)
+        Assert Equals(idx, 3)
+        Assert Equals(kind, 'delimiter')
+        Assert Equals(pattern, ',\s*')
+        unlet! pattern
+
+        let [idx, pattern, occurence, kind] =
+        \ parser.shift_to_something_start(',foo', deepcopy(targets), 0)
+        Assert Equals(idx, 0)
+        Assert Equals(kind, 'delimiter')
+        Assert Equals(pattern, ',\s*')
+        unlet! pattern
+      End
+    End
+
+    Context s:shift_to_braket_end()
+      Before
+        let rule = {
+        \ 'surrounds': ['(', ')', 1],
+        \ 'delimiter': [',\s*'],
+        \ 'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+        \ 'quotes': [['"', '"']],
+        \ 'literal_quotes': [["'", "'"]],
+        \ 'immutable': ['\%(^\s\|\n\)\s*']}
+        let quotes = map(copy(get(rule, 'quotes', [])), '[0, v:val, 0, "quotes"]')
+        let literal_quotes = map(copy(get(rule, 'literal_quotes', [])), '[0, v:val, 0, "literal_quotes"]')
+      End
+
+      It searches the end of parenthesis
+        let idx = parser.shift_to_braket_end(
+        \ '(foo)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+        Assert Equals(idx, 5)
+
+        let idx = parser.shift_to_braket_end(
+        \ 'foo(bar)baz', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 3)
+        Assert Equals(idx, 8)
+
+        let idx = parser.shift_to_braket_end(
+        \ '(foo)bar(baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+        Assert Equals(idx, 5)
+
+        let idx = parser.shift_to_braket_end(
+        \ '(foo)bar(baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 8)
+        Assert Equals(idx, 13)
+
+        let idx = parser.shift_to_braket_end(
+        \ '(foo(bar)baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+        Assert Equals(idx, 13)
+
+        let idx = parser.shift_to_braket_end(
+        \ '(foo(bar)baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 4)
+        Assert Equals(idx, 9)
+
+        let idx = parser.shift_to_braket_end(
+        \ '()', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+        Assert Equals(idx, 2)
+
+        let idx = parser.shift_to_braket_end(
+        \ '(foo(bar)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+        Assert Equals(idx, 9)
+
+        let idx = parser.shift_to_braket_end(
+        \ ' ()', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+        Assert Equals(idx, 3)
+
+        let idx = parser.shift_to_braket_end(
+        \ '(foo")"bar)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+        Assert Equals(idx, 11)
+
+        let idx = parser.shift_to_braket_end(
+        \ "(foo')'bar)", ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+        Assert Equals(idx, 11)
+      End
+    End
+
+    Context s:shift_to_quote_end()
+      It searches the end of a quoted text
+        let idx = parser.shift_to_quote_end('"foo"', ['"', '"'], 0)
+        Assert Equals(idx, 5)
+
+        let idx = parser.shift_to_quote_end('foo"bar"baz', ['"', '"'], 3)
+        Assert Equals(idx, 8)
+
+        let idx = parser.shift_to_quote_end('"foo"bar"baz"', ['"', '"'], 0)
+        Assert Equals(idx, 5)
+
+        let idx = parser.shift_to_quote_end('"foo"bar"baz"', ['"', '"'], 8)
+        Assert Equals(idx, 13)
+
+        let idx = parser.shift_to_quote_end('"foo\"bar"', ['"', '"'], 0)
+        Assert Equals(idx, 10)
+
+        let idx = parser.shift_to_quote_end('"foo\\"bar"', ['"', '"'], 0)
+        Assert Equals(idx, 7)
+
+        let idx = parser.shift_to_quote_end('"foo\\\"bar"', ['"', '"'], 0)
+        Assert Equals(idx, 12)
+
+        let idx = parser.shift_to_quote_end('foobar', ['"', '"'], 0)
+        Assert Equals(idx, -1)
+
+        let idx = parser.shift_to_quote_end('"foobar', ['"', '"'], 0)
+        Assert Equals(idx, -1)
+
+        let idx = parser.shift_to_quote_end('"foo\"bar', ['"', '"'], 0)
+        Assert Equals(idx, -1)
+
+        let idx = parser.shift_to_quote_end('"\"foobar', ['"', '"'], 0)
+        Assert Equals(idx, -1)
+
+        let idx = parser.shift_to_quote_end('"foobar\"', ['"', '"'], 0)
+        Assert Equals(idx, -1)
+
+        let idx = parser.shift_to_quote_end('""', ['"', '"'], 0)
+        Assert Equals(idx, 2)
+
+        let idx = parser.shift_to_quote_end('"\"', ['"', '"'], 0)
+        Assert Equals(idx, -1)
+      End
+    End
+
+    Context s:shift_to_literal_quote_end()
+      It searches the end of a literal-quoted text
+        let idx = parser.shift_to_literal_quote_end("'foo'", ["'", "'"], 0)
+        Assert Equals(idx, 5, 'failed at #1')
+
+        let idx = parser.shift_to_literal_quote_end("foo'bar'baz", ["'", "'"], 3)
+        Assert Equals(idx, 8, 'failed at #2')
+
+        let idx = parser.shift_to_literal_quote_end("'foo'bar'baz'", ["'", "'"], 0)
+        Assert Equals(idx, 5, 'failed at #3')
+
+        let idx = parser.shift_to_literal_quote_end("'foo'bar'baz'", ["'", "'"], 8)
+        Assert Equals(idx, 13, 'failed at #4')
+
+        let idx = parser.shift_to_literal_quote_end('''foo\''bar''', ["'", "'"], 0)
+        Assert Equals(idx, 6, 'failed at #5')
+
+        let idx = parser.shift_to_literal_quote_end('''foo\\''bar''', ["'", "'"], 0)
+        Assert Equals(idx, 7, 'failed at #6')
+
+        let idx = parser.shift_to_literal_quote_end('''foo\\\''bar''', ["'", "'"], 0)
+        Assert Equals(idx, 8, 'failed at #7')
+
+        let idx = parser.shift_to_literal_quote_end('foobar', ["'", "'"], 0)
+        Assert Equals(idx, -1, 'failed at #8')
+
+        let idx = parser.shift_to_literal_quote_end("'foobar", ["'", "'"], 0)
+        Assert Equals(idx, -1, 'failed at #9')
+
+        let idx = parser.shift_to_literal_quote_end('''foo\''bar', ["'", "'"], 0)
+        Assert Equals(idx, 6, 'failed at #10')
+
+        let idx = parser.shift_to_literal_quote_end('''\''foobar', ["'", "'"], 0)
+        Assert Equals(idx, 3, 'failed at #11')
+
+        let idx = parser.shift_to_literal_quote_end('''foobar\''', ["'", "'"], 0)
+        Assert Equals(idx, 9, 'failed at #12')
+
+        let idx = parser.shift_to_literal_quote_end("''", ["'", "'"], 0)
+        Assert Equals(idx, 2, 'failed at #13')
+
+        let idx = parser.shift_to_literal_quote_end('''\''', ["'", "'"], 0)
+        Assert Equals(idx, 3, 'failed at #14')
+      End
+    End
+
+    Context s:parse_charwise()
+      Before
+        let rule = {
+        \ 'surrounds': ['(', ')', 1],
+        \ 'delimiter': [',\s*'],
+        \ 'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+        \ 'quotes': [['"', '"']],
+        \ 'literal_quotes': [["'", "'"]],
+        \ 'immutable': ['\%(^\s\|\n\)\s*']}
+      End
+
+      It split a string into items and delimiters
+        let stuffs = parser.parse_charwise('foo, bar', rule)
+        Assert Equals(len(stuffs), 3)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  'foo')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  'bar')
+
+        let stuffs = parser.parse_charwise('foo, bar, baz', rule)
+        Assert Equals(len(stuffs), 5)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  'foo')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  'bar')
+        Assert Equals(stuffs[3]['attr'], 'delimiter')
+        Assert Equals(stuffs[3]['str'],  ', ')
+        Assert Equals(stuffs[4]['attr'], 'item')
+        Assert Equals(stuffs[4]['str'],  'baz')
+
+        let stuffs = parser.parse_charwise('foo, (bar, baz)', rule)
+        Assert Equals(len(stuffs), 3)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  'foo')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  '(bar, baz)')
+
+        let stuffs = parser.parse_charwise('foo, [bar, baz]', rule)
+        Assert Equals(len(stuffs), 3)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  'foo')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  '[bar, baz]')
+
+        let stuffs = parser.parse_charwise('foo, {bar, baz}', rule)
+        Assert Equals(len(stuffs), 3)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  'foo')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  '{bar, baz}')
+
+        let stuffs = parser.parse_charwise('foo, "bar, baz"', rule)
+        Assert Equals(len(stuffs), 3)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  'foo')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  '"bar, baz"')
+
+        let stuffs = parser.parse_charwise("foo, 'bar, baz'", rule)
+        Assert Equals(len(stuffs), 3)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  'foo')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  "'bar, baz'")
+
+        let stuffs = parser.parse_charwise('(foo, bar), baz, qux', rule)
+        Assert Equals(len(stuffs), 5)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  '(foo, bar)')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  'baz')
+        Assert Equals(stuffs[3]['attr'], 'delimiter')
+        Assert Equals(stuffs[3]['str'],  ', ')
+        Assert Equals(stuffs[4]['attr'], 'item')
+        Assert Equals(stuffs[4]['str'],  'qux')
+
+        let stuffs = parser.parse_charwise('foo, (bar, baz), qux', rule)
+        Assert Equals(len(stuffs), 5)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  'foo')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  '(bar, baz)')
+        Assert Equals(stuffs[3]['attr'], 'delimiter')
+        Assert Equals(stuffs[3]['str'],  ', ')
+        Assert Equals(stuffs[4]['attr'], 'item')
+        Assert Equals(stuffs[4]['str'],  'qux')
+
+        let stuffs = parser.parse_charwise('foo, bar, (baz, qux)', rule)
+        Assert Equals(len(stuffs), 5)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  'foo')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  'bar')
+        Assert Equals(stuffs[3]['attr'], 'delimiter')
+        Assert Equals(stuffs[3]['str'],  ', ')
+        Assert Equals(stuffs[4]['attr'], 'item')
+        Assert Equals(stuffs[4]['str'],  '(baz, qux)')
+
+        let stuffs = parser.parse_charwise('"foo, bar", (baz, qux)', rule)
+        Assert Equals(len(stuffs), 3)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  '"foo, bar"')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  '(baz, qux)')
+
+        let stuffs = parser.parse_charwise('"foo, (bar, baz)", qux', rule)
+        Assert Equals(len(stuffs), 3)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  '"foo, (bar, baz)"')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  'qux')
+
+        let stuffs = parser.parse_charwise('(foo, "bar, baz"), qux', rule)
+        Assert Equals(len(stuffs), 3)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  '(foo, "bar, baz")')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  'qux')
+
+        let stuffs = parser.parse_charwise("foo, bar,\n baz, qux", rule)
+        Assert Equals(len(stuffs), 8)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  'foo')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  'bar')
+        Assert Equals(stuffs[3]['attr'], 'delimiter')
+        Assert Equals(stuffs[3]['str'],  ',')
+        Assert Equals(stuffs[4]['attr'], 'immutable')
+        Assert Equals(stuffs[4]['str'],  "\n ")
+        Assert Equals(stuffs[5]['attr'], 'item')
+        Assert Equals(stuffs[5]['str'],  'baz')
+        Assert Equals(stuffs[6]['attr'], 'delimiter')
+        Assert Equals(stuffs[6]['str'],  ', ')
+        Assert Equals(stuffs[7]['attr'], 'item')
+        Assert Equals(stuffs[7]['str'],  'qux')
+
+        let stuffs = parser.parse_charwise("foo, bar\n    , baz, qux", rule)
+        Assert Equals(len(stuffs), 8)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  'foo')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  'bar')
+        Assert Equals(stuffs[3]['attr'], 'immutable')
+        Assert Equals(stuffs[3]['str'],  "\n    ")
+        Assert Equals(stuffs[4]['attr'], 'delimiter')
+        Assert Equals(stuffs[4]['str'],  ', ')
+        Assert Equals(stuffs[5]['attr'], 'item')
+        Assert Equals(stuffs[5]['str'],  'baz')
+        Assert Equals(stuffs[6]['attr'], 'delimiter')
+        Assert Equals(stuffs[6]['str'],  ', ')
+        Assert Equals(stuffs[7]['attr'], 'item')
+        Assert Equals(stuffs[7]['str'],  'qux')
+
+        let stuffs = parser.parse_charwise("foo, bar, , baz", rule)
+        Assert Equals(len(stuffs), 7)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  'foo')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  'bar')
+        Assert Equals(stuffs[3]['attr'], 'delimiter')
+        Assert Equals(stuffs[3]['str'],  ', ')
+        Assert Equals(stuffs[4]['attr'], 'item')
+        Assert Equals(stuffs[4]['str'],  '')
+        Assert Equals(stuffs[5]['attr'], 'delimiter')
+        Assert Equals(stuffs[5]['str'],  ', ')
+        Assert Equals(stuffs[6]['attr'], 'item')
+        Assert Equals(stuffs[6]['str'],  'baz')
+
+        let stuffs = parser.parse_charwise("foo, bar,", rule)
+        Assert Equals(len(stuffs), 5)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  'foo')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  'bar')
+        Assert Equals(stuffs[3]['attr'], 'delimiter')
+        Assert Equals(stuffs[3]['str'],  ',')
+        Assert Equals(stuffs[4]['attr'], 'item')
+        Assert Equals(stuffs[4]['str'],  '')
+
+        let stuffs = parser.parse_charwise(", foo, bar", rule)
+        Assert Equals(len(stuffs), 5)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  '')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  ', ')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  'foo')
+        Assert Equals(stuffs[3]['attr'], 'delimiter')
+        Assert Equals(stuffs[3]['str'],  ', ')
+        Assert Equals(stuffs[4]['attr'], 'item')
+        Assert Equals(stuffs[4]['str'],  'bar')
+
+        " zero-width delimiter
+        let rule = {'body': '\a\+', 'delimiter': ['\C\ze[A-Z]'],}
+        let stuffs = parser.parse_charwise('FooBarBaz', rule)
+        Assert Equals(len(stuffs), 5)
+        Assert Equals(stuffs[0]['attr'], 'item')
+        Assert Equals(stuffs[0]['str'],  'Foo')
+        Assert Equals(stuffs[1]['attr'], 'delimiter')
+        Assert Equals(stuffs[1]['str'],  '')
+        Assert Equals(stuffs[2]['attr'], 'item')
+        Assert Equals(stuffs[2]['str'],  'Bar')
+        Assert Equals(stuffs[3]['attr'], 'delimiter')
+        Assert Equals(stuffs[3]['str'],  '')
+        Assert Equals(stuffs[4]['attr'], 'item')
+        Assert Equals(stuffs[4]['str'],  'Baz')
+      End
+    End
+  End
+
+  Context autoload/swap/lib.vim
+    Context s:buf_byte_len()
+      After
+        %delete
+      End
+
+      It returns the distance between the assigned two points on the buffer
+        %delete
+        call append(0, ['abc', 'def', 'ghi'])
+
+        let l = s:Lib.buf_byte_len([0, 1, 1, 0], [0, 1, 1, 0])
+        Assert Equals(l, 0)
+
+        let l = s:Lib.buf_byte_len([0, 1, 1, 0], [0, 1, 2, 0])
+        Assert Equals(l, 1)
+
+        let l = s:Lib.buf_byte_len([0, 1, 1, 0], [0, 1, 3, 0])
+        Assert Equals(l, 2)
+
+        let l = s:Lib.buf_byte_len([0, 1, 1, 0], [0, 2, 1, 0])
+        Assert Equals(l, 4)
+
+        let l = s:Lib.buf_byte_len([0, 1, 1, 0], [0, 2, 2, 0])
+        Assert Equals(l, 5)
+
+        let l = s:Lib.buf_byte_len([0, 1, 1, 0], [0, 2, 3, 0])
+        Assert Equals(l, 6)
+
+        let l = s:Lib.buf_byte_len([0, 1, 1, 0], [0, 3, 1, 0])
+        Assert Equals(l, 8)
+
+        let l = s:Lib.buf_byte_len([0, 1, 1, 0], [0, 3, 2, 0])
+        Assert Equals(l, 9)
+
+        let l = s:Lib.buf_byte_len([0, 1, 1, 0], [0, 3, 3, 0])
+        Assert Equals(l, 10)
+
+        %delete
+        call append(0, ['', 'def', 'ghi'])
+
+        let l = s:Lib.buf_byte_len([0, 1, 1, 0], [0, 1, 1, 0])
+        Assert Equals(l, 0)
+
+        let l = s:Lib.buf_byte_len([0, 1, 1, 0], [0, 2, 1, 0])
+        Assert Equals(l, 1)
+
+        let l = s:Lib.buf_byte_len([0, 1, 1, 0], [0, 3, 1, 0])
+        Assert Equals(l, 5)
+
+        %delete
+        call append(0, ['abc', '', 'ghi'])
+
+        let l = s:Lib.buf_byte_len([0, 1, 1, 0], [0, 2, 1, 0])
+        Assert Equals(l, 4)
+
+        let l = s:Lib.buf_byte_len([0, 1, 1, 0], [0, 3, 1, 0])
+        Assert Equals(l, 5)
+
+        %delete
+        call append(0, ['abc', 'def', ''])
+
+        let l = s:Lib.buf_byte_len([0, 1, 1, 0], [0, 3, 1, 0])
+        Assert Equals(l, 8)
+      End
+    End
+  End
+
+  Context autoload/swap/swap.vim
+    Before
+      let swap = s:scope.funcs('autoload/swap/swap.vim')
+      let parser = s:scope.funcs('autoload/swap/parser.vim')
+
+      let rule = {'delimiter': [',\s*']}
+      let buf = {}
+      let buf.all = parser.parse_charwise('dd, aa, bb, cc', rule)
+      let buf.items = filter(copy(buf.all), 'v:val.attr is# "item"')
+    End
+
+    Context s:sort()
+      It sorts the tokens
+        let newbuf = swap.sort(buf, [s:Lib.compare_ascend])
+        let newstr = swap.string(newbuf)
+        Assert Equals(newstr, 'aa, bb, cc, dd')
+
+        let newbuf = swap.sort(buf, [s:Lib.compare_descend])
+        let newstr = swap.string(newbuf)
+        Assert Equals(newstr, 'dd, cc, bb, aa')
+      End
+    End
+
+    Context s:get_rules()
+      It returns a list of rules depending on filetype & mode
+        let rules = [{'body': 'a,b', 'delimiter': ','}]
+        let got = swap.get_rules(rules, '', 'n')
+        Assert LengthOf(got, 1, 'failed at #1')
+
+        " Filter the rule which does not have neither 'body' nor 'surrounds'
+        let rules = [{'delimiter': ','}]
+        let got = swap.get_rules(rules, '', 'n')
+        Assert LengthOf(got, 0, 'failed at #2')
+
+        " Do not filter the rule which does not have neither 'body' nor 'surrounds'
+        let rules = [{'delimiter': ','}]
+        let got = swap.get_rules(rules, '', 'x')
+        Assert LengthOf(got, 1, 'failed at #3')
+
+        " test filetype filter
+        let rules = [
+        \   {'body': 'a,b', 'delimiter': ',', 'filetype': ['foo']},
+        \   {'body': 'c,d', 'delimiter': ',', 'filetype': ['foo']},
+        \   {'body': 'e,f', 'delimiter': ',', 'filetype': ['bar']},
+        \ ]
+        let got = swap.get_rules(rules, 'foo', 'n')
+        Assert LengthOf(got, 2, 'failed at #4')
+
+        " test mode filter
+        let rules = [
+        \   {'body': 'a,b', 'delimiter': ',', 'mode': 'n'},
+        \   {'body': 'c,d', 'delimiter': ',', 'mode': 'n'},
+        \   {'body': 'e,f', 'delimiter': ',', 'mode': 'x'},
+        \ ]
+        let got = swap.get_rules(rules, '', 'n')
+        Assert LengthOf(got, 2, 'failed at #5')
+
+        " test filters
+        let rules = [
+        \   {'body': 'a,b', 'delimiter': ',', 'filetype': ['foo'], 'mode': 'n'},
+        \   {'body': 'c,d', 'delimiter': ',', 'filetype': ['bar'], 'mode': 'n'},
+        \   {'body': 'e,f', 'delimiter': ',', 'filetype': ['foo'], 'mode': 'x'},
+        \ ]
+        let got = swap.get_rules(rules, 'foo', 'n')
+        Assert LengthOf(got, 1, 'failed at #6')
+
+        " Remove duplicates
+        let rules = [
+        \   {'body': 'a,b', 'delimiter': ','},
+        \   {'body': 'a,b', 'delimiter': ';'},
+        \   {'surrounds': ['c', 'd'], 'delimiter': ','},
+        \   {'surrounds': ['c', 'd'], 'delimiter': ';'},
+        \ ]
+        let got = swap.get_rules(rules, '', 'n')
+        Assert LengthOf(got, 2, 'failed at #7')
+      End
+    End
+  End
+End
+
+
+" integration test
+Describe [integration test]
+  Before each
+    %delete
+    set selection&
+    unlet! g:swap#rules
+  End
+
+  After
+    %delete
+    set selection&
+    unlet! g:swap#rules
+  End
+
+  Context normal mode
+    Context gs
+      It swaps tokens interactively
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgsl\<Esc>"
+        Assert Equals(getline('.'), '(bar, foo, baz)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1G6lgsl\<Esc>"
+        Assert Equals(getline('.'), '(foo, baz, bar)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1G11lgsl\<Esc>"
+        Assert Equals(getline('.'), '(foo, bar, baz)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgsh\<Esc>"
+        Assert Equals(getline('.'), '(foo, bar, baz)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1G6lgsh\<Esc>"
+        Assert Equals(getline('.'), '(bar, foo, baz)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1G11lgsh\<Esc>"
+        Assert Equals(getline('.'), '(foo, baz, bar)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgsjl\<Esc>"
+        Assert Equals(getline('.'), '(foo, baz, bar)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1G6lgsjl\<Esc>"
+        Assert Equals(getline('.'), '(foo, bar, baz)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1G11lgsjl\<Esc>"
+        Assert Equals(getline('.'), '(foo, bar, baz)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgskh\<Esc>"
+        Assert Equals(getline('.'), '(foo, bar, baz)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1G6lgskh\<Esc>"
+        Assert Equals(getline('.'), '(foo, bar, baz)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1G11lgskh\<Esc>"
+        Assert Equals(getline('.'), '(bar, foo, baz)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgsjkl\<Esc>"
+        Assert Equals(getline('.'), '(bar, foo, baz)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgskjl\<Esc>"
+        Assert Equals(getline('.'), '(foo, baz, bar)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1G11lgsjkh\<Esc>"
+        Assert Equals(getline('.'), '(bar, foo, baz)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1G11lgskjh\<Esc>"
+        Assert Equals(getline('.'), '(foo, baz, bar)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgs12\<Esc>"
+        Assert Equals(getline('.'), '(bar, foo, baz)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgs23\<Esc>"
+        Assert Equals(getline('.'), '(foo, baz, bar)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgs13\<Esc>"
+        Assert Equals(getline('.'), '(baz, bar, foo)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgs1223u\<Esc>"
+        Assert Equals(getline('.'), '(bar, foo, baz)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgs1223u\<C-r>\<Esc>"
+        Assert Equals(getline('.'), '(bar, baz, foo)')
+
+        " The case for changing the end position of region.
+        call append(0, ['(', 'f,', 'b,', 'baz)'])
+        execute "normal 2Ggsllh\<Esc>"
+        Assert Equals(getline(1), '(')
+        Assert Equals(getline(2), 'b,')
+        Assert Equals(getline(3), 'f,')
+        Assert Equals(getline(4), 'baz)')
+        %delete
+
+        call setline(1, '(dd, bb, cc, aa)')
+        execute "normal 1Glgss\<Esc>"
+        Assert Equals(getline('.'), '(aa, bb, cc, dd)', 'failed at #29')
+
+        call setline(1, '(dd, bb, cc, aa)')
+        execute "normal 1GlgsS\<Esc>"
+        Assert Equals(getline('.'), '(dd, cc, bb, aa)', 'failed at #30')
+
+        " sort
+        call setline(1, '(dd, bb, cc, aa)')
+        let saved = g:swap#mode#sortfunc
+        let g:swap#mode#sortfunc = [s:Lib.compare_descend]
+        execute "normal 1Glgss\<Esc>"
+        Assert Equals(getline('.'), '(dd, cc, bb, aa)', 'failed at #31')
+        let g:swap#mode#sortfunc = saved
+
+        " sort
+        call setline(1, '(dd, bb, cc, aa)')
+        let saved = g:swap#mode#SORTFUNC
+        let g:swap#mode#SORTFUNC = [s:Lib.compare_ascend]
+        execute "normal 1GlgsS\<Esc>"
+        Assert Equals(getline('.'), '(aa, bb, cc, dd)', 'failed at #32')
+        let g:swap#mode#SORTFUNC = saved
+
+        " sort
+        call setline(1, '(dd, bb, cc, aa)')
+        execute "normal 1Glgss12\<Esc>"
+        Assert Equals(getline('.'), '(bb, aa, cc, dd)', 'failed at #33')
+      End
+
+      It works well with various 'selection' option
+        set selection=inclusive
+        call setline(1, '(foo, bar, baz)')
+        execute "normal gglgsl\<Esc>"
+        Assert Equals(getline('.'), '(bar, foo, baz)')
+
+        set selection=exclusive
+        call setline(1, '(foo, bar, baz)')
+        execute "normal gglgsl\<Esc>"
+        Assert Equals(getline('.'), '(bar, foo, baz)')
+
+        set selection=old
+        call setline(1, '(foo, bar, baz)')
+        execute "normal gglgsl\<Esc>"
+        Assert Equals(getline('.'), '(bar, foo, baz)')
+      End
+    End
+
+    Context g>
+      It swaps the token under the cursor with the next
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glg>"
+        Assert Equals(getline('.'), '(bar, foo, baz)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1G6lg>"
+        Assert Equals(getline('.'), '(foo, baz, bar)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1G11lg>"
+        Assert Equals(getline('.'), '(foo, bar, baz)')
+      End
+
+      It works well with various 'selection' option
+        set selection=inclusive
+        call setline(1, '(foo, bar, baz)')
+        normal ggfbg>
+        Assert Equals(getline('.'), '(foo, baz, bar)')
+
+        set selection=exclusive
+        call setline(1, '(foo, bar, baz)')
+        normal ggfbg>
+        Assert Equals(getline('.'), '(foo, baz, bar)')
+
+        set selection=old
+        call setline(1, '(foo, bar, baz)')
+        normal ggfbg>
+        Assert Equals(getline('.'), '(foo, baz, bar)')
+      End
+    End
+
+    Context g<
+      It swaps the token under the cursor with the previous
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glg<"
+        Assert Equals(getline('.'), '(foo, bar, baz)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1G6lg<"
+        Assert Equals(getline('.'), '(bar, foo, baz)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1G11lg<"
+        Assert Equals(getline('.'), '(foo, baz, bar)')
+
+        call append(0, ['(', 'foo, bar, baz)'])
+        execute "normal 2G6lg<"
+        Assert Equals(getline('.'), 'bar, foo, baz)')
+        %delete
+      End
+
+      It works well with various 'selection' option
+        set selection=inclusive
+        call setline(1, '(foo, bar, baz)')
+        normal ggfbg<
+        Assert Equals(getline('.'), '(bar, foo, baz)', 'failed at #1')
+
+        set selection=exclusive
+        call setline(1, '(foo, bar, baz)')
+        normal ggfbg<
+        Assert Equals(getline('.'), '(bar, foo, baz)', 'failed at #1')
+
+        set selection=old
+        call setline(1, '(foo, bar, baz)')
+        normal ggfbg<
+        Assert Equals(getline('.'), '(bar, foo, baz)', 'failed at #2')
+      End
+    End
+  End
+
+  Context visual mode
+    Context gs
+      It swaps tokens interactively
+        call setline(1, 'foo, bar, baz')
+        execute "normal ggv$gsl\<Esc>"
+        Assert Equals(getline('.'), 'bar, foo, baz')
+
+        call append(0, ['foo', 'bar', 'baz'])
+        execute "normal ggV2jgsl\<Esc>"
+        Assert Equals(getline(1), 'bar')
+        Assert Equals(getline(2), 'foo')
+        Assert Equals(getline(3), 'baz')
+        %delete
+
+        call append(0, ['foo', 'bar', 'baz'])
+        execute "normal gg\<C-v>2jlgsl\<Esc>"
+        Assert Equals(getline(1), 'bao')
+        Assert Equals(getline(2), 'for')
+        Assert Equals(getline(3), 'baz')
+        %delete
+
+        call setline(1, 'dd, bb, cc, aa')
+        execute "normal ggv$gss\<Esc>"
+        Assert Equals(getline('.'), 'aa, bb, cc, dd')
+
+        call setline(1, 'dd, bb, cc, aa')
+        execute "normal ggv$gsS\<Esc>"
+        Assert Equals(getline('.'), 'dd, cc, bb, aa')
+      End
+    End
+  End
+
+  Context textobject-i
+    Before
+      function! s:test_textobj_i() abort
+        let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+        call setline(1, 'foo, bar, baz')
+        call cursor(1, 1)
+        call swap#textobj#select('i')
+        normal! ""y
+        Assert Equals(@@, 'foo')
+
+        let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+        call setline(1, 'foo, bar, baz')
+        call cursor(1, 6)
+        call swap#textobj#select('i')
+        normal! ""y
+        Assert Equals(@@, 'bar')
+
+        let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+        call setline(1, 'foo, bar, baz')
+        call cursor(1, 11)
+        call swap#textobj#select('i')
+        normal! ""y
+        Assert Equals(@@, 'baz')
+
+        let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+        call setline(1, 'foo, bar, baz')
+        call cursor(1, 4)
+        call swap#textobj#select('i')
+        normal! ""y
+        Assert Equals(@@, 'bar')
+
+        let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+        call setline(1, 'foo, bar, baz')
+        call cursor(1, 9)
+        call swap#textobj#select('i')
+        normal! ""y
+        Assert Equals(@@, 'baz')
+
+        let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+        call setline(1, 'foo, bar, baz')
+        call cursor(1, 1)
+        execute "normal! 2:\<C-u>call swap#textobj#select('i')\<CR>"
+        normal! ""y
+        Assert Equals(@@, 'foo, bar')
+
+        let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+        call setline(1, 'foo, bar, baz')
+        call cursor(1, 1)
+        execute "normal! 3:\<C-u>call swap#textobj#select('i')\<CR>"
+        normal! ""y
+        Assert Equals(@@, 'foo, bar, baz')
+
+        let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+        call setline(1, 'foo, bar, baz')
+        call cursor(1, 6)
+        execute "normal! 2:\<C-u>call swap#textobj#select('i')\<CR>"
+        normal! ""y
+        Assert Equals(@@, 'bar, baz')
+
+        let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', '], 'immutable': ['\s*"immutable\d\?"\s*']}]
+        call setline(1, 'foo, "immutable" bar, baz')
+        call cursor(1, 16)
+        call swap#textobj#select('i')
+        normal! ""y
+        Assert Equals(@@, 'bar')
+
+        let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', '], 'immutable': ['\s*"immutable\d\?"\s*']}]
+        call setline(1, 'foo, "immutable1" "immutable2" bar, baz')
+        call cursor(1, 32)
+        call swap#textobj#select('i')
+        normal! ""y
+        Assert Equals(@@, 'bar')
+
+        let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', '], 'immutable': ['\s*"immutable\d\?"\s*']}]
+        call setline(1, 'foo, "immutable1" "immutable2" bar, baz')
+        call cursor(1, 18)
+        call swap#textobj#select('i')
+        normal! ""y
+        Assert Equals(@@, 'bar')
+
+        let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+        call setline(1, ', foo, bar, baz')
+        call cursor(1, 1)
+        call swap#textobj#select('i')
+        normal! ""y
+        Assert Equals(@@, 'foo')
+
+        let g:swap#rules = [{'body': '^.\+$', 'delimiter': [', ']}]
+        call setline(1, 'foo, bar, baz, ')
+        call cursor(1, 11)
+        call swap#textobj#select('i')
+        normal! ""y
+        Assert Equals(@@, 'baz')
+
+        let g:swap#rules = [{'surrounds': ['(', ')'], 'delimiter': [', ']}]
+        call setline(1, '(((foo), bar), baz)')
+        call cursor(1, 4)
+        call swap#textobj#select('i')
+        normal! ""y
+        Assert Equals(@@, 'foo')
+      endfunction
+    End
+
+    It selects an token under the cursor
+      set selection=inclusive
+      call s:test_textobj_i()
+    End
+
+    It works well with &selection is# 'exclusive'
+      set selection=exclusive
+      call s:test_textobj_i()
+    End
+
+    It works well with &selection is# 'old'
+      set selection=old
+      call s:test_textobj_i()
+    End
+  End
+
+  Context textobject-a
+    Before
+      function! s:test_textobj_a() abort
+        let g:swap#rules = [
+        \   {'body': '^.\+$', 'delimiter': [', ']}
+        \ ]
+        call setline(1, 'foo, bar, baz')
+        call cursor(1, 1)
+        call swap#textobj#select('a')
+        normal! ""y
+        Assert Equals(@@, 'foo, ')
+
+        let g:swap#rules = [
+        \   {'body': '^.\+$', 'delimiter': [', ']}
+        \ ]
+        call setline(1, 'foo, bar, baz')
+        call cursor(1, 6)
+        call swap#textobj#select('a')
+        normal! ""y
+        Assert Equals(@@, ', bar')
+
+        let g:swap#rules = [
+        \   {'body': '^.\+$', 'delimiter': [', ']}
+        \ ]
+        call setline(1, 'foo, bar, baz')
+        call cursor(1, 11)
+        call swap#textobj#select('a')
+        normal! ""y
+        Assert Equals(@@, ', baz')
+
+        let g:swap#rules = [
+        \   {'body': '^.\+$', 'delimiter': [', ']}
+        \ ]
+        call setline(1, 'foo, bar, baz')
+        call cursor(1, 4)
+        call swap#textobj#select('a')
+        normal! ""y
+        Assert Equals(@@, ', bar')
+
+        let g:swap#rules = [
+        \   {'body': '^.\+$', 'delimiter': [', ']}
+        \ ]
+        call setline(1, 'foo, bar, baz')
+        call cursor(1, 9)
+        call swap#textobj#select('a')
+        normal! ""y
+        Assert Equals(@@, ', baz')
+
+        let g:swap#rules = [
+        \   {'body': '^.\+$', 'delimiter': [', ']}
+        \ ]
+        call setline(1, 'foo, bar, baz')
+        call cursor(1, 1)
+        execute "normal! 2:\<C-u>call swap#textobj#select('a')\<CR>"
+        normal! ""y
+        Assert Equals(@@, 'foo, bar, ')
+
+        let g:swap#rules = [
+        \   {'body': '^.\+$', 'delimiter': [', ']}
+        \ ]
+        call setline(1, 'foo, bar, baz')
+        call cursor(1, 1)
+        execute "normal! 3:\<C-u>call swap#textobj#select('a')\<CR>"
+        normal! ""y
+        Assert Equals(@@, 'foo, bar, baz')
+
+        let g:swap#rules = [
+        \   {'body': '^.\+$', 'delimiter': [', ']}
+        \ ]
+        call setline(1, 'foo, bar, baz')
+        call cursor(1, 6)
+        execute "normal! 2:\<C-u>call swap#textobj#select('a')\<CR>"
+        normal! ""y
+        Assert Equals(@@, ', bar, baz')
+
+        let g:swap#rules = [
+        \   {'body': '^.\+$', 'delimiter': [', '],
+        \    'immutable': ['\s*"immutable\d\?"\s*']}
+        \ ]
+        call setline(1, 'foo, "immutable" bar, baz')
+        call cursor(1, 16)
+        call swap#textobj#select('a')
+        normal! ""y
+        Assert Equals(@@, ', "immutable" bar')
+
+        let g:swap#rules = [
+        \   {'body': '^.\+$', 'delimiter': [', '],
+        \    'immutable': ['\s*"immutable\d\?"\s*']}
+        \ ]
+        call setline(1, 'foo, "immutable1" "immutable2" bar, baz')
+        call cursor(1, 32)
+        call swap#textobj#select('a')
+        normal! ""y
+        Assert Equals(@@, ', "immutable1" "immutable2" bar')
+
+        let g:swap#rules = [
+        \   {'body': '^.\+$', 'delimiter': [', '],
+        \    'immutable': ['\s*"immutable\d\?"\s*']}
+        \ ]
+        call setline(1, 'foo, "immutable1" "immutable2" bar, baz')
+        call cursor(1, 18)
+        call swap#textobj#select('a')
+        normal! ""y
+        Assert Equals(@@, ', "immutable1" "immutable2" bar')
+
+        let g:swap#rules = [
+        \   {'body': '^.\+$', 'delimiter': [', ']}
+        \ ]
+        call setline(1, ', foo, bar, baz')
+        call cursor(1, 1)
+        call swap#textobj#select('a')
+        normal! ""y
+        Assert Equals(@@, ', foo')
+
+        let g:swap#rules = [
+        \   {'body': '^.\+$', 'delimiter': [', ']}
+        \ ]
+        call setline(1, 'foo, bar, baz, ')
+        call cursor(1, 11)
+        call swap#textobj#select('a')
+        normal! ""y
+        Assert Equals(@@, ', baz')
+
+        let g:swap#rules = [
+        \   {'surrounds': ['(', ')'], 'delimiter': [', ']}
+        \ ]
+        call setline(1, '(((foo), bar), baz)')
+        call cursor(1, 4)
+        call swap#textobj#select('i')
+        normal! ""y
+        Assert Equals(@@, 'foo')
+      endfunction
+    End
+
+    It selects an token under the cursor with an adjacent delimiter
+      set selection=inclusive
+      call s:test_textobj_a()
+    End
+
+    It works well with &selection is# 'exclusive'
+      set selection=exclusive
+      call s:test_textobj_a()
+    End
+
+    It works well with &selection is# 'old'
+      set selection=old
+      call s:test_textobj_a()
+    End
+  End
+End
+
+
+" public API
+Describe [API]
+  Before each
+    %delete
+    unlet! g:swap#rules
+  End
+
+  After
+    %delete
+    unlet! g:swap#rules
+  End
+
+  Context swap#region
+    It swaps tokens in the assigned region
+      call setline(1, '(foo, bar, baz)')
+      let start = [0, 1, 2, 0]
+      let end = [0, 1, 14, 0]
+      let type = 'char'
+      call swap#region(start, end, type, [[1, 2]])
+      Assert Equals(getline('.'), '(bar, foo, baz)')
+
+      call setline(1, '(foo, bar, baz)')
+      call setpos("'a", [0, 1, 2, 0])
+      call setpos("'b", [0, 1, 14, 0])
+      call swap#region("'a", "'b", 'v', [[1, 2]])
+      Assert Equals(getline('.'), '(bar, foo, baz)')
+
+      call setline(1, '(foo, bar; baz)')
+      let start = [0, 1, 2, 0]
+      let end = [0, 1, 14, 0]
+      let type = 'char'
+      let g:swap#rules = [{
+      \     'description': 'Reorder the selected comma-delimited word in visual mode.',
+      \     'mode': 'x',
+      \     'delimiter': ['\s*,\s*'],
+      \   }]
+      let rules = [{
+      \     'description': 'Reorder the selected semicolon-delimited word in visual mode.',
+      \     'mode': 'x',
+      \     'delimiter': ['\s*;\s*'],
+      \   }]
+      call swap#region(start, end, type, [[1, 2]], rules)
+      Assert Equals(getline('.'), '(baz; foo, bar)')
+      unlet! g:swap#rules
+    End
+  End
+
+  Context swap#region_interactively
+    It swaps tokens in the assigned region interactively
+      call setline(1, '(foo, bar, baz)')
+      let start = [0, 1, 2, 0]
+      let end = [0, 1, 14, 0]
+      let type = 'char'
+      execute "normal! :\<C-u>call swap#region_interactively(start, end, type)\<CR>12\<Esc>"
+      Assert Equals(getline('.'), '(bar, foo, baz)')
+
+      call setline(1, '(foo, bar, baz)')
+      call setpos("'a", [0, 1, 2, 0])
+      call setpos("'b", [0, 1, 14, 0])
+      execute "normal! :\<C-u>call swap#region_interactively(\"'a\", \"'b\", 'v')\<CR>12\<Esc>"
+      Assert Equals(getline('.'), '(bar, foo, baz)')
+
+      call setline(1, '(foo, bar; baz)')
+      let start = [0, 1, 2, 0]
+      let end = [0, 1, 14, 0]
+      let type = 'char'
+      let g:swap#rules = [{
+      \     'description': 'Reorder the selected comma-delimited word in visual mode.',
+      \     'mode': 'x',
+      \     'delimiter': ['\s*,\s*'],
+      \   }]
+      let rules = [{
+      \     'description': 'Reorder the selected semicolon-delimited word in visual mode.',
+      \     'mode': 'x',
+      \     'delimiter': ['\s*;\s*'],
+      \   }]
+      execute "normal! :\<C-u>call swap#region_interactively(start, end, type, rules)\<CR>12\<Esc>"
+      Assert Equals(getline('.'), '(baz; foo, bar)')
+      unlet! g:swap#rules
+    End
+  End
+
+  Context swap#around_pos
+    It swaps tokens around the assigned region
+      call setline(1, '(foo, bar, baz)')
+      let pos = [0, 1, 2, 0]
+      call swap#around_pos(pos, [[1, 2]])
+      Assert Equals(getline('.'), '(bar, foo, baz)')
+
+      call setline(1, '(foo, bar, baz)')
+      call setpos("'a", [0, 1, 2, 0])
+      call swap#around_pos("'a", [[1, 2]])
+      Assert Equals(getline('.'), '(bar, foo, baz)')
+
+      call setline(1, '(foo, bar; baz)')
+      let pos = [0, 1, 2, 0]
+      let g:swap#rules = [{
+      \     'description': 'Reorder the selected comma-delimited word in visual mode.',
+      \     'mode': 'n',
+      \     'surrounds': ['(', ')'],
+      \     'delimiter': ['\s*,\s*'],
+      \   }]
+      let rules = [{
+      \     'description': 'Reorder the selected semicolon-delimited word in visual mode.',
+      \     'mode': 'n',
+      \     'surrounds': ['(', ')'],
+      \     'delimiter': ['\s*;\s*'],
+      \   }]
+      call swap#around_pos(pos, [[1, 2]], rules)
+      Assert Equals(getline('.'), '(baz; foo, bar)')
+      unlet! g:swap#rules
+    End
+  End
+
+  Context swap#around_pos_interactively
+    It swaps tokens around the assigned region interactively
+      call setline(1, '(foo, bar, baz)')
+      let pos = [0, 1, 2, 0]
+      execute "normal! :\<C-u>call swap#around_pos_interactively(pos)\<CR>12\<Esc>"
+      Assert Equals(getline('.'), '(bar, foo, baz)')
+
+      call setline(1, '(foo, bar, baz)')
+      call setpos("'a", [0, 1, 2, 0])
+      execute "normal! :\<C-u>call swap#around_pos_interactively(\"'a\")\<CR>12\<Esc>"
+      Assert Equals(getline('.'), '(bar, foo, baz)')
+
+      call setline(1, '(foo, bar; baz)')
+      let pos = [0, 1, 2, 0]
+      let g:swap#rules = [{
+      \     'description': 'Reorder the selected comma-delimited word in visual mode.',
+      \     'mode': 'n',
+      \     'surrounds': ['(', ')'],
+      \     'delimiter': ['\s*,\s*'],
+      \   }]
+      let rules = [{
+      \     'description': 'Reorder the selected semicolon-delimited word in visual mode.',
+      \     'mode': 'n',
+      \     'surrounds': ['(', ')'],
+      \     'delimiter': ['\s*;\s*'],
+      \   }]
+      execute "normal! :\<C-u>call swap#around_pos_interactively(pos, rules)\<CR>12\<Esc>"
+      Assert Equals(getline('.'), '(baz; foo, bar)')
+      unlet! g:swap#rules
+    End
+  End
+End
+
+
+" vim:set ts=2 sts=2 sw=2:
