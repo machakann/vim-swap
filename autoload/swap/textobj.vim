@@ -24,7 +24,8 @@ function! swap#textobj#select(type, ...) abort "{{{
   call setpos('.', first.head)
   normal! o
   call setpos('.', last.tail)
-  if &selection isnot# 'exclusive'
+  if &selection is# 'inclusive' ||
+  \ (&selection is# 'old' && last.tail[2] != col([last.tail[1], '$']))
     normal! h
   endif
 endfunction "}}}
