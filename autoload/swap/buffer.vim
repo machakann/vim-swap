@@ -12,7 +12,6 @@ let s:NULLREGION = s:Const.NULLREGION
 
 " Token object - represents an swappable token on the buffer {{{
 let s:Token = extend({
-\   'idx': -1,
 \   'attr': '',
 \   'str': '',
 \   'highlightid': [],
@@ -73,9 +72,8 @@ function! s:Token.clear_highlight() abort  "{{{
 endfunction "}}}
 
 
-function! s:Token(idx, attr, str) abort "{{{
+function! s:Token(attr, str) abort "{{{
   let token = deepcopy(s:Token)
-  let token.idx = a:idx
   let token.attr = a:attr
   let token.str = a:str
   return token
@@ -146,7 +144,6 @@ endfunction "}}}
 
 function! s:Buffer.update_tokens() abort "{{{
   call s:address_{self.type}wise(self)
-  call map(self.all, 'extend(v:val, {"idx": v:key})')
 endfunction "}}}
 
 
@@ -330,7 +327,7 @@ let s:Buffers = {}
 
 function! s:Buffers.Buffer(region, tokens) abort "{{{
   let buffer = deepcopy(s:Buffer)
-  let buffer.all = map(copy(a:tokens), 's:Token(v:key, v:val.attr, v:val.str)')
+  let buffer.all = map(copy(a:tokens), 's:Token(v:val.attr, v:val.str)')
   let buffer.items = filter(copy(buffer.all), 'v:val.attr is# "item"')
   call extend(buffer, deepcopy(a:region))
   return buffer

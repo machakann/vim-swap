@@ -9,6 +9,7 @@ function! swap#textobj#select(type, ...) abort "{{{
   let rules = get(a:000, 0, get(g:, 'swap#rules', g:swap#default_rules))
   let swap = swap#swap#new('n', [], rules)
   let [buffer, rule] = swap.search(getpos('.'), TEXTOBJ)
+  call map(buffer.all, 'extend(v:val, {"idx": v:key})')
   if empty(buffer) || empty(buffer.items)
     return
   endif
@@ -43,20 +44,20 @@ endfunction "}}}
 
 function! s:get_target_a(buffer, count) abort "{{{
   let [cursoritem, enditem] = s:get_target_i(a:buffer, a:count)
-  let conj_delimiter = s:get_preconjugate_delimiter(a:buffer, cursoritem)
-  if !empty(conj_delimiter)
-    return [conj_delimiter, enditem]
+  let adj_delimiter = s:get_preadjacent_delimiter(a:buffer, cursoritem)
+  if !empty(adj_delimiter)
+    return [adj_delimiter, enditem]
   endif
 
-  let conj_delimiter = s:get_postconjugate_delimiter(a:buffer, enditem)
-  if !empty(conj_delimiter)
-    return [cursoritem, conj_delimiter]
+  let adj_delimiter = s:get_postadjacent_delimiter(a:buffer, enditem)
+  if !empty(adj_delimiter)
+    return [cursoritem, adj_delimiter]
   endif
   return [cursoritem, enditem]
 endfunction "}}}
 
 
-function! s:get_preconjugate_delimiter(buffer, cursoritem) abort "{{{
+function! s:get_preadjacent_delimiter(buffer, cursoritem) abort "{{{
   if a:cursoritem.idx < 0
     return {}
   endif
@@ -72,7 +73,7 @@ function! s:get_preconjugate_delimiter(buffer, cursoritem) abort "{{{
 endfunction "}}}
 
 
-function! s:get_postconjugate_delimiter(buffer, enditem) abort "{{{
+function! s:get_postadjacent_delimiter(buffer, enditem) abort "{{{
   if a:enditem.idx < 0
     return {}
   endif
