@@ -328,10 +328,9 @@ endfunction "}}}
 let s:Buffers = {}
 
 
-function! s:Buffers.Buffer(region, parsedtokens) abort "{{{
+function! s:Buffers.Buffer(region, tokens) abort "{{{
   let buffer = deepcopy(s:Buffer)
-  let buffer.all = map(copy(a:parsedtokens),
-  \                    's:Token(v:key, v:val.attr, v:val.str)')
+  let buffer.all = map(copy(a:tokens), 's:Token(v:key, v:val.attr, v:val.str)')
   let buffer.items = filter(copy(buffer.all), 'v:val.attr is# "item"')
   call extend(buffer, deepcopy(a:region))
   return buffer

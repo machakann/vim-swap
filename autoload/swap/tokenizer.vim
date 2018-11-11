@@ -1,23 +1,23 @@
-" parser - parse a buffer text into swappable tokens
+" tokenizer - tokenize a buffer text into swappable tokens
 
 let s:Const = swap#constant#import()
 let s:Lib = swap#lib#import()
 let s:Buffers = swap#buffer#import()
 
 
-function! s:parse(region, rule, curpos) abort "{{{
-  " s:parse_{type}wise() functions return a list of dictionaries which have two keys at least, attr and str.
+function! s:tokenize(region, rule, curpos) abort "{{{
+  " s:tokenize_{type}wise() functions return a list of dictionaries which have two keys at least, attr and str.
   "   attr : 'item' or 'delimiter' or 'immutable'.
   "          'item' is a token reordered.
   "          'delimiter' is a token separating items.
   "          'immutable' is neither an 'item' nor a 'delimiter'. It is a string which should not be changed.
   "   str  : The value is the string as 'item' or 'delimiter' or 'immutable'.
   " For instance,
-  "   'foo,bar' is parsed to [{'attr': 'item', 'str': 'foo'}, {'attr': 'delimiter', 'str': ','}, {'attr': 'item': 'str': 'bar'}]
+  "   'foo,bar' is tokenized to [{'attr': 'item', 'str': 'foo'}, {'attr': 'delimiter', 'str': ','}, {'attr': 'item': 'str': 'bar'}]
   " In case that motionwise is# 'V' or "\<C-v>", delimiter string should be "\n".
   let text = s:get_buf_text(a:region)
-  let parsedtokens = s:parse_{a:region.type}wise(text, a:rule)
-  let buffer = s:Buffers.Buffer(a:region, parsedtokens)
+  let tokens = s:tokenize_{a:region.type}wise(text, a:rule)
+  let buffer = s:Buffers.Buffer(a:region, tokens)
   call buffer.update_tokens()
   call buffer.update_sharp(a:curpos)
   call buffer.update_hat()
@@ -26,7 +26,7 @@ function! s:parse(region, rule, curpos) abort "{{{
 endfunction "}}}
 
 
-function! s:parse_charwise(text, rule) abort  "{{{
+function! s:tokenize_charwise(text, rule) abort  "{{{
   let idx = 0
   let end = strlen(a:text)
   let head = 0
@@ -142,7 +142,7 @@ function! s:parse_charwise(text, rule) abort  "{{{
 endfunction "}}}
 
 
-function! s:parse_linewise(text, rule) abort  "{{{
+function! s:tokenize_linewise(text, rule) abort  "{{{
   let buffer = []
   for text in split(a:text, "\n", 1)[0:-2]
     call s:add_an_token(buffer, 'item', text)
@@ -152,7 +152,7 @@ function! s:parse_linewise(text, rule) abort  "{{{
 endfunction "}}}
 
 
-function! s:parse_blockwise(text, rule) abort  "{{{
+function! s:tokenize_blockwise(text, rule) abort  "{{{
   let buffer = []
   for text in split(a:text, "\n", 1)
     call s:add_an_token(buffer, 'item', text)
@@ -501,12 +501,12 @@ function! s:compare_idx(i1, i2) abort "{{{
 endfunction "}}}
 
 
-let s:Parser = {}
-let s:Parser.parse = function('s:parse')
+let s:Tokenizer = {}
+let s:Tokenizer.tokenize = function('s:tokenize')
 
 
-function! swap#parser#import() abort "{{{
-  return s:Parser
+function! swap#tokenizer#import() abort "{{{
+  return s:Tokenizer
 endfunction "}}}
 
 
