@@ -304,9 +304,7 @@ function! s:Swapmode.clear_highlight(buffer) abort  "{{{
   endif
 
   for item in a:buffer.items
-    if item.highlightid != []
-      call item.clear_highlight()
-    endif
+    call item.clear_highlight()
   endfor
 endfunction "}}}
 

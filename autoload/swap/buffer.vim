@@ -14,7 +14,7 @@ let s:NULLREGION = s:Const.NULLREGION
 let s:Token = extend({
 \   'attr': '',
 \   'str': '',
-\   'highlightid': [],
+\   '_highlightid': [],
 \   'including': [],
 \ }, deepcopy(s:NULLREGION))
 function! s:Token.cursor(...) abort "{{{
@@ -62,13 +62,16 @@ function! s:Token.highlight(group) abort "{{{
   endif
 
   for order in order_list
-    let self.highlightid += s:matchaddpos(a:group, order)
+    let self._highlightid += s:matchaddpos(a:group, order)
   endfor
 endfunction "}}}
 
 
 function! s:Token.clear_highlight() abort  "{{{
-  call filter(map(self.highlightid, 's:matchdelete(v:val)'), 'v:val > 0')
+  if empty(self._highlightid)
+    return
+  endif
+  call filter(map(self._highlightid, 's:matchdelete(v:val)'), 'v:val > 0')
 endfunction "}}}
 
 
