@@ -169,7 +169,7 @@ function! s:Swap._swap_once(buffer, input, undojoin) abort "{{{
   " update buffer information
   let newbuffer.head = getpos("'[")
   let newbuffer.tail = getpos("']")
-  call newbuffer.update_items()
+  call newbuffer.update_tokens()
   call newbuffer.get_item(input[1], s:TRUE).cursor()
   call newbuffer.update_sharp(getpos('.'))
   call newbuffer.update_hat()
@@ -189,7 +189,7 @@ function! s:Swap._restore_buffer(input, undojoin) abort "{{{
   " update buffer information
   let newbuffer.head = getpos("'[")
   let newbuffer.tail = getpos("']")
-  call newbuffer.update_items()
+  call newbuffer.update_tokens()
   call newbuffer.get_item(a:input[2], s:TRUE).cursor()
   call newbuffer.update_sharp(getpos('.'))
   call newbuffer.update_hat()
@@ -211,7 +211,7 @@ function! s:Swap._sort_items(buffer, input, undojoin) abort "{{{
   " update buffer information
   let newbuffer.head = getpos("'[")
   let newbuffer.tail = getpos("']")
-  call newbuffer.update_items()
+  call newbuffer.update_tokens()
   let pos = newbuffer.update_sharp(curpos)
   call newbuffer.get_item(pos, s:TRUE).cursor()
   call newbuffer.update_hat()
@@ -511,13 +511,13 @@ function! s:swap(buffer, input) abort "{{{
   call insert(itemindexes, idx1, idx2)
 
   let newbuffer = s:new_empty_buffer(a:buffer)
-  for item in a:buffer.all
-    if item.attr is# 'item'
+  for token in a:buffer.all
+    if token.attr is# 'item'
       let i = remove(itemindexes, 0)
-      let item = a:buffer.items[i]
-      call add(newbuffer.items, item)
+      let token = a:buffer.items[i]
+      call add(newbuffer.items, token)
     endif
-    call add(newbuffer.all, item)
+    call add(newbuffer.all, token)
   endfor
   return newbuffer
 endfunction "}}}
@@ -535,12 +535,12 @@ function! s:sort(buffer, args) abort "{{{
   endif
 
   let newbuffer = s:new_empty_buffer(a:buffer)
-  for item in a:buffer.all
-    if item.attr is# 'item'
-      let item = remove(sorted_items, 0)
-      call add(newbuffer.items, item)
+  for token in a:buffer.all
+    if token.attr is# 'item'
+      let token = remove(sorted_items, 0)
+      call add(newbuffer.items, token)
     endif
-    call add(newbuffer.all, item)
+    call add(newbuffer.all, token)
   endfor
   return newbuffer
 endfunction "}}}

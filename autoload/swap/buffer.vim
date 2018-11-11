@@ -1,4 +1,4 @@
-" Buffer - represents a region of the buffer swappped as delimited items
+" Buffer - represents a region of the buffer swappped as delimited tokens
 
 let s:Const = swap#constant#import()
 let s:Lib = swap#lib#import()
@@ -10,14 +10,15 @@ let s:TYPESTR = s:Const.TYPESTR
 let s:NULLREGION = s:Const.NULLREGION
 
 
-" Item object - represents an swappable item on the buffer {{{
-let s:Item = extend({
+" Token object - represents an swappable token on the buffer {{{
+let s:Token = extend({
 \   'idx': -1,
 \   'attr': '',
 \   'str': '',
 \   'highlightid': [],
+\   'including': [],
 \ }, deepcopy(s:NULLREGION))
-function! s:Item.cursor(...) abort "{{{
+function! s:Token.cursor(...) abort "{{{
   let to_tail = get(a:000, 0, 0)
   if to_tail
     call setpos('.', self.tail)
@@ -27,7 +28,7 @@ function! s:Item.cursor(...) abort "{{{
 endfunction "}}}
 
 
-function! s:Item.highlight(group) abort "{{{
+function! s:Token.highlight(group) abort "{{{
   if self.len <= 0
     return
   endif
@@ -67,17 +68,17 @@ function! s:Item.highlight(group) abort "{{{
 endfunction "}}}
 
 
-function! s:Item.clear_highlight() abort  "{{{
+function! s:Token.clear_highlight() abort  "{{{
   call filter(map(self.highlightid, 's:matchdelete(v:val)'), 'v:val > 0')
 endfunction "}}}
 
 
-function! s:Item(idx, attr, str) abort "{{{
-  let item = deepcopy(s:Item)
-  let item.idx = a:idx
-  let item.attr = a:attr
-  let item.str = a:str
-  return item
+function! s:Token(idx, attr, str) abort "{{{
+  let token = deepcopy(s:Token)
+  let token.idx = a:idx
+  let token.attr = a:attr
+  let token.str = a:str
+  return token
 endfunction "}}}
 
 
@@ -143,7 +144,7 @@ function! s:Buffer.selectable() abort  "{{{
 endfunction "}}}
 
 
-function! s:Buffer.update_items() abort "{{{
+function! s:Buffer.update_tokens() abort "{{{
   call s:address_{self.type}wise(self)
   call map(self.all, 'extend(v:val, {"idx": v:key})')
 endfunction "}}}
@@ -250,20 +251,20 @@ endfunction "}}}
 
 function! s:address_charwise(buffer) abort  "{{{
   let pos = copy(a:buffer.head)
-  for item in a:buffer.all
-    if stridx(item.str, "\n") < 0
-      let len = strlen(item.str)
-      let item.len  = len
-      let item.head = copy(pos)
+  for token in a:buffer.all
+    if stridx(token.str, "\n") < 0
+      let len = strlen(token.str)
+      let token.len  = len
+      let token.head = copy(pos)
       let pos[2] += len
-      let item.tail = copy(pos)
+      let token.tail = copy(pos)
     else
-      let lines = split(item.str, '\n\zs', 1)
-      let item.len  = strlen(item.str)
-      let item.head = copy(pos)
+      let lines = split(token.str, '\n\zs', 1)
+      let token.len  = strlen(token.str)
+      let token.head = copy(pos)
       let pos[1] += len(lines) - 1
       let pos[2] = strlen(lines[-1]) + 1
-      let item.tail = copy(pos)
+      let token.tail = copy(pos)
     endif
   endfor
   return a:buffer
@@ -272,16 +273,16 @@ endfunction "}}}
 
 function! s:address_linewise(buffer) abort  "{{{
   let lnum = a:buffer.head[1]
-  for item in a:buffer.all
-    if item.attr is# 'item'
-      let len = strlen(item.str)
-      let item.len  = len
-      let item.head = [0, lnum, 1, 0]
-      let item.tail = [0, lnum, len+1, 0]
-    elseif item.attr is# 'delimiter'
-      let item.len = 1
-      let item.head = [0, lnum, col([lnum, '$']), 0]
-      let item.tail = [0, lnum+1, 1, 0]
+  for token in a:buffer.all
+    if token.attr is# 'item'
+      let len = strlen(token.str)
+      let token.len  = len
+      let token.head = [0, lnum, 1, 0]
+      let token.tail = [0, lnum, len+1, 0]
+    elseif token.attr is# 'delimiter'
+      let token.len = 1
+      let token.head = [0, lnum, col([lnum, '$']), 0]
+      let token.tail = [0, lnum+1, 1, 0]
       let lnum += 1
     endif
   endfor
@@ -293,17 +294,17 @@ function! s:address_blockwise(buffer) abort  "{{{
   let view = winsaveview()
   let lnum = a:buffer.head[1]
   let virtcol = a:buffer.head[2]
-  for item in a:buffer.all
-    if item.attr is# 'item'
+  for token in a:buffer.all
+    if token.attr is# 'item'
       let col = s:Lib.virtcol2col(lnum, virtcol)
-      let len = strlen(item.str)
-      let item.len  = len
-      let item.head = [0, lnum, col, 0]
-      let item.tail = [0, lnum, col+len, 0]
-    elseif item.attr is# 'delimiter'
-      let item.len = 0
-      let item.head = [0, lnum, col+len, 0]
-      let item.tail = [0, lnum, col+len, 0]
+      let len = strlen(token.str)
+      let token.len  = len
+      let token.head = [0, lnum, col, 0]
+      let token.tail = [0, lnum, col+len, 0]
+    elseif token.attr is# 'delimiter'
+      let token.len = 0
+      let token.head = [0, lnum, col+len, 0]
+      let token.tail = [0, lnum, col+len, 0]
       let lnum += 1
     endif
   endfor
@@ -327,10 +328,10 @@ endfunction "}}}
 let s:Buffers = {}
 
 
-function! s:Buffers.Buffer(region, parseditems) abort "{{{
+function! s:Buffers.Buffer(region, parsedtokens) abort "{{{
   let buffer = deepcopy(s:Buffer)
-  let buffer.all = map(copy(a:parseditems),
-  \                    's:Item(v:key, v:val.attr, v:val.str)')
+  let buffer.all = map(copy(a:parsedtokens),
+  \                    's:Token(v:key, v:val.attr, v:val.str)')
   let buffer.items = filter(copy(buffer.all), 'v:val.attr is# "item"')
   call extend(buffer, deepcopy(a:region))
   return buffer
