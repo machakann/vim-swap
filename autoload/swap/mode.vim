@@ -35,7 +35,6 @@ let s:Swapmode = {
 \   'pos': {
 \     'current': 0,
 \     'end': 0,
-\     'last_current': 0,
 \     'selected': 0,
 \   },
 \   'history': [],
@@ -53,7 +52,6 @@ function! s:Swapmode.get_input(buffer) abort "{{{
   let input = ['', '']
   let key_map = deepcopy(get(g:, 'swap#keymappings', g:swap#default_keymappings))
   let self.pos.current = 0
-  let self.pos.last_current = 0
   let self.pos.selected = 0
   let self.pos.end = len(a:buffer.items)
 
@@ -191,7 +189,6 @@ function! s:Swapmode.revise_cursor_pos(buffer) abort  "{{{
 
   let head = a:buffer.head
   let tail = a:buffer.tail
-  let self.pos.last_current = self.pos.current
   if s:Lib.in_order_of(curpos, head)
     let self.pos.current = 0
   elseif curpos == tail || s:Lib.in_order_of(tail, curpos)
@@ -263,7 +260,6 @@ function! s:Swapmode.set_current(pos, buffer) abort "{{{
     call winrestview({})
   endif
 
-  let self.pos.last_current = self.pos.current
   let self.pos.current = a:pos
 endfunction "}}}
 
