@@ -314,23 +314,25 @@ function! s:Swapmode.update_highlight(buffer) abort  "{{{
     return
   endif
 
-  let last_current = a:buffer.get_item(self.pos.last_current)
-  if !empty(last_current)
-    call last_current.clear_highlight()
-    call last_current.highlight('SwapItem')
-  endif
-
-  let selected = a:buffer.get_item(self.pos.selected)
-  if !empty(selected)
-    call selected.clear_highlight()
-    call selected.highlight('SwapSelectedItem')
-  endif
-
-  let current = a:buffer.get_item(self.pos.current)
-  if !empty(current)
-    call current.clear_highlight()
-    call current.highlight('SwapCurrentItem')
-  endif
+  for [i, item] in s:Lib.enumerate(a:buffer.items)
+    let pos = i + 1
+    if pos == self.pos.current
+      if item.higroup isnot# 'SwapCurrentItem'
+        call item.clear_highlight()
+        call item.highlight('SwapCurrentItem')
+      endif
+    elseif pos == self.pos.selected
+      if item.higroup isnot# 'SwapSelectedItem'
+        call item.clear_highlight()
+        call item.highlight('SwapSelectedItem')
+      endif
+    else
+      if item.higroup isnot# 'SwapItem'
+        call item.clear_highlight()
+        call item.highlight('SwapItem')
+      endif
+    endif
+  endfor
 endfunction "}}}
 
 

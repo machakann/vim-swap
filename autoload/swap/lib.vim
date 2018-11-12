@@ -135,6 +135,11 @@ function! s:get_right_pos(pos, ...) abort  "{{{
 endfunction "}}}
 
 
+function! s:enumerate(list) abort "{{{
+  return map(copy(a:list), '[v:key, v:val]')
+endfunction "}}}
+
+
 unlet! s:Lib
 let s:Lib = {}
 let s:Lib.get_buf_length = function('s:get_buf_length')
@@ -152,6 +157,7 @@ let s:Lib.type2v = function('s:type2v')
 let s:Lib.v2type = function('s:v2type')
 let s:Lib.get_left_pos = function('s:get_left_pos')
 let s:Lib.get_right_pos = function('s:get_right_pos')
+let s:Lib.enumerate = function('s:enumerate')
 lockvar! s:Lib
 
 
