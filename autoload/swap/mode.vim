@@ -13,7 +13,7 @@ let s:TYPESTR = s:Const.TYPESTR
 let s:FIRST = 0       " in the first target determination
 let s:SECOND = 1      " in the second target determination
 let s:DONE = 2        " Both the targets have been determined
-let s:CANCELLED = 3   " cancelled by Esc
+let s:EXIT = 3        " cancelled by Esc
 
 " patches
 if v:version > 704 || (v:version == 704 && has('patch237'))
@@ -72,7 +72,7 @@ function! s:Swapmode.get_input(buffer) abort "{{{
     echo ''
   endtry
 
-  if phase is# s:CANCELLED
+  if phase is# s:EXIT
     return []
   endif
 
@@ -748,7 +748,7 @@ endfunction "}}}
 
 function! s:Swapmode.key_Esc(phase, input, buffer) abort  "{{{
   call self.echo(a:phase, a:input)
-  let phase = s:CANCELLED
+  let phase = s:EXIT
   return [phase, a:input]
 endfunction "}}}
 
