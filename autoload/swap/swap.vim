@@ -125,13 +125,7 @@ function! s:Swap._swap_interactive(buffer) abort "{{{
   while s:TRUE
     let input = swapmode.get_input(buffer)
     if input == [] | break | endif
-    if input[0] is# 'undo'
-      let [buffer, undojoin] = self._restore_buffer(input, undojoin)
-    elseif input[0] is# 'sort'
-      let [buffer, undojoin] = self._sort_items(buffer, input, undojoin)
-    else
-      let [buffer, undojoin] = self._swap_once(buffer, input, undojoin)
-    endif
+    let [buffer, undojoin] = self._process(buffer, input, undojoin)
   endwhile
   return swapmode.export_history()
 endfunction "}}}
@@ -145,13 +139,25 @@ function! s:Swap._swap_sequential(buffer) abort  "{{{
   let buffer = a:buffer
   let undojoin = s:FALSE
   for input in self.input_list
-    if input[0] is# 'sort'
-      let [buffer, undojoin] = self._sort_items(buffer, input, undojoin)
-    else
-      let [buffer, undojoin] = self._swap_once(buffer, input, undojoin)
-    endif
+    let [buffer, undojoin] = self._process(buffer, input, undojoin)
   endfor
   return self.input_list
+endfunction "}}}
+
+
+function! s:Swap._process(buffer, input, undojoin) abort "{{{
+  if a:input[0] is# 'undo'
+    return self._restore_buffer(a:input, a:undojoin)
+  elseif a:input[0] is# 'sort'
+    return self._sort_items(a:buffer, a:input, a:undojoin)
+  elseif a:input[0] is# 'group'
+    return self._group(a:buffer, a:input, a:undojoin)
+  elseif a:input[0] is# 'ungroup'
+    return self._ungroup(a:buffer, a:input, a:undojoin)
+  elseif a:input[0] is# 'breakup'
+    return self._breakup(a:buffer, a:input, a:undojoin)
+  endif
+  return self._swap_once(a:buffer, a:input, a:undojoin)
 endfunction "}}}
 
 
@@ -173,6 +179,7 @@ function! s:Swap._swap_once(buffer, input, undojoin) abort "{{{
   call newbuffer.get_item(input[1], s:TRUE).cursor()
   call newbuffer.update_sharp(getpos('.'))
   call newbuffer.update_hat()
+  call newbuffer.update_dollar()
   return [newbuffer, s:TRUE]
 endfunction "}}}
 
@@ -216,6 +223,40 @@ function! s:Swap._sort_items(buffer, input, undojoin) abort "{{{
   call newbuffer.get_item(pos, s:TRUE).cursor()
   call newbuffer.update_hat()
   return [newbuffer, s:TRUE]
+endfunction "}}}
+
+
+function! s:Swap._group(buffer, input, undojoin) abort "{{{
+  if a:input[0] isnot# 'group'
+    echoerr 'vim-swap: Invalid arguments for swap._group()'
+  endif
+
+  let start = a:input[1]
+  let end = a:input[2]
+  call a:buffer.group(start, end)
+  return [a:buffer, a:undojoin]
+endfunction "}}}
+
+
+function! s:Swap._ungroup(buffer, input, undojoin) abort "{{{
+  if a:input[0] isnot# 'ungroup'
+    echoerr 'vim-swap: Invalid arguments for swap._ungroup()'
+  endif
+
+  let pos = a:input[1]
+  call a:buffer.ungroup(pos)
+  return [a:buffer, a:undojoin]
+endfunction "}}}
+
+
+function! s:Swap._breakup(buffer, input, undojoin) abort "{{{
+  if a:input[0] isnot# 'breakup'
+    echoerr 'vim-swap: Invalid arguments for swap._breakup()'
+  endif
+
+  let pos = a:input[1]
+  call a:buffer.breakup(pos)
+  return [a:buffer, a:undojoin]
 endfunction "}}}
 
 
@@ -501,6 +542,20 @@ function! s:new_empty_buffer(buffer) abort "{{{
 endfunction "}}}
 
 
+" This function returns a shallow copy of a:items with ungrouping
+function! s:ungrouped_copy(items) abort "{{{
+  let ungrouped_list = []
+  for item in a:items
+    if item.attr is# 'itemgroup'
+      call extend(ungrouped_list, item.flatten())
+    else
+      call add(ungrouped_list, item)
+    endif
+  endfor
+  return ungrouped_list
+endfunction "}}}
+
+
 function! s:swap(buffer, input) abort "{{{
   let itemindexes = range(len(a:buffer.items))
   let idx1 = a:input[0] - 1
@@ -511,13 +566,19 @@ function! s:swap(buffer, input) abort "{{{
   call insert(itemindexes, idx1, idx2)
 
   let newbuffer = s:new_empty_buffer(a:buffer)
+  " Fill items into newbuffer.items without ungrouping
+  for i in itemindexes
+    let token = a:buffer.items[i]
+    call add(newbuffer.items, token)
+  endfor
+  " Fill swapped items into newbuffer.all with ungrouping
+  let ungrouped_list = s:ungrouped_copy(newbuffer.items)
   for token in a:buffer.all
     if token.attr is# 'item'
-      let i = remove(itemindexes, 0)
-      let token = a:buffer.items[i]
-      call add(newbuffer.items, token)
+      call add(newbuffer.all, remove(ungrouped_list, 0))
+    else
+      call add(newbuffer.all, token)
     endif
-    call add(newbuffer.all, token)
   endfor
   return newbuffer
 endfunction "}}}
@@ -535,12 +596,18 @@ function! s:sort(buffer, args) abort "{{{
   endif
 
   let newbuffer = s:new_empty_buffer(a:buffer)
+  " Fill items into newbuffer.items without ungrouping
+  for item in sorted_items
+    call add(newbuffer.items, item)
+  endfor
+  " Fill swapped items into newbuffer.all with ungrouping
+  let ungrouped_list = s:ungrouped_copy(newbuffer.items)
   for token in a:buffer.all
     if token.attr is# 'item'
-      let token = remove(sorted_items, 0)
-      call add(newbuffer.items, token)
+      call add(newbuffer.all, remove(ungrouped_list, 0))
+    else
+      call add(newbuffer.all, token)
     endif
-    call add(newbuffer.all, token)
   endfor
   return newbuffer
 endfunction "}}}
