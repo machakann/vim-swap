@@ -656,11 +656,45 @@ Describe [integration test]
     %delete
     set selection&
     unlet! g:swap#rules
+    unlet! g:swap#keymappings
   End
 
 
   Context normal mode
     Context gs
+      Before
+        let g:swap#keymappings = [
+        \   {'input': '1', 'output': ['1', 'fix_nr']},
+        \   {'input': '2', 'output': ['2', 'fix_nr']},
+        \   {'input': '3', 'output': ['3', 'fix_nr']},
+        \   {'input': '4', 'output': ['4', 'fix_nr']},
+        \   {'input': '5', 'output': ['5', 'fix_nr']},
+        \   {'input': '6', 'output': ['6', 'fix_nr']},
+        \   {'input': '7', 'output': ['7', 'fix_nr']},
+        \   {'input': '8', 'output': ['8', 'fix_nr']},
+        \   {'input': '9', 'output': ['9', 'fix_nr']},
+        \   {'input': "\<CR>",  'output': ['CR']},
+        \   {'input': "\<BS>",  'output': ['BS']},
+        \   {'input': "\<C-h>", 'output': ['BS']},
+        \   {'input': 'u',      'output': ['undo']},
+        \   {'input': "\<C-r>", 'output': ['redo']},
+        \   {'input': 'h', 'output': ['swap_prev']},
+        \   {'input': 'l', 'output': ['swap_next']},
+        \   {'input': 'k', 'output': ['move_prev']},
+        \   {'input': 'j', 'output': ['move_next']},
+        \   {'input': 's', 'output': ['sort']},
+        \   {'input': 'S', 'output': ['SORT']},
+        \   {'input': 'g', 'output': ['group']},
+        \   {'input': 'G', 'output': ['ungroup']},
+        \   {'input': "\<C-g>", 'output': ['breakup']},
+        \   {'input': "\<Left>",  'output': ['swap_prev']},
+        \   {'input': "\<Right>", 'output': ['swap_next']},
+        \   {'input': "\<Up>",    'output': ['move_prev']},
+        \   {'input': "\<Down>",  'output': ['move_next']},
+        \   {'input': "\<Esc>", 'output': ['Esc']},
+        \ ]
+      End
+
       It swaps tokens interactively
         call setline(1, '(foo, bar, baz)')
         execute "normal 1Glgsl\<Esc>"
@@ -783,6 +817,31 @@ Describe [integration test]
         call setline(1, '(dd, bb, cc, aa)')
         execute "normal 1Glgss12\<Esc>"
         Assert Equals(getline('.'), '(bb, aa, cc, dd)')
+
+        " grouping
+        call setline(1, '(foo, bar, baz, qux)')
+        execute "normal 1Glgsgl\<Esc>"
+        Assert Equals(getline('.'), '(baz, foo, bar, qux)')
+
+        " grouping at the edge
+        call setline(1, '(foo, bar, baz, qux)')
+        execute "normal 1Glgsjjggh\<Esc>"
+        Assert Equals(getline('.'), '(foo, baz, qux, bar)')
+
+        " ungrouping
+        call setline(1, '(foo, bar, baz, qux)')
+        execute "normal 1GlgsglGl\<Esc>"
+        Assert Equals(getline('.'), '(baz, bar, foo, qux)')
+
+        " grouping grouped items
+        call setline(1, '(foo, bar, baz, qux, quux)')
+        execute "normal 1Glgsgjgkgl\<Esc>"
+        Assert Equals(getline('.'), '(quux, foo, bar, baz, qux)')
+
+        " breaking up (This is not in the default key-mappings)
+        call setline(1, '(foo, bar, baz, qux, quux)')
+        execute "normal 1Glgsgjgkg\<C-g>l\<Esc>"
+        Assert Equals(getline('.'), '(bar, foo, baz, qux, quux)')
       End
 
       It works well with various 'selection' option
@@ -877,6 +936,39 @@ Describe [integration test]
 
   Context visual mode
     Context gs
+      Before
+        let g:swap#keymappings = [
+        \   {'input': '1', 'output': ['1', 'fix_nr']},
+        \   {'input': '2', 'output': ['2', 'fix_nr']},
+        \   {'input': '3', 'output': ['3', 'fix_nr']},
+        \   {'input': '4', 'output': ['4', 'fix_nr']},
+        \   {'input': '5', 'output': ['5', 'fix_nr']},
+        \   {'input': '6', 'output': ['6', 'fix_nr']},
+        \   {'input': '7', 'output': ['7', 'fix_nr']},
+        \   {'input': '8', 'output': ['8', 'fix_nr']},
+        \   {'input': '9', 'output': ['9', 'fix_nr']},
+        \   {'input': "\<CR>",  'output': ['CR']},
+        \   {'input': "\<BS>",  'output': ['BS']},
+        \   {'input': "\<C-h>", 'output': ['BS']},
+        \   {'input': 'u',      'output': ['undo']},
+        \   {'input': "\<C-r>", 'output': ['redo']},
+        \   {'input': 'h', 'output': ['swap_prev']},
+        \   {'input': 'l', 'output': ['swap_next']},
+        \   {'input': 'k', 'output': ['move_prev']},
+        \   {'input': 'j', 'output': ['move_next']},
+        \   {'input': 's', 'output': ['sort']},
+        \   {'input': 'S', 'output': ['SORT']},
+        \   {'input': 'g', 'output': ['group']},
+        \   {'input': 'G', 'output': ['ungroup']},
+        \   {'input': "\<C-g>", 'output': ['breakup']},
+        \   {'input': "\<Left>",  'output': ['swap_prev']},
+        \   {'input': "\<Right>", 'output': ['swap_next']},
+        \   {'input': "\<Up>",    'output': ['move_prev']},
+        \   {'input': "\<Down>",  'output': ['move_next']},
+        \   {'input': "\<Esc>", 'output': ['Esc']},
+        \ ]
+      End
+
       It swaps tokens interactively
         call setline(1, 'foo, bar, baz')
         execute "normal ggv$gsl\<Esc>"
@@ -903,6 +995,31 @@ Describe [integration test]
         call setline(1, 'dd, bb, cc, aa')
         execute "normal ggv$gsS\<Esc>"
         Assert Equals(getline('.'), 'dd, cc, bb, aa')
+
+        " grouping
+        call setline(1, 'foo, bar, baz, qux')
+        execute "normal 1Gv$gsgl\<Esc>"
+        Assert Equals(getline('.'), 'baz, foo, bar, qux')
+
+        " grouping at the edge
+        call setline(1, 'foo, bar, baz, qux')
+        execute "normal 1Gv$gsjjggh\<Esc>"
+        Assert Equals(getline('.'), 'foo, baz, qux, bar')
+
+        " ungrouping
+        call setline(1, 'foo, bar, baz, qux')
+        execute "normal 1Gv$gsglGl\<Esc>"
+        Assert Equals(getline('.'), 'baz, bar, foo, qux')
+
+        " grouping grouped items
+        call setline(1, 'foo, bar, baz, qux, quux')
+        execute "normal 1Gv$gsgjgkgl\<Esc>"
+        Assert Equals(getline('.'), 'quux, foo, bar, baz, qux')
+
+        " breaking up (This is not in the default key-mappings)
+        call setline(1, 'foo, bar, baz, qux, quux')
+        execute "normal 1Gv$gsgjgkg\<C-g>l\<Esc>"
+        Assert Equals(getline('.'), 'bar, foo, baz, qux, quux')
       End
     End
   End
@@ -1231,6 +1348,31 @@ Describe [API]
       let type = 'char'
       call swap#region(start, end, type, [['sort', s:Lib.compare_ascend]])
       Assert Equals(getline('.'), '(aa, bb, cc, dd)')
+
+      " grouping
+      call setline(1, '(foo, bar, baz, qux)')
+      let start = [0, 1, 2, 0]
+      let end = [0, 1, 19, 0]
+      let type = 'char'
+      call swap#region(start, end, type, [['group', 1, 2], [1, 2]])
+      Assert Equals(getline('.'), '(baz, foo, bar, qux)')
+
+      " ungrouping
+      call setline(1, '(foo, bar, baz, qux)')
+      let start = [0, 1, 2, 0]
+      let end = [0, 1, 19, 0]
+      let type = 'char'
+      call swap#region(start, end, type, [['group', 1, 2], ['ungroup', 1], [1, 2]])
+      Assert Equals(getline('.'), '(bar, foo, baz, qux)')
+
+      " breaking up
+      call setline(1, '(foo, bar, baz, qux, quux)')
+      let start = [0, 1, 2, 0]
+      let end = [0, 1, 25, 0]
+      let type = 'char'
+      call swap#region(start, end, type,
+      \ [['group', 1, 2], ['group', 2, 3], ['group', 1, 2], ['breakup', 1], [1, 2]])
+      Assert Equals(getline('.'), '(bar, foo, baz, qux, quux)')
     End
   End
 
@@ -1304,6 +1446,25 @@ Describe [API]
       let pos = [0, 1, 2, 0]
       call swap#around_pos(pos, [['sort', s:Lib.compare_ascend]])
       Assert Equals(getline('.'), '(aa, bb, cc, dd)')
+
+      " grouping
+      call setline(1, '(foo, bar, baz, qux)')
+      let pos = [0, 1, 2, 0]
+      call swap#around_pos(pos, [['group', 1, 2], [1, 2]])
+      Assert Equals(getline('.'), '(baz, foo, bar, qux)')
+
+      " ungrouping
+      call setline(1, '(foo, bar, baz, qux)')
+      let pos = [0, 1, 2, 0]
+      call swap#around_pos(pos, [['group', 1, 2], ['ungroup', 1], [1, 2]])
+      Assert Equals(getline('.'), '(bar, foo, baz, qux)')
+
+      " breaking up
+      call setline(1, '(foo, bar, baz, qux, quux)')
+      let pos = [0, 1, 2, 0]
+      call swap#around_pos(pos,
+      \ [['group', 1, 2], ['group', 2, 3], ['group', 1, 2], ['breakup', 1], [1, 2]])
+      Assert Equals(getline('.'), '(bar, foo, baz, qux, quux)')
     End
   End
 
