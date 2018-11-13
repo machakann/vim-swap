@@ -112,6 +112,15 @@ function! s:Swapmode._msg_hist(input) abort "{{{
   if a:input[0] is# 'sort'
     return [['sort', g:swap#hl_itemnr],
     \       [', ', 'NONE']]
+  elseif a:input[0] is# 'group'
+    return [[printf('group:%d-%d', a:input[1], a:input[2]), g:swap#hl_itemnr],
+    \       [', ', 'NONE']]
+  elseif a:input[0] is# 'ungroup'
+    return [[printf('ungoup:%d', a:input[1]), g:swap#hl_itemnr],
+    \       [', ', 'NONE']]
+  elseif a:input[0] is# 'breakup'
+    return [[printf('breakup:%d', a:input[1]), g:swap#hl_itemnr],
+    \       [', ', 'NONE']]
   endif
   return [[a:input[0], g:swap#hl_itemnr],
   \       [g:swap#arrow, g:swap#hl_arrow],
@@ -124,6 +133,15 @@ function! s:Swapmode._msg_input(phase, input) abort "{{{
   if a:input[0] is# 'sort'
     return [[', ', 'NONE'],
     \       ['sort', g:swap#hl_itemnr]]
+  elseif a:input[0] is# 'group'
+    return [[', ', 'NONE'],
+    \       [printf('group:%d-%d', a:input[1], a:input[2]), g:swap#hl_itemnr]]
+  elseif a:input[0] is# 'ungroup'
+    return [[', ', 'NONE'],
+    \       [printf('ungoup:%d', a:input[1]), g:swap#hl_itemnr]]
+  elseif a:input[0] is# 'breakup'
+    return [[', ', 'NONE'],
+    \       [printf('breakup:%d', a:input[1]), g:swap#hl_itemnr]]
   endif
 
   let message = []
@@ -683,6 +701,48 @@ function! s:Swapmode.key_SORT(phase, input, buffer) abort "{{{
   let input = ['sort'] + g:swap#mode#SORTFUNC
   let phase = s:DONE
   return [phase, input]
+endfunction "}}}
+
+
+function! s:Swapmode.key_group(phase, input, buffer) abort  "{{{
+  if a:phase >= s:DONE
+    return [a:phase, a:input]
+  endif
+  if len(a:buffer.items) < 2
+    return [a:phase, a:input]
+  endif
+  if self.pos.current < 1 || self.pos.current > self.pos.end - 1
+    return [a:phase, a:input]
+  endif
+
+  let input = ['group', self.pos.current, self.pos.current + 1]
+  return [s:DONE, input]
+endfunction "}}}
+
+
+function! s:Swapmode.key_ungroup(phase, input, buffer) abort  "{{{
+  if a:phase >= s:DONE
+    return [a:phase, a:input]
+  endif
+  if self.pos.current < 1 || self.pos.current > self.pos.end
+    return [a:phase, a:input]
+  endif
+
+  let input = ['ungroup', self.pos.current]
+  return [s:DONE, input]
+endfunction "}}}
+
+
+function! s:Swapmode.key_breakup(phase, input, buffer) abort "{{{
+  if a:phase >= s:DONE
+    return [a:phase, a:input]
+  endif
+  if self.pos.current < 1 || self.pos.current > self.pos.end
+    return [a:phase, a:input]
+  endif
+
+  let input = ['breakup', self.pos.current]
+  return [s:DONE, input]
 endfunction "}}}
 
 

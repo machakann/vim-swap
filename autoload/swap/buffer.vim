@@ -18,10 +18,11 @@ let s:Token = extend({
 \   '_highlightid': [],
 \ }, deepcopy(s:NULLREGION))
 
-function! s:Token(attr, str) abort "{{{
+function! s:Token(attr, str, type) abort "{{{
   let token = deepcopy(s:Token)
   let token.attr = a:attr
   let token.str = a:str
+  let token.type = a:type
   return token
 endfunction "}}}
 
@@ -36,7 +37,7 @@ function! s:Token.cursor(...) abort "{{{
 endfunction "}}}
 
 
-function! s:Token.highlight(group) abort "{{{
+function! s:Token.highlight(higroup) abort "{{{
   if self.len <= 0
     return
   endif
@@ -71,9 +72,9 @@ function! s:Token.highlight(group) abort "{{{
   endif
 
   for order in order_list
-    let self._highlightid += s:matchaddpos(a:group, order)
+    let self._highlightid += s:matchaddpos(a:higroup, order)
   endfor
-  let self.higroup = a:group
+  let self.higroup = a:higroup
 endfunction "}}}
 
 
@@ -86,19 +87,19 @@ function! s:Token.clear_highlight() abort  "{{{
 endfunction "}}}
 
 
-" function! s:matchaddpos(group, pos) abort "{{{
+" function! s:matchaddpos(higroup, pos) abort "{{{
 if exists('*matchaddpos')
-  function! s:matchaddpos(group, pos) abort
-    return [matchaddpos(a:group, a:pos)]
+  function! s:matchaddpos(higroup, pos) abort
+    return [matchaddpos(a:higroup, a:pos)]
   endfunction
 else
-  function! s:matchaddpos(group, pos) abort
+  function! s:matchaddpos(higroup, pos) abort
     let id_list = []
     for pos in a:pos
       if len(pos) == 1
-        let id_list += [matchadd(a:group, printf('\%%%dl', pos[0]))]
+        let id_list += [matchadd(a:higroup, printf('\%%%dl', pos[0]))]
       else
-        let id_list += [matchadd(a:group, printf('\%%%dl\%%>%dc.*\%%<%dc', pos[0], pos[1]-1, pos[1]+pos[2]))]
+        let id_list += [matchadd(a:higroup, printf('\%%%dl\%%>%dc.*\%%<%dc', pos[0], pos[1]-1, pos[1]+pos[2]))]
       endif
     endfor
     return id_list
@@ -116,12 +117,101 @@ endfunction "}}}
 "}}}
 
 
+" Grouped Token {{{
+let s:GroupedToken = extend(deepcopy(s:Token),{
+\   'including': [],
+\ })
+
+function! s:GroupedToken(tokens) abort "{{{
+  let token = deepcopy(s:GroupedToken)
+  let token.attr = 'itemgroup'
+  let token.including = a:tokens
+  call token.update()
+  return token
+endfunction "}}}
+
+
+function! s:GroupedToken.highlight(higroup) abort "{{{
+  for item in self.including
+    call item.highlight(a:higroup)
+  endfor
+endfunction "}}}
+
+
+function! s:GroupedToken.clear_highlight() abort  "{{{
+  for item in self.including
+    call item.clear_highlight()
+  endfor
+endfunction "}}}
+
+
+function! s:GroupedToken.update() abort "{{{
+  let stack = copy(self.including)
+  while !empty(stack)
+    let item = remove(stack, -1)
+    if item.attr is# 'itemgroup'
+      call item.update()
+      call extend(stack, item.including)
+    endif
+  endwhile
+  return s:update(self)
+endfunction "}}}
+
+
+function! s:update(itemgroup) abort "{{{
+  let a:itemgroup.head = a:itemgroup.including[0].head
+  let a:itemgroup.tail = a:itemgroup.including[-1].tail
+  let a:itemgroup.type = a:itemgroup.including[0].type
+  let a:itemgroup.str = join(map(copy(a:itemgroup.including), 'v:val.str'), '')
+  let a:itemgroup.len = strlen(a:itemgroup.str)
+  return a:itemgroup
+endfunction "}}}
+
+
+" This method returns a shallow copy of GroupToken.including with ungrouping
+function! s:GroupedToken.flatten() abort "{{{
+  let list = copy(self.including)
+  while !s:flatten_done(list)
+    let list = s:flatten(list)
+  endwhile
+  return list
+endfunction "}}}
+
+
+function! s:flatten(list) abort "{{{
+  let list = []
+  for item in a:list
+    if item.attr is# 'itemgroup'
+      let list += item.including
+    else
+      let list += [item]
+    endif
+  endfor
+  return list
+endfunction "}}}
+
+
+function! s:flatten_done(list) abort "{{{
+  return empty(filter(copy(a:list), 'v:val.attr is# "itemgroup"'))
+endfunction "}}}
+"}}}
+
+
 " Buffer object - represents a swapping region of buffer {{{
 let s:Buffer = extend({
 \   'all': [],
 \   'items': [],
 \   'mark': {'#': 0, '^': 0, '$': 0},
 \ }, deepcopy(s:NULLREGION))
+
+function! s:Buffer(region, tokens) abort "{{{
+  let buffer = deepcopy(s:Buffer)
+  let buffer.all =
+  \ map(copy(a:tokens), 's:Token(v:val.attr, v:val.str, a:region.type)')
+  let buffer.items = filter(copy(buffer.all), 'v:val.attr is# "item"')
+  call extend(buffer, deepcopy(a:region))
+  return buffer
+endfunction "}}}
 
 
 function! s:Buffer.swappable() abort  "{{{
@@ -252,6 +342,56 @@ function! s:Buffer.get_item(pos, ...) abort "{{{
 endfunction "}}}
 
 
+function! s:Buffer.group(start, end) abort "{{{
+  let start = self.get_pos(a:start) - 1
+  let end = self.get_pos(a:end) - 1
+  if start < 0 || end < 0 || start >= end
+    return
+  endif
+
+  let token_list = remove(self.items, start, end)
+  let grouped = s:GroupedToken(token_list)
+  call insert(self.items, grouped, start)
+  call self.update_hat()
+  call self.update_sharp(getpos('.'))
+  call self.update_dollar()
+endfunction "}}}
+
+
+function! s:Buffer.ungroup(pos) abort "{{{
+  let itemgroup = self.get_item(a:pos)
+  if get(itemgroup, 'attr', '') isnot# 'itemgroup'
+    return
+  endif
+  if empty(itemgroup.including)
+    return
+  endif
+
+  let i0 = self.get_pos(a:pos) - 1
+  call remove(self.items, i0)
+  for [i, item] in s:Lib.enumerate(itemgroup.including)
+    call insert(self.items, item, i0 + i)
+  endfor
+endfunction "}}}
+
+
+function! s:Buffer.breakup(pos) abort "{{{
+  let itemgroup = self.get_item(a:pos)
+  if get(itemgroup, 'attr', '') isnot# 'itemgroup'
+    return
+  endif
+  if empty(itemgroup.including)
+    return
+  endif
+
+  let i0 = self.get_pos(a:pos) - 1
+  call remove(self.items, i0)
+  for [i, item] in s:Lib.enumerate(itemgroup.flatten())
+    call insert(self.items, item, i0 + i)
+  endfor
+endfunction "}}}
+
+
 function! s:address_charwise(buffer) abort  "{{{
   let pos = copy(a:buffer.head)
   for token in a:buffer.all
@@ -268,6 +408,11 @@ function! s:address_charwise(buffer) abort  "{{{
       let pos[1] += len(lines) - 1
       let pos[2] = strlen(lines[-1]) + 1
       let token.tail = copy(pos)
+    endif
+  endfor
+  for item in a:buffer.items
+    if item.attr is# 'itemgroup'
+      call item.update()
     endif
   endfor
   return a:buffer
@@ -287,6 +432,11 @@ function! s:address_linewise(buffer) abort  "{{{
       let token.head = [0, lnum, col([lnum, '$']), 0]
       let token.tail = [0, lnum+1, 1, 0]
       let lnum += 1
+    endif
+  endfor
+  for item in a:buffer.items
+    if item.attr is# 'itemgroup'
+      call item.update()
     endif
   endfor
   return a:buffer
@@ -311,6 +461,11 @@ function! s:address_blockwise(buffer) abort  "{{{
       let lnum += 1
     endif
   endfor
+  for item in a:buffer.items
+    if item.attr is# 'itemgroup'
+      call item.update()
+    endif
+  endfor
   call winrestview(view)
   return a:buffer
 endfunction "}}}
@@ -329,16 +484,7 @@ endfunction "}}}
 
 
 let s:Buffers = {}
-
-
-function! s:Buffers.Buffer(region, tokens) abort "{{{
-  let buffer = deepcopy(s:Buffer)
-  let buffer.all = map(copy(a:tokens), 's:Token(v:val.attr, v:val.str)')
-  let buffer.items = filter(copy(buffer.all), 'v:val.attr is# "item"')
-  call extend(buffer, deepcopy(a:region))
-  return buffer
-endfunction "}}}
-
+let s:Buffers.Buffer = function('s:Buffer')
 
 function! swap#buffer#import() abort "{{{
   return s:Buffers
