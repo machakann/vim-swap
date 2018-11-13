@@ -12,6 +12,7 @@ Describe [unit test]
     %delete
   End
 
+
   Context autoload/swap/tokenize.vim
     Before
       let tokenizer = s:scope.funcs('autoload/swap/tokenizer.vim')
@@ -208,46 +209,46 @@ Describe [unit test]
     Context s:shift_to_literal_quote_end()
       It searches the end of a literal-quoted text
         let idx = tokenizer.shift_to_literal_quote_end("'foo'", ["'", "'"], 0)
-        Assert Equals(idx, 5, 'failed at #1')
+        Assert Equals(idx, 5)
 
         let idx = tokenizer.shift_to_literal_quote_end("foo'bar'baz", ["'", "'"], 3)
-        Assert Equals(idx, 8, 'failed at #2')
+        Assert Equals(idx, 8)
 
         let idx = tokenizer.shift_to_literal_quote_end("'foo'bar'baz'", ["'", "'"], 0)
-        Assert Equals(idx, 5, 'failed at #3')
+        Assert Equals(idx, 5)
 
         let idx = tokenizer.shift_to_literal_quote_end("'foo'bar'baz'", ["'", "'"], 8)
-        Assert Equals(idx, 13, 'failed at #4')
+        Assert Equals(idx, 13)
 
         let idx = tokenizer.shift_to_literal_quote_end('''foo\''bar''', ["'", "'"], 0)
-        Assert Equals(idx, 6, 'failed at #5')
+        Assert Equals(idx, 6)
 
         let idx = tokenizer.shift_to_literal_quote_end('''foo\\''bar''', ["'", "'"], 0)
-        Assert Equals(idx, 7, 'failed at #6')
+        Assert Equals(idx, 7)
 
         let idx = tokenizer.shift_to_literal_quote_end('''foo\\\''bar''', ["'", "'"], 0)
-        Assert Equals(idx, 8, 'failed at #7')
+        Assert Equals(idx, 8)
 
         let idx = tokenizer.shift_to_literal_quote_end('foobar', ["'", "'"], 0)
-        Assert Equals(idx, -1, 'failed at #8')
+        Assert Equals(idx, -1)
 
         let idx = tokenizer.shift_to_literal_quote_end("'foobar", ["'", "'"], 0)
-        Assert Equals(idx, -1, 'failed at #9')
+        Assert Equals(idx, -1)
 
         let idx = tokenizer.shift_to_literal_quote_end('''foo\''bar', ["'", "'"], 0)
-        Assert Equals(idx, 6, 'failed at #10')
+        Assert Equals(idx, 6)
 
         let idx = tokenizer.shift_to_literal_quote_end('''\''foobar', ["'", "'"], 0)
-        Assert Equals(idx, 3, 'failed at #11')
+        Assert Equals(idx, 3)
 
         let idx = tokenizer.shift_to_literal_quote_end('''foobar\''', ["'", "'"], 0)
-        Assert Equals(idx, 9, 'failed at #12')
+        Assert Equals(idx, 9)
 
         let idx = tokenizer.shift_to_literal_quote_end("''", ["'", "'"], 0)
-        Assert Equals(idx, 2, 'failed at #13')
+        Assert Equals(idx, 2)
 
         let idx = tokenizer.shift_to_literal_quote_end('''\''', ["'", "'"], 0)
-        Assert Equals(idx, 3, 'failed at #14')
+        Assert Equals(idx, 3)
       End
     End
 
@@ -589,17 +590,17 @@ Describe [unit test]
       It returns a list of rules depending on filetype & mode
         let rules = [{'body': 'a,b', 'delimiter': ','}]
         let got = swap.get_rules(rules, '', 'n')
-        Assert LengthOf(got, 1, 'failed at #1')
+        Assert LengthOf(got, 1)
 
         " Filter the rule which does not have neither 'body' nor 'surrounds'
         let rules = [{'delimiter': ','}]
         let got = swap.get_rules(rules, '', 'n')
-        Assert LengthOf(got, 0, 'failed at #2')
+        Assert LengthOf(got, 0)
 
         " Do not filter the rule which does not have neither 'body' nor 'surrounds'
         let rules = [{'delimiter': ','}]
         let got = swap.get_rules(rules, '', 'x')
-        Assert LengthOf(got, 1, 'failed at #3')
+        Assert LengthOf(got, 1)
 
         " test filetype filter
         let rules = [
@@ -608,7 +609,7 @@ Describe [unit test]
         \   {'body': 'e,f', 'delimiter': ',', 'filetype': ['bar']},
         \ ]
         let got = swap.get_rules(rules, 'foo', 'n')
-        Assert LengthOf(got, 2, 'failed at #4')
+        Assert LengthOf(got, 2)
 
         " test mode filter
         let rules = [
@@ -617,7 +618,7 @@ Describe [unit test]
         \   {'body': 'e,f', 'delimiter': ',', 'mode': 'x'},
         \ ]
         let got = swap.get_rules(rules, '', 'n')
-        Assert LengthOf(got, 2, 'failed at #5')
+        Assert LengthOf(got, 2)
 
         " test filters
         let rules = [
@@ -626,7 +627,7 @@ Describe [unit test]
         \   {'body': 'e,f', 'delimiter': ',', 'filetype': ['foo'], 'mode': 'x'},
         \ ]
         let got = swap.get_rules(rules, 'foo', 'n')
-        Assert LengthOf(got, 1, 'failed at #6')
+        Assert LengthOf(got, 1)
 
         " Remove duplicates
         let rules = [
@@ -636,7 +637,7 @@ Describe [unit test]
         \   {'surrounds': ['c', 'd'], 'delimiter': ';'},
         \ ]
         let got = swap.get_rules(rules, '', 'n')
-        Assert LengthOf(got, 2, 'failed at #7')
+        Assert LengthOf(got, 2)
       End
     End
   End
@@ -656,6 +657,7 @@ Describe [integration test]
     set selection&
     unlet! g:swap#rules
   End
+
 
   Context normal mode
     Context gs
@@ -755,18 +757,18 @@ Describe [integration test]
 
         call setline(1, '(dd, bb, cc, aa)')
         execute "normal 1Glgss\<Esc>"
-        Assert Equals(getline('.'), '(aa, bb, cc, dd)', 'failed at #29')
+        Assert Equals(getline('.'), '(aa, bb, cc, dd)')
 
         call setline(1, '(dd, bb, cc, aa)')
         execute "normal 1GlgsS\<Esc>"
-        Assert Equals(getline('.'), '(dd, cc, bb, aa)', 'failed at #30')
+        Assert Equals(getline('.'), '(dd, cc, bb, aa)')
 
         " sort
         call setline(1, '(dd, bb, cc, aa)')
         let saved = g:swap#mode#sortfunc
         let g:swap#mode#sortfunc = [s:Lib.compare_descend]
         execute "normal 1Glgss\<Esc>"
-        Assert Equals(getline('.'), '(dd, cc, bb, aa)', 'failed at #31')
+        Assert Equals(getline('.'), '(dd, cc, bb, aa)')
         let g:swap#mode#sortfunc = saved
 
         " sort
@@ -774,13 +776,13 @@ Describe [integration test]
         let saved = g:swap#mode#SORTFUNC
         let g:swap#mode#SORTFUNC = [s:Lib.compare_ascend]
         execute "normal 1GlgsS\<Esc>"
-        Assert Equals(getline('.'), '(aa, bb, cc, dd)', 'failed at #32')
+        Assert Equals(getline('.'), '(aa, bb, cc, dd)')
         let g:swap#mode#SORTFUNC = saved
 
         " sort
         call setline(1, '(dd, bb, cc, aa)')
         execute "normal 1Glgss12\<Esc>"
-        Assert Equals(getline('.'), '(bb, aa, cc, dd)', 'failed at #33')
+        Assert Equals(getline('.'), '(bb, aa, cc, dd)')
       End
 
       It works well with various 'selection' option
@@ -858,17 +860,17 @@ Describe [integration test]
         set selection=inclusive
         call setline(1, '(foo, bar, baz)')
         normal ggfbg<
-        Assert Equals(getline('.'), '(bar, foo, baz)', 'failed at #1')
+        Assert Equals(getline('.'), '(bar, foo, baz)')
 
         set selection=exclusive
         call setline(1, '(foo, bar, baz)')
         normal ggfbg<
-        Assert Equals(getline('.'), '(bar, foo, baz)', 'failed at #1')
+        Assert Equals(getline('.'), '(bar, foo, baz)')
 
         set selection=old
         call setline(1, '(foo, bar, baz)')
         normal ggfbg<
-        Assert Equals(getline('.'), '(bar, foo, baz)', 'failed at #2')
+        Assert Equals(getline('.'), '(bar, foo, baz)')
       End
     End
   End
@@ -1187,6 +1189,7 @@ Describe [API]
     %delete
     unlet! g:swap#rules
   End
+
 
   Context swap#region
     It swaps tokens in the assigned region
