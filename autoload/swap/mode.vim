@@ -58,7 +58,7 @@ function! s:Swapmode.get_input(buffer) abort "{{{
   let pos = self.get_nonblank_pos('#', a:buffer)
   call self.set_current(pos, a:buffer)
   call self.echo(phase, input)
-  call self.highlight(a:buffer)
+  call self.update_highlight(a:buffer)
   redraw
   try
     while phase < s:DONE
@@ -291,23 +291,6 @@ function! s:Swapmode.get_nonblank_pos(pos, buffer) abort "{{{
     return a:buffer.get_pos(a:pos)
   endif
   return s:next_nonblank(a:buffer.items, a:buffer.get_pos(a:pos))
-endfunction "}}}
-
-
-function! s:Swapmode.highlight(buffer) abort "{{{
-  if !g:swap#highlight
-    return
-  endif
-
-  let pos = 1
-  for item in a:buffer.items
-    if pos == self.pos.current
-      call item.highlight('SwapCurrentItem')
-    else
-      call item.highlight('SwapItem')
-    endif
-    let pos += 1
-  endfor
 endfunction "}}}
 
 
