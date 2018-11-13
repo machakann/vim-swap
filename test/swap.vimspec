@@ -1223,6 +1223,14 @@ Describe [API]
       call swap#region(start, end, type, [[1, 2]], rules)
       Assert Equals(getline('.'), '(baz; foo, bar)')
       unlet! g:swap#rules
+
+      " sort
+      call setline(1, '(dd, bb, cc, aa)')
+      let start = [0, 1, 2, 0]
+      let end = [0, 1, 15, 0]
+      let type = 'char'
+      call swap#region(start, end, type, [['sort', s:Lib.compare_ascend]])
+      Assert Equals(getline('.'), '(aa, bb, cc, dd)')
     End
   End
 
@@ -1290,6 +1298,12 @@ Describe [API]
       call swap#around_pos(pos, [[1, 2]], rules)
       Assert Equals(getline('.'), '(baz; foo, bar)')
       unlet! g:swap#rules
+
+      " sort
+      call setline(1, '(dd, bb, cc, aa)')
+      let pos = [0, 1, 2, 0]
+      call swap#around_pos(pos, [['sort', s:Lib.compare_ascend]])
+      Assert Equals(getline('.'), '(aa, bb, cc, dd)')
     End
   End
 
