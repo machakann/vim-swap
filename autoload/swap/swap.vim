@@ -122,17 +122,11 @@ function! s:Swap._swap_interactive(buffer) abort "{{{
   let buffer = a:buffer
   let undojoin = s:FALSE
   let swapmode = s:Mode.Swapmode()
-  try
-    while s:TRUE
-      let input = swapmode.get_input(buffer)
-      if input == [] | break | endif
-      let [buffer, undojoin] = self._process(buffer, input, undojoin)
-    endwhile
-  finally
-    call swapmode.clear_highlight(a:buffer)
-    " clear messages
-    echo ''
-  endtry
+  while s:TRUE
+    let input = swapmode.get_input(buffer)
+    if input == [] | break | endif
+    let [buffer, undojoin] = self._process(buffer, input, undojoin)
+  endwhile
   return swapmode.export_history()
 endfunction "}}}
 

@@ -67,6 +67,10 @@ function! s:Swapmode.get_input(buffer) abort "{{{
     endwhile
   catch /^Vim:Interrupt$/
     let phase = s:EXIT
+  finally
+    call self.clear_highlight(a:buffer)
+    " clear messages
+    echo ''
   endtry
 
   if phase is# s:EXIT
