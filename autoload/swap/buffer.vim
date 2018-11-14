@@ -117,7 +117,7 @@ endfunction "}}}
 "}}}
 
 
-" Grouped Token {{{
+" Grouped Token - represents a token grouping other multiple tokens {{{
 let s:GroupedToken = extend(deepcopy(s:Token),{
 \   'including': [],
 \ })
