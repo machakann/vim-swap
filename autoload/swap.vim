@@ -1,12 +1,13 @@
 " swap.vim - Reorder delimited items.
 " TODO: number displaying
 
+let s:TRUE = 1
+let s:FALSE = 0
+
 let g:swap#timeoutlen  = get(g:, 'swap#timeoutlen', &timeoutlen)
 let g:swap#stimeoutlen = get(g:, 'swap#stimeoutlen', 50)
-let g:swap#highlight   = get(g:, 'swap#highlight', 1)
-let g:swap#hl_itemnr   = get(g:, 'swap#hl_itemnr', 'Special')
-let g:swap#hl_arrow    = get(g:, 'swap#hl_arrow', 'NONE')
-let g:swap#arrow       = get(g:, 'swap#arrow', ' <=> ')
+let g:swap#highlight   = get(g:, 'swap#highlight', s:TRUE)
+let g:swap#verbose     = get(g:, 'swap#verbose', s:TRUE)
 let g:swap#default_rules = [
 \   {
 \     'descripsion': 'Reorder the selected space-delimited word in visual mode.',

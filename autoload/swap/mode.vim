@@ -1,4 +1,5 @@
 " Swapmode object - Interactive order determination.
+scriptencoding utf-8
 
 let s:Const = swap#constant#import()
 let s:Lib = swap#lib#import()
@@ -34,8 +35,8 @@ let g:swap#mode#SORTFUNC =
 let s:Swapmode = {
 \   'pos': {
 \     'current': 0,
-\     'end': 0,
 \     'selected': 0,
+\     'end': 0,
 \   },
 \   'history': [],
 \   'undolevel': 0,
@@ -57,9 +58,8 @@ function! s:Swapmode.get_input(buffer) abort "{{{
 
   let pos = self.get_nonblank_pos('#', a:buffer)
   call self.set_current(pos, a:buffer)
-  call self.echo(phase, input)
-  call self.update_highlight(a:buffer)
-  redraw
+  call self.update_highlight(a:buffer) | redraw
+  call self.echo(a:buffer)
   try
     while phase < s:DONE
       let key = s:prompt(key_map)
@@ -84,23 +84,16 @@ function! s:Swapmode.get_input(buffer) abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.echo(phase, input) abort "{{{
-  if a:phase >= s:DONE
-    return
-  endif
-
+function! s:Swapmode.echo(buffer) abort "{{{
   let message = []
-  for histitem in self.history[: -1*(self.undolevel+1)]
-    let message += self._msg_hist(histitem.input)
-  endfor
-  if !empty(message)
-    call remove(message, -1)
+  if g:swap#verbose
+    let message += [['Swap mode ', 'ModeMsg']]
+    let message += self._msg_buffer(a:buffer)
+    let message = self._fit_msg(message)
+  else
+    let message += [['-- Swap mode --', 'ModeMsg']]
   endif
-  let message += self._msg_input(a:phase, a:input)
-  call self._fit_msg(message)
 
-  echohl ModeMsg
-  echo 'Swap mode: '
   for mes in message
     execute 'echohl ' . mes[1]
     echon mes[0]
@@ -109,64 +102,66 @@ function! s:Swapmode.echo(phase, input) abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode._msg_hist(input) abort "{{{
-  if a:input[0] is# 'sort'
-    return [['sort', g:swap#hl_itemnr],
-    \       [', ', 'NONE']]
-  elseif a:input[0] is# 'group'
-    return [[printf('group:%d-%d', a:input[1], a:input[2]), g:swap#hl_itemnr],
-    \       [', ', 'NONE']]
-  elseif a:input[0] is# 'ungroup'
-    return [[printf('ungoup:%d', a:input[1]), g:swap#hl_itemnr],
-    \       [', ', 'NONE']]
-  elseif a:input[0] is# 'breakup'
-    return [[printf('breakup:%d', a:input[1]), g:swap#hl_itemnr],
-    \       [', ', 'NONE']]
-  endif
-  return [[a:input[0], g:swap#hl_itemnr],
-  \       [g:swap#arrow, g:swap#hl_arrow],
-  \       [a:input[1], g:swap#hl_itemnr],
-  \       [', ', 'NONE']]
+let s:SEPARATOR = ' '
+let s:DELIMITER = '-'
+let s:ABBREVIATION = '…'
+
+function! s:Swapmode._msg_buffer(buffer) abort "{{{
+  let max_width = &columns - 25
+  for len in range(10, 4, -2)
+    let msg = []
+    for m in map(copy(a:buffer.items), 's:msg(v:key, v:val, len)')
+      let msg += m
+    endfor
+    if s:msg_width(msg) <= max_width
+      break
+    endif
+  endfor
+  return msg
 endfunction "}}}
 
 
-function! s:Swapmode._msg_input(phase, input) abort "{{{
-  if a:input[0] is# 'sort'
-    return [[', ', 'NONE'],
-    \       ['sort', g:swap#hl_itemnr]]
-  elseif a:input[0] is# 'group'
-    return [[', ', 'NONE'],
-    \       [printf('group:%d-%d', a:input[1], a:input[2]), g:swap#hl_itemnr]]
-  elseif a:input[0] is# 'ungroup'
-    return [[', ', 'NONE'],
-    \       [printf('ungoup:%d', a:input[1]), g:swap#hl_itemnr]]
-  elseif a:input[0] is# 'breakup'
-    return [[', ', 'NONE'],
-    \       [printf('breakup:%d', a:input[1]), g:swap#hl_itemnr]]
+function! s:msg(i, item, previewlen) abort "{{{
+  if a:item.attr is# 'item'
+    return s:msg_item(a:i, a:item, a:previewlen)
+  elseif a:item.attr is# 'itemgroup'
+    return s:msg_itemgroup(a:i, a:item, a:previewlen)
   endif
+  return []
+endfunction "}}}
 
-  let message = []
-  if a:phase is# s:FIRST
-    if a:input[0] isnot# ''
-      let higoup = self.pos.is_valid(a:input[0])
-      \          ? g:swap#hl_itemnr : 'ErrorMsg'
-      let message += [[', ', 'NONE']]
-      let message += [[a:input[0], higoup]]
-    endif
-  elseif a:phase is# s:SECOND
-    let message += [[', ', 'NONE']]
-    if a:input[1] isnot# ''
-      let message += [[a:input[0], g:swap#hl_itemnr]]
-      let message += [[g:swap#arrow, g:swap#hl_arrow]]
-      let higoup = self.pos.is_valid(a:input[1])
-      \          ? g:swap#hl_itemnr : 'ErrorMsg'
-      let message += [[a:input[1], higoup]]
-    else
-      let message += [[a:input[0], g:swap#hl_itemnr]]
-      let message += [[g:swap#arrow, g:swap#hl_arrow]]
-    endif
+
+function! s:msg_width(msg) abort "{{{
+  let msgstr = join(map(copy(a:msg), 'v:val[0]'), '')
+  return strdisplaywidth(msgstr)
+endfunction "}}}
+
+
+function! s:msg_item(i, item, previewlen) abort "{{{
+  let msg = []
+  call add(msg, [s:SEPARATOR, 'NONE'])
+  call add(msg, [printf('%d:', a:i + 1), 'SpecialKey'])
+  call add(msg, [a:item.str[: a:previewlen - 1], 'SwapItem'])
+  if strchars(a:item.str) > a:previewlen
+    call add(msg, [s:ABBREVIATION, 'SwapItem'])
   endif
-  return message
+  return msg
+endfunction "}}}
+
+
+function! s:msg_itemgroup(i, item, previewlen) abort "{{{
+  let msg = []
+  call add(msg, [s:SEPARATOR, 'NONE'])
+  call add(msg, [printf('%d:', a:i + 1), 'SpecialKey'])
+  for included in a:item.flatten()
+    call add(msg, [included.str[: a:previewlen - 1], 'SwapItem'])
+    if strchars(a:item.str) > a:previewlen
+      call add(msg, [s:ABBREVIATION, 'SwapItem'])
+    endif
+    call add(msg, [s:DELIMITER, 'SpecialKey'])
+  endfor
+  call remove(msg, -1)
+  return msg
 endfunction "}}}
 
 
@@ -314,23 +309,22 @@ function! s:Swapmode.update_highlight(buffer) abort  "{{{
 
   for [i, item] in s:Lib.enumerate(a:buffer.items)
     let pos = i + 1
-    if pos == self.pos.current
-      if item.higroup isnot# 'SwapCurrentItem'
-        call item.clear_highlight()
-        call item.highlight('SwapCurrentItem')
-      endif
-    elseif pos == self.pos.selected
-      if item.higroup isnot# 'SwapSelectedItem'
-        call item.clear_highlight()
-        call item.highlight('SwapSelectedItem')
-      endif
-    else
-      if item.higroup isnot# 'SwapItem'
-        call item.clear_highlight()
-        call item.highlight('SwapItem')
-      endif
+    let higroup = s:higroup(pos, self.pos)
+    if item.higroup isnot# higroup
+      call item.clear_highlight()
+      call item.highlight(higroup)
     endif
   endfor
+endfunction "}}}
+
+
+function! s:higroup(p, pos) abort "{{{
+  if a:p == a:pos.current
+    return 'SwapCurrentItem'
+  elseif a:p == a:pos.selected
+    return 'SwapSelectedItem'
+  endif
+  return 'SwapItem'
 endfunction "}}}
 
 
@@ -463,7 +457,6 @@ function! s:Swapmode.key_nr(nr, phase, input, buffer) abort  "{{{
   endif
 
   let input = s:append(a:input, a:phase, a:nr)
-  call self.echo(a:phase, input)
   return [a:phase, input]
 endfunction "}}}
 function! s:Swapmode.key_0(phase, input, buffer) abort "{{{
@@ -517,7 +510,6 @@ function! s:Swapmode.key_BS(phase, input, buffer) abort  "{{{
   if phase is# s:FIRST
     if a:input[s:FIRST] isnot# ''
       let input = s:truncate(a:input, s:FIRST)
-      call self.echo(phase, input)
     endif
   elseif phase is# s:SECOND
     if a:input[s:SECOND] isnot# ''
@@ -528,7 +520,6 @@ function! s:Swapmode.key_BS(phase, input, buffer) abort  "{{{
       call self.select(s:NOTHING)
       call self.update_highlight(a:buffer)
     endif
-    call self.echo(phase, input)
   endif
   return [phase, input]
 endfunction "}}}
@@ -575,7 +566,7 @@ function! s:Swapmode.key_current(phase, input, buffer) abort "{{{
   if phase is# s:FIRST
     let phase = s:SECOND
     call self.select(input[0])
-    call self.echo(phase, input)
+    call self.update_highlight(a:buffer)
   elseif phase is# s:SECOND
     let phase = s:DONE
   endif
@@ -591,15 +582,12 @@ function! s:Swapmode.key_fix_nr(phase, input, buffer) abort "{{{
       call self.set_current(pos, a:buffer)
       let phase = s:SECOND
       call self.select(a:input[0])
-      call self.echo(phase, a:input)
       call self.update_highlight(a:buffer)
     endif
   elseif phase is# s:SECOND
     let pos = str2nr(a:input[s:SECOND])
     if self.pos.is_valid(pos)
       let phase = s:DONE
-    else
-      call self.echo(phase, a:input)
     endif
   endif
   return [phase, a:input]
@@ -731,7 +719,6 @@ endfunction "}}}
 
 
 function! s:Swapmode.key_Esc(phase, input, buffer) abort  "{{{
-  call self.echo(a:phase, a:input)
   let phase = s:EXIT
   return [phase, a:input]
 endfunction "}}}
