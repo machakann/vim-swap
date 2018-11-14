@@ -79,11 +79,11 @@ endfunction "}}}
 
 
 function! s:Token.clear_highlight() abort  "{{{
+  let self.higroup = ''
   if empty(self._highlightid)
     return
   endif
   call filter(map(self._highlightid, 's:matchdelete(v:val)'), 'v:val > 0')
-  let self.higroup = ''
 endfunction "}}}
 
 
@@ -135,6 +135,7 @@ function! s:GroupedToken.highlight(higroup) abort "{{{
   for item in self.including
     call item.highlight(a:higroup)
   endfor
+  let self.higroup = a:higroup
 endfunction "}}}
 
 
@@ -142,6 +143,7 @@ function! s:GroupedToken.clear_highlight() abort  "{{{
   for item in self.including
     call item.clear_highlight()
   endfor
+  let self.higroup = ''
 endfunction "}}}
 
 
