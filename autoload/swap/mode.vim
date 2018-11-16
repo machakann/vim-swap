@@ -86,7 +86,7 @@ endfunction "}}}
 
 function! s:Swapmode.echo(buffer) abort "{{{
   let message = []
-  if g:swap#verbose
+  if g:swap#displaymode is# 'itempreview'
     let message += [['Swap mode ', 'ModeMsg']]
     let message += self._msg_buffer(a:buffer)
     let message = self._fit_msg(message)
