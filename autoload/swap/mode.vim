@@ -59,8 +59,8 @@ function! s:Swapmode.get_input(buffer) abort "{{{
   let pos = self.get_nonblank_pos('#', a:buffer)
   call self.set_current(pos, a:buffer)
   call self.update_highlight(a:buffer) | redraw
-  call self.echo(a:buffer)
   try
+    call self.echo(a:buffer)
     while phase < s:DONE
       let key = s:prompt(key_map)
       let [phase, input] = self.execute(key, phase, input, a:buffer)
