@@ -14,7 +14,6 @@ let s:CONTINUE = 0
 let s:DONE = 1
 
 function! s:search(rule, region, curpos) abort  "{{{
-  let region = a:region
   let timeout = g:swap#stimeoutlen
   if has_key(a:rule, 'body')
     let body = a:rule.body
@@ -22,10 +21,10 @@ function! s:search(rule, region, curpos) abort  "{{{
   elseif has_key(a:rule, 'surrounds')
     let surrounds = a:rule.surrounds
     let nest = get(surrounds, -1, 0)
-    if region == s:NULLREGION
+    if a:region == s:NULLREGION
       let [head, tail] = [a:curpos, a:curpos]
     else
-      let [head, tail] = s:get_outer_pos(region.head, region.tail, surrounds)
+      let [head, tail] = s:get_outer_pos(a:region.head, a:region.tail, surrounds)
     endif
     return s:search_surrounds(surrounds, head, tail, a:curpos, nest, timeout)
   endif
