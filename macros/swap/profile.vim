@@ -1,0 +1,13 @@
+let s:root = expand('<sfile>:h:h:h:p')
+profile start profile.log
+execute printf('profile! file %s/autoload/swap.vim', s:root)
+execute printf('profile! file %s/autoload/swap/buffer.vim', s:root)
+execute printf('profile! file %s/autoload/swap/clock.vim', s:root)
+execute printf('profile! file %s/autoload/swap/constant.vim', s:root)
+execute printf('profile! file %s/autoload/swap/lib.vim', s:root)
+execute printf('profile! file %s/autoload/swap/log.vim', s:root)
+execute printf('profile! file %s/autoload/swap/mode.vim', s:root)
+execute printf('profile! file %s/autoload/swap/searcher.vim', s:root)
+execute printf('profile! file %s/autoload/swap/swap.vim', s:root)
+execute printf('profile! file %s/autoload/swap/textobj.vim', s:root)
+execute printf('profile! file %s/autoload/swap/tokenizer.vim', s:root)
