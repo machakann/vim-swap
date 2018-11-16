@@ -5,6 +5,7 @@ let s:Lib = swap#lib#import()
 let s:Searcher = swap#searcher#import()
 let s:Tokenizer = swap#tokenizer#import()
 let s:Mode = swap#mode#import()
+let s:Logging = swap#logging#import()
 
 let s:TRUE = 1
 let s:FALSE = 0
@@ -14,6 +15,8 @@ let s:TYPEDICT = s:Const.TYPEDICT
 let s:TYPEFUNC = s:Const.TYPEFUNC
 let s:NULLREGION = s:Const.NULLREGION
 let s:GUI_RUNNING = has('gui_running')
+
+let s:logger = s:Logging.Logger(expand('<sfile>'))
 
 
 function! swap#swap#new(mode, input_list, rules) abort "{{{
@@ -102,6 +105,8 @@ endfunction "}}}
 
 
 function! s:Swap.operatorfunc(type) abort "{{{
+  call s:logger.debug('Operatorfunc [mode: %s, dot-repeat: %s]',
+  \                   g:swap.mode, g:swap.dotrepeat)
   if self.mode is# 'n'
     call self.around(getpos('.'))
   elseif self.mode is# 'x'
@@ -122,11 +127,13 @@ function! s:Swap._swap_interactive(buffer) abort "{{{
   let buffer = a:buffer
   let undojoin = s:FALSE
   let swapmode = s:Mode.Swapmode()
+  call s:logger.debug('Swapmode start')
   while s:TRUE
     let input = swapmode.get_input(buffer)
     if input == [] | break | endif
     let [buffer, undojoin] = self._process(buffer, input, undojoin)
   endwhile
+  call s:logger.debug('Swapmode end')
   return swapmode.export_history()
 endfunction "}}}
 
@@ -146,18 +153,22 @@ endfunction "}}}
 
 
 function! s:Swap._process(buffer, input, undojoin) abort "{{{
+  call s:logger.debug('  input: %s', a:input)
   if a:input[0] is# 'undo'
-    return self._restore_buffer(a:input, a:undojoin)
+    let [buffer, undojoin] = self._restore_buffer(a:input, a:undojoin)
   elseif a:input[0] is# 'sort'
-    return self._sort_items(a:buffer, a:input, a:undojoin)
+    let [buffer, undojoin] = self._sort_items(a:buffer, a:input, a:undojoin)
   elseif a:input[0] is# 'group'
-    return self._group(a:buffer, a:input, a:undojoin)
+    let [buffer, undojoin] = self._group(a:buffer, a:input, a:undojoin)
   elseif a:input[0] is# 'ungroup'
-    return self._ungroup(a:buffer, a:input, a:undojoin)
+    let [buffer, undojoin] = self._ungroup(a:buffer, a:input, a:undojoin)
   elseif a:input[0] is# 'breakup'
-    return self._breakup(a:buffer, a:input, a:undojoin)
+    let [buffer, undojoin] = self._breakup(a:buffer, a:input, a:undojoin)
+  else
+    let [buffer, undojoin] = self._swap_once(a:buffer, a:input, a:undojoin)
   endif
-  return self._swap_once(a:buffer, a:input, a:undojoin)
+  call s:logger.debug('  buffer: %s', s:string(a:buffer))
+  return [buffer, undojoin]
 endfunction "}}}
 
 
@@ -413,6 +424,7 @@ endfunction "}}}
 
 
 function! s:search(rules, pos, ...) abort "{{{
+  call s:logger.debug('Search a swappable region around %s', a:pos)
   let view = winsaveview()
   let textobj = get(a:000, 0, s:FALSE)
   let buffer = {}
@@ -430,7 +442,15 @@ function! s:search(rules, pos, ...) abort "{{{
     let &virtualedit = virtualedit
   endtry
   call winrestview(view)
-  return buffer != {} ? [buffer, rule] : [{}, {}]
+
+  if buffer == {}
+    call s:logger.debug('No match. Swappable region search failed.')
+    return [{}, {}]
+  endif
+  call s:logger.debug('Matched. start: %s, end: %s', buffer.head, buffer.tail)
+  call s:logger.debug('  matched rule: %s', rule)
+  " call s:logger.debug('  token list: %s', buffer.all)
+  return [buffer, rule]
 endfunction "}}}
 
 
@@ -466,7 +486,10 @@ endfunction "}}}
 
 
 function! s:match(region, rules) abort  "{{{
-  if a:region == s:NULLREGION
+  call s:logger.debug('Match the region from %s to %s with rules',
+  \                   a:region.head, a:region.tail)
+  if a:region is# s:NULLREGION
+    call s:logger.debug('Invalid region assigned. Matching failed.')
     return [{}, {}]
   endif
 
@@ -481,7 +504,15 @@ function! s:match(region, rules) abort  "{{{
     endif
   endwhile
   call winrestview(view)
-  return buffer != {} ? [buffer, rule] : [{}, {}]
+
+  if buffer == {}
+    call s:logger.debug('No Match. Matching failed.')
+    return [{}, {}]
+  endif
+  call s:logger.debug('Matched. start: %s, end: %s', buffer.head, buffer.tail)
+  call s:logger.debug('  matched rule: %s', rule)
+  " call s:logger.debug('  token list: %s', buffer.all)
+  return [buffer, rule]
 endfunction "}}}
 
 

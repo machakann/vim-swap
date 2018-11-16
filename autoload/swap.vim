@@ -1,8 +1,12 @@
 " swap.vim - Reorder delimited items.
 " TODO: number displaying
 
+let s:Logging = swap#logging#import()
+
 let s:TRUE = 1
 let s:FALSE = 0
+
+let s:logger = s:Logging.Logger(expand('<sfile>'))
 
 let g:swap#timeoutlen  = get(g:, 'swap#timeoutlen', &timeoutlen)
 let g:swap#stimeoutlen = get(g:, 'swap#stimeoutlen', 50)
@@ -215,42 +219,52 @@ augroup END
 " Swap items in the specific region on the current buffer
 " NOTE: Just a one-shot action, not repeated by dot command
 function! swap#region(start, end, type, input_list, ...) abort "{{{
+  call s:logger.debug('Call swap#region(%s, %s, %s, %s, %s)',
+  \                   a:start, a:end, a:type, a:input_list, a:000)
   let rules = get(a:000, 0, get(g:, 'swap#rules', g:swap#default_rules))
   if empty(a:input_list)
     return
   endif
   let swap = swap#swap#new('x', a:input_list, rules)
   call swap.region(a:start, a:end, a:type)
+  call s:logger.debug('Finish swap#region()')
 endfunction "}}}
 
 
 " Search swappable items around a position and swap them
 " NOTE: Just a one-shot action, not repeated by dot command
 function! swap#around_pos(pos, input_list, ...) abort "{{{
+  call s:logger.debug('swap#around_pos(%s, %s, %s)', a:pos, a:input_list, a:000)
   let rules = get(a:000, 0, get(g:, 'swap#rules', g:swap#default_rules))
   if empty(a:input_list)
     return
   endif
   let swap = swap#swap#new('n', a:input_list, rules)
   call swap.around(a:pos)
+  call s:logger.debug('Finish swap#around_pos()')
 endfunction "}}}
 
 
 " Swap items in the specific region on the current buffer in swap mode
 " NOTE: Just a one-shot action, not repeated by dot command
 function! swap#region_interactively(start, end, type, ...) abort "{{{
+  call s:logger.debug('swap#region_interactively(%s, %s, %s, %s, %s)',
+  \                   a:start, a:end, a:type, a:000)
   let rules = get(a:000, 0, get(g:, 'swap#rules', g:swap#default_rules))
   let swap = swap#swap#new('x', [], rules)
   call swap.region(a:start, a:end, a:type)
+  call s:logger.debug('Finish swap#region_interactively()')
 endfunction "}}}
 
 
 " Search swappable items around a position and swap them in swap mode
 " NOTE: Just a one-shot action, not repeated by dot command
 function! swap#around_pos_interactively(pos, ...) abort "{{{
+  call s:logger.debug('swap#around_pos_interactively(%s, %s)', a:pos, a:000)
   let rules = get(a:000, 0, get(g:, 'swap#rules', g:swap#default_rules))
   let swap = swap#swap#new('n', [], rules)
   call swap.around(a:pos)
+  call s:logger.debug('Finish swap#around_pos_interactively()')
 endfunction "}}}
 
 
@@ -258,6 +272,7 @@ endfunction "}}}
 "   nnoremap <silent> gs :<C-u>call swap#prerequisite('n')g@l
 "   xnoremap <silent> gs :<C-u>call swap#prerequisite('x')gvg@
 function! swap#prerequisite(mode, ...) abort "{{{
+  call s:logger.debug('swap#prerequisite(%s, %s)', a:mode, a:000)
   let input_list = get(a:000, 0, [])
   let rules = get(a:000, 1, get(g:, 'swap#rules', g:swap#default_rules))
   let g:swap = swap#swap#new(a:mode, input_list, rules)
@@ -267,10 +282,12 @@ endfunction "}}}
 
 " The operator function
 function! swap#operatorfunc(motionwise) abort "{{{
+  call s:logger.debug('swap#operatorfunc(%s)', a:motionwise)
   if !exists('g:swap')
     return
   endif
   call g:swap.operatorfunc(a:motionwise)
+  call s:logger.debug('Finish swap#operatorfunc()')
 endfunction "}}}
 
 
