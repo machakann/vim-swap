@@ -2,27 +2,22 @@
 
 let s:Const = swap#constant#import()
 let s:Lib = swap#lib#import()
-let s:Buffers = swap#buffer#import()
 
 
-function! s:tokenize(region, rule, curpos) abort "{{{
-  " s:tokenize_{type}wise() functions return a list of dictionaries which have two keys at least, attr and str.
-  "   attr : 'item' or 'delimiter' or 'immutable'.
-  "          'item' is a token reordered.
-  "          'delimiter' is a token separating items.
-  "          'immutable' is neither an 'item' nor a 'delimiter'. It is a string which should not be changed.
-  "   str  : The value is the string as 'item' or 'delimiter' or 'immutable'.
-  " For instance,
-  "   'foo,bar' is tokenized to [{'attr': 'item', 'str': 'foo'}, {'attr': 'delimiter', 'str': ','}, {'attr': 'item': 'str': 'bar'}]
-  " In case that motionwise is# 'V' or "\<C-v>", delimiter string should be "\n".
-  let text = s:get_buf_text(a:region)
-  let tokens = s:tokenize_{a:region.type}wise(text, a:rule)
-  let buffer = s:Buffers.Buffer(a:region, tokens)
-  call buffer.update_tokens()
-  call buffer.update_sharp(a:curpos)
-  call buffer.update_hat()
-  call buffer.update_dollar()
-  return buffer
+" s:tokenize() return a list of dictionaries which have two keys at least,
+" attr and str.
+"   attr : 'item' or 'delimiter' or 'immutable'.
+"          'item' is a token reordered.
+"          'delimiter' is a token separating items.
+"          'immutable' is neither an 'item' nor a 'delimiter'. It is a string which should not be changed.
+"   str  : The value is the string as 'item' or 'delimiter' or 'immutable'.
+" For instance, 'foo,bar' is tokenized to:
+"   [{'attr': 'item', 'str': 'foo'},
+"    {'attr': 'delimiter', 'str': ','},
+"    {'attr': 'item': 'str': 'bar'}]
+" In case that motionwise is# 'V' or "\<C-v>", delimiter string should be "\n".
+function! s:tokenize(text, type, rule) abort "{{{
+  return s:tokenize_{a:type}wise(a:text, a:rule)
 endfunction "}}}
 
 
@@ -45,68 +40,69 @@ function! s:tokenize_charwise(text, rule) abort  "{{{
     unlet! pattern  " ugly...
     let [idx, pattern, occurence, kind] = s:shift_to_something_start(a:text, targets.all, idx)
     if idx < 0
+      " finish tokenizing
       call s:add_buffer_text(buffer, 'item', a:text, head, idx)
       break
-    else
-      if kind is# 'delimiter'
-        " a delimiter is found
-        " NOTE: I would like to treat zero-width delimiter as possible.
-        let last_elem = get(buffer, -1, {'attr': ''})
-        if idx == last_delimiter_tail && last_elem.attr is# 'delimiter' && last_elem.str ==# ''
-          " zero-width delimiter is found
-          let idx += 1
-          continue
-        endif
+    endif
 
-        if !(head == idx && last_elem.attr is# 'immutable')
-          call s:add_buffer_text(buffer, 'item', a:text, head, idx)
-        endif
-        if idx == last_delimiter_tail
-          " successive delimiters
-          let [head, idx] = [idx, s:shift_to_delimiter_end(a:text, pattern, idx, 0)]
-        else
-          let [head, idx] = [idx, s:shift_to_delimiter_end(a:text, pattern, idx, 1)]
-        endif
-        call s:add_buffer_text(buffer, 'delimiter', a:text, head, idx)
-        if idx < 0 || idx >= end
-          break
-        else
-          let head = idx
-          let last_delimiter_tail = idx
-        endif
-      elseif kind is# 'braket'
-        " a bra is found
-        let idx = s:shift_to_braket_end(a:text, pattern, targets.quotes, targets.literal_quotes, idx)
-        if idx < 0 || idx >= end
-          call s:add_buffer_text(buffer, 'item', a:text, head, idx)
-          break
-        endif
-      elseif kind is# 'quotes'
-        " a quote is found
-        let idx = s:shift_to_quote_end(a:text, pattern, idx)
-        if idx < 0 || idx >= end
-          call s:add_buffer_text(buffer, 'item', a:text, head, idx)
-          break
-        endif
-      elseif kind is# 'literal_quotes'
-        " an literal quote (non-escaped quote) is found
-        let idx = s:shift_to_literal_quote_end(a:text, pattern, idx)
-        if idx < 0 || idx >= end
-          call s:add_buffer_text(buffer, 'item', a:text, head, idx)
-          break
-        endif
+    if kind is# 'delimiter'
+      " a delimiter is found
+      " NOTE: I would like to treat zero-width delimiter as possible.
+      let last_elem = get(buffer, -1, {'attr': ''})
+      if idx == last_delimiter_tail && last_elem.attr is# 'delimiter' && last_elem.str ==# ''
+        " zero-width delimiter is found
+        let idx += 1
+        continue
+      endif
+
+      if !(head == idx && last_elem.attr is# 'immutable')
+        call s:add_buffer_text(buffer, 'item', a:text, head, idx)
+      endif
+      if idx == last_delimiter_tail
+        " successive delimiters
+        let [head, idx] = [idx, s:shift_to_delimiter_end(a:text, pattern, idx, 0)]
       else
-        " an immutable string is found
-        if idx != head
-          call s:add_buffer_text(buffer, 'item', a:text, head, idx)
-        endif
-        let [head, idx] = [idx, s:shift_to_immutable_end(a:text, pattern, idx)]
-        call s:add_buffer_text(buffer, 'immutable', a:text, head, idx)
-        if idx < 0 || idx >= end
-          break
-        else
-          let head = idx
-        endif
+        let [head, idx] = [idx, s:shift_to_delimiter_end(a:text, pattern, idx, 1)]
+      endif
+      call s:add_buffer_text(buffer, 'delimiter', a:text, head, idx)
+      if idx < 0 || idx >= end
+        break
+      else
+        let head = idx
+        let last_delimiter_tail = idx
+      endif
+    elseif kind is# 'braket'
+      " a bra is found
+      let idx = s:shift_to_braket_end(a:text, pattern, targets.quotes, targets.literal_quotes, idx)
+      if idx < 0 || idx >= end
+        call s:add_buffer_text(buffer, 'item', a:text, head, idx)
+        break
+      endif
+    elseif kind is# 'quotes'
+      " a quote is found
+      let idx = s:shift_to_quote_end(a:text, pattern, idx)
+      if idx < 0 || idx >= end
+        call s:add_buffer_text(buffer, 'item', a:text, head, idx)
+        break
+      endif
+    elseif kind is# 'literal_quotes'
+      " an literal quote (non-escaped quote) is found
+      let idx = s:shift_to_literal_quote_end(a:text, pattern, idx)
+      if idx < 0 || idx >= end
+        call s:add_buffer_text(buffer, 'item', a:text, head, idx)
+        break
+      endif
+    else
+      " an immutable string is found
+      if idx != head
+        call s:add_buffer_text(buffer, 'item', a:text, head, idx)
+      endif
+      let [head, idx] = [idx, s:shift_to_immutable_end(a:text, pattern, idx)]
+      call s:add_buffer_text(buffer, 'immutable', a:text, head, idx)
+      if idx < 0 || idx >= end
+        break
+      else
+        let head = idx
       endif
     endif
   endwhile
@@ -160,75 +156,6 @@ function! s:tokenize_blockwise(text, rule) abort  "{{{
   endfor
   call remove(buffer, -1)
   return buffer
-endfunction "}}}
-
-
-function! s:get_buf_text(region) abort  "{{{
-  " NOTE: Do *not* use operator+textobject in another textobject!
-  "       For example, getting a text with the command is not appropriate.
-  "         execute printf('normal! %s:call setpos(".", %s)%s""y', a:retion.motionwise, string(a:region.tail), "\<CR>")
-  "       Because it causes confusions for the unit of dot-repeating.
-  "       Use visual selection+operator as following.
-  let text = ''
-  let v = s:Lib.type2v(a:region.type)
-  let visual = [getpos("'<"), getpos("'>")]
-  let registers = s:saveregisters()
-  let selection = &selection
-  set selection=inclusive
-  try
-    call setpos('.', a:region.head)
-    execute 'normal! ' . v
-    call setpos('.', a:region.tail)
-    silent noautocmd normal! ""y
-    let text = @@
-  finally
-    let &selection = selection
-    call s:restoreregisters(registers)
-    call setpos("'<", visual[0])
-    call setpos("'>", visual[1])
-    return text
-  endtry
-endfunction "}}}
-
-
-function! s:saveregisters() abort "{{{
-  let registers = {}
-  let registers['0'] = s:getregister('0')
-  let registers['1'] = s:getregister('1')
-  let registers['2'] = s:getregister('2')
-  let registers['3'] = s:getregister('3')
-  let registers['4'] = s:getregister('4')
-  let registers['5'] = s:getregister('5')
-  let registers['6'] = s:getregister('6')
-  let registers['7'] = s:getregister('7')
-  let registers['8'] = s:getregister('8')
-  let registers['9'] = s:getregister('9')
-  let registers['"'] = s:getregister('"')
-  if &clipboard =~# 'unnamed'
-    let registers['*'] = s:getregister('*')
-  endif
-  if &clipboard =~# 'unnamedplus'
-    let registers['+'] = s:getregister('+')
-  endif
-  return registers
-endfunction "}}}
-
-
-function! s:restoreregisters(registers) abort "{{{
-  for [register, contains] in items(a:registers)
-    call s:setregister(register, contains)
-  endfor
-endfunction "}}}
-
-
-function! s:getregister(register) abort "{{{
-  return [getreg(a:register), getregtype(a:register)]
-endfunction "}}}
-
-
-function! s:setregister(register, contains) abort "{{{
-  let [value, options] = a:contains
-  return setreg(a:register, value, options)
 endfunction "}}}
 
 

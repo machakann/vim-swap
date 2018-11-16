@@ -4,6 +4,7 @@ let s:Const = swap#constant#import()
 let s:Lib = swap#lib#import()
 let s:Searcher = swap#searcher#import()
 let s:Tokenizer = swap#tokenizer#import()
+let s:Buffer = swap#buffer#import()
 let s:Mode = swap#mode#import()
 let s:Logging = swap#logging#import()
 
@@ -211,6 +212,7 @@ function! s:Swap._restore_buffer(input, undojoin) abort "{{{
   call newbuffer.get_item(a:input[2], s:TRUE).cursor()
   call newbuffer.update_sharp(getpos('.'))
   call newbuffer.update_hat()
+  call newbuffer.update_dollar()
   return [newbuffer, s:TRUE]
 endfunction "}}}
 
@@ -474,7 +476,9 @@ function! s:search_by_group(priority_group, curpos, textobj) abort "{{{
     for sitem in searchitems
       let rule = sitem.rule
       let region = sitem.region
-      let buffer = s:Tokenizer.tokenize(region, rule, a:curpos)
+      let text = s:get_buf_text(region)
+      let tokens = s:Tokenizer.tokenize(text, region.type, rule)
+      let buffer = s:Buffer.Buffer(tokens, region, a:curpos)
       if buffer.swappable() || (a:textobj && buffer.selectable())
         return [buffer, rule]
       endif
@@ -482,6 +486,75 @@ function! s:search_by_group(priority_group, curpos, textobj) abort "{{{
     call filter(searchitems, '!done_list[v:key]')
   endwhile
   return [{}, {}]
+endfunction "}}}
+
+
+function! s:get_buf_text(region) abort  "{{{
+  " NOTE: Do *not* use operator+textobject in another textobject!
+  "       For example, getting a text with the command is not appropriate.
+  "         execute printf('normal! %s:call setpos(".", %s)%s""y', a:retion.motionwise, string(a:region.tail), "\<CR>")
+  "       Because it causes confusions for the unit of dot-repeating.
+  "       Use visual selection+operator as following.
+  let text = ''
+  let v = s:Lib.type2v(a:region.type)
+  let visual = [getpos("'<"), getpos("'>")]
+  let registers = s:saveregisters()
+  let selection = &selection
+  set selection=inclusive
+  try
+    call setpos('.', a:region.head)
+    execute 'normal! ' . v
+    call setpos('.', a:region.tail)
+    silent noautocmd normal! ""y
+    let text = @@
+  finally
+    let &selection = selection
+    call s:restoreregisters(registers)
+    call setpos("'<", visual[0])
+    call setpos("'>", visual[1])
+    return text
+  endtry
+endfunction "}}}
+
+
+function! s:saveregisters() abort "{{{
+  let registers = {}
+  let registers['0'] = s:getregister('0')
+  let registers['1'] = s:getregister('1')
+  let registers['2'] = s:getregister('2')
+  let registers['3'] = s:getregister('3')
+  let registers['4'] = s:getregister('4')
+  let registers['5'] = s:getregister('5')
+  let registers['6'] = s:getregister('6')
+  let registers['7'] = s:getregister('7')
+  let registers['8'] = s:getregister('8')
+  let registers['9'] = s:getregister('9')
+  let registers['"'] = s:getregister('"')
+  if &clipboard =~# 'unnamed'
+    let registers['*'] = s:getregister('*')
+  endif
+  if &clipboard =~# 'unnamedplus'
+    let registers['+'] = s:getregister('+')
+  endif
+  return registers
+endfunction "}}}
+
+
+function! s:restoreregisters(registers) abort "{{{
+  for [register, contains] in items(a:registers)
+    call s:setregister(register, contains)
+  endfor
+endfunction "}}}
+
+
+function! s:getregister(register) abort "{{{
+  return [getreg(a:register), getregtype(a:register)]
+endfunction "}}}
+
+
+function! s:setregister(register, contains) abort "{{{
+  let [value, options] = a:contains
+  return setreg(a:register, value, options)
 endfunction "}}}
 
 
@@ -519,7 +592,9 @@ endfunction "}}}
 function! s:match_group(region, priority_group, curpos) abort "{{{
   for rule in a:priority_group
     if s:Searcher.match(rule, a:region)
-      let buffer = s:Tokenizer.tokenize(a:region, rule, a:curpos)
+      let text = s:get_buf_text(a:region)
+      let tokens = s:Tokenizer.tokenize(text, a:region.type, rule)
+      let buffer = s:Buffer.Buffer(tokens, a:region, a:curpos)
       if buffer.swappable()
         return [buffer, rule]
       endif

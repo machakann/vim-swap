@@ -206,12 +206,16 @@ let s:Buffer = extend({
 \   'mark': {'#': 0, '^': 0, '$': 0},
 \ }, deepcopy(s:NULLREGION))
 
-function! s:Buffer(region, tokens) abort "{{{
+function! s:Buffer(tokens, region, curpos) abort "{{{
   let buffer = deepcopy(s:Buffer)
   let buffer.all =
   \ map(copy(a:tokens), 's:Token(v:val.attr, v:val.str, a:region.type)')
   let buffer.items = filter(copy(buffer.all), 'v:val.attr is# "item"')
   call extend(buffer, deepcopy(a:region))
+  call buffer.update_tokens()
+  call buffer.update_sharp(a:curpos)
+  call buffer.update_hat()
+  call buffer.update_dollar()
   return buffer
 endfunction "}}}
 
@@ -485,11 +489,11 @@ endfunction "}}}
 "}}}
 
 
-let s:Buffers = {}
-let s:Buffers.Buffer = function('s:Buffer')
+let s:BufferModule = {}
+let s:BufferModule.Buffer = function('s:Buffer')
 
 function! swap#buffer#import() abort "{{{
-  return s:Buffers
+  return s:BufferModule
 endfunction "}}}
 
 
