@@ -1,6 +1,6 @@
 " Swap object - Managing a whole action.
 
-let s:Const = swap#constant#import(s:, ['TYPESTR', 'TYPENUM', 'NULLREGION'])
+let s:Const = swap#constant#import()
 let s:Lib = swap#lib#import()
 let s:Searcher = swap#searcher#import()
 let s:Tokenizer = swap#tokenizer#import()

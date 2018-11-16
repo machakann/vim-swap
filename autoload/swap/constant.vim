@@ -29,7 +29,7 @@ endif
 lockvar! s:Const
 
 
-function! swap#constant#import(...) abort "{{{
+function! swap#constant#import() abort "{{{
   return s:Const
 endfunction "}}}
 
