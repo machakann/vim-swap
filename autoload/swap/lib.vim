@@ -140,6 +140,16 @@ function! s:enumerate(list) abort "{{{
 endfunction "}}}
 
 
+" This is a matchstrpos() implementation for old vim
+" NOTE: expr should be string, list is not supported
+function! s:matchstrpos(expr, pat, ...) abort "{{{
+  let str = call('matchstr', [a:expr, a:pat] + a:000)
+  let start = call('match', [a:expr, a:pat] + a:000)
+  let end = call('matchend', [a:expr, a:pat] + a:000)
+  return [str, start, end]
+endfunction "}}}
+
+
 unlet! s:Lib
 let s:Lib = {}
 let s:Lib.get_buf_length = function('s:get_buf_length')
@@ -158,6 +168,8 @@ let s:Lib.v2type = function('s:v2type')
 let s:Lib.get_left_pos = function('s:get_left_pos')
 let s:Lib.get_right_pos = function('s:get_right_pos')
 let s:Lib.enumerate = function('s:enumerate')
+let s:Lib.matchstrpos = exists('*matchstrpos') ? function('matchstrpos')
+\                                              : function('s:matchstrpos')
 lockvar! s:Lib
 
 

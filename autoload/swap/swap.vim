@@ -3,7 +3,7 @@
 let s:Const = swap#constant#import()
 let s:Lib = swap#lib#import()
 let s:Searcher = swap#searcher#import()
-let s:Tokenizer = swap#tokenizer#import()
+let s:Parser = swap#parser#import()
 let s:Buffer = swap#buffer#import()
 let s:Mode = swap#mode#import()
 let s:Logging = swap#logging#import()
@@ -477,7 +477,7 @@ function! s:search_by_group(priority_group, curpos, textobj) abort "{{{
       let rule = sitem.rule
       let region = sitem.region
       let text = s:get_buf_text(region)
-      let tokens = s:Tokenizer.tokenize(text, region.type, rule)
+      let tokens = s:Parser.parse(text, region.type, rule)
       let buffer = s:Buffer.Buffer(tokens, region, a:curpos)
       if buffer.swappable() || (a:textobj && buffer.selectable())
         return [buffer, rule]
@@ -593,7 +593,7 @@ function! s:match_group(region, priority_group, curpos) abort "{{{
   for rule in a:priority_group
     if s:Searcher.match(rule, a:region)
       let text = s:get_buf_text(a:region)
-      let tokens = s:Tokenizer.tokenize(text, a:region.type, rule)
+      let tokens = s:Parser.parse(text, a:region.type, rule)
       let buffer = s:Buffer.Buffer(tokens, a:region, a:curpos)
       if buffer.swappable()
         return [buffer, rule]

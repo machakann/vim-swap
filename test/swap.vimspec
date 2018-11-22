@@ -13,12 +13,12 @@ Describe [unit test]
   End
 
 
-  Context autoload/swap/tokenize.vim
+  Context autoload/swap/parser.vim
     Before
-      let tokenizer = s:scope.funcs('autoload/swap/tokenizer.vim')
+      let parser = s:scope.funcs('autoload/swap/parser.vim')
     End
 
-    Context s:shift_to_something_start()
+    Context s:search_nearest_object()
       Before
         let rule = {
         \ 'surrounds': ['(', ')', 1],
@@ -27,80 +27,193 @@ Describe [unit test]
         \ 'quotes': [['"', '"']],
         \ 'literal_quotes': [["'", "'"]],
         \ 'immutable': ['\%(^\s\|\n\)\s*']}
-        let targets = []
-        let targets += map(copy(get(rule, 'delimiter', [])), '[-1, v:val, 0, "delimiter"]')
-        let targets += map(copy(get(rule, 'immutable', [])), '[-1, v:val, 0, "immutable"]')
-        let targets += map(copy(get(rule, 'braket', [])), '[-1, v:val, 0, "braket"]')
-        let targets += map(copy(get(rule, 'quotes', [])), '[-1, v:val, 0, "quotes"]')
-        let targets += map(copy(get(rule, 'literal_quotes', [])), '[-1, v:val, 0, "literal_quotes"]')
-      End
-
-      It searches a beginning of the braket
-        let [idx, pattern, occurence, kind] =
-        \ tokenizer.shift_to_something_start('foo(bar)', deepcopy(targets), 0)
-        Assert Equals(idx, 3)
-        Assert Equals(kind, 'braket')
-        Assert Equals(pattern, ['(', ')'])
-        unlet! pattern
-
-        let [idx, pattern, occurence, kind] =
-        \ tokenizer.shift_to_something_start('(foo)', deepcopy(targets), 0)
-        Assert Equals(idx, 0)
-        Assert Equals(kind, 'braket')
-        Assert Equals(pattern, ['(', ')'])
-        unlet! pattern
-      End
-
-      It searches a beginning of the quoted text
-        let [idx, pattern, occurence, kind] =
-        \ tokenizer.shift_to_something_start('foo"bar"', deepcopy(targets), 0)
-        Assert Equals(idx, 3)
-        Assert Equals(kind, 'quotes')
-        Assert Equals(pattern, ['"', '"'])
-        unlet! pattern
-
-        let [idx, pattern, occurence, kind] =
-        \ tokenizer.shift_to_something_start('"foo"', deepcopy(targets), 0)
-        Assert Equals(idx, 0)
-        Assert Equals(kind, 'quotes')
-        Assert Equals(pattern, ['"', '"'])
-        unlet! pattern
-      End
-
-      It searches a beginning of the literal-quoted text
-        let [idx, pattern, occurence, kind] =
-        \ tokenizer.shift_to_something_start("foo'bar'", deepcopy(targets), 0)
-        Assert Equals(idx, 3)
-        Assert Equals(kind, 'literal_quotes')
-        Assert Equals(pattern, ["'", "'"])
-        unlet! pattern
-
-        let [idx, pattern, occurence, kind] =
-        \ tokenizer.shift_to_something_start("'foo'", deepcopy(targets), 0)
-        Assert Equals(idx, 0)
-        Assert Equals(kind, 'literal_quotes')
-        Assert Equals(pattern, ["'", "'"])
-        unlet! pattern
+        let objects = parser.make_objects(rule)
       End
 
       It searches a beginning of the delimiter
-        let [idx, pattern, occurence, kind] =
-        \ tokenizer.shift_to_something_start('foo, bar', deepcopy(targets), 0)
-        Assert Equals(idx, 3)
-        Assert Equals(kind, 'delimiter')
-        Assert Equals(pattern, ',\s*')
-        unlet! pattern
+        let match = parser.search_nearest_object('foo, bar', deepcopy(objects), 0, {})
+        Assert Equals(match.start, 3)
+        Assert Equals(match.end, 5)
+        Assert Equals(match.kind, 'delimiter')
+        Assert Equals(match.pat, ',\s*')
 
-        let [idx, pattern, occurence, kind] =
-        \ tokenizer.shift_to_something_start(',foo', deepcopy(targets), 0)
-        Assert Equals(idx, 0)
-        Assert Equals(kind, 'delimiter')
-        Assert Equals(pattern, ',\s*')
-        unlet! pattern
+        let match = parser.search_nearest_object(', foo', deepcopy(objects), 0, {})
+        Assert Equals(match.start, 0)
+        Assert Equals(match.end, 2)
+        Assert Equals(match.kind, 'delimiter')
+        Assert Equals(match.pat, ',\s*')
+
+        let _objects = deepcopy(objects)
+
+        let match = parser.search_nearest_object('foo, bar, baz', _objects, 0, {})
+        Assert Equals(match.start, 3)
+        Assert Equals(match.end, 5)
+        Assert Equals(match.kind, 'delimiter')
+        Assert Equals(match.pat, ',\s*')
+
+        let match = parser.search_nearest_object('foo, bar, baz', _objects, 5, {})
+        Assert Equals(match.start, 8)
+        Assert Equals(match.end, 10)
+        Assert Equals(match.kind, 'delimiter')
+        Assert Equals(match.pat, ',\s*')
+
+        let match = parser.search_nearest_object('foo, bar, baz', _objects, 6, {})
+        Assert Equals(match.start, 8)
+        Assert Equals(match.end, 10)
+        Assert Equals(match.kind, 'delimiter')
+        Assert Equals(match.pat, ',\s*')
+
+        let match = parser.search_nearest_object('foo, bar, baz', _objects, 9, {})
+        Assert Equals(match, {})
+      End
+
+      It searches a beginning of the braket
+        let match = parser.search_nearest_object('foo(bar)', deepcopy(objects), 0, {})
+        Assert Equals(match.start, 3)
+        Assert Equals(match.kind, 'braket')
+        Assert Equals(match.pat, ['(', ')'])
+
+        let match = parser.search_nearest_object('(foo)', deepcopy(objects), 0, {})
+        Assert Equals(match.start, 0)
+        Assert Equals(match.kind, 'braket')
+        Assert Equals(match.pat, ['(', ')'])
+
+        let _objects = deepcopy(objects)
+
+        let match = parser.search_nearest_object('(foo)bar(baz)', _objects, 0, {})
+        Assert Equals(match.start, 0)
+        Assert Equals(match.kind, 'braket')
+        Assert Equals(match.pat, ['(', ')'])
+
+        let match = parser.search_nearest_object('(foo)bar(baz)', _objects, 5, {})
+        Assert Equals(match.start, 8)
+        Assert Equals(match.kind, 'braket')
+        Assert Equals(match.pat, ['(', ')'])
+
+        let match = parser.search_nearest_object('(foo)bar(baz)', _objects, 6, {})
+        Assert Equals(match.start, 8)
+        Assert Equals(match.kind, 'braket')
+        Assert Equals(match.pat, ['(', ')'])
+
+        let match = parser.search_nearest_object('(foo)bar(baz)', _objects, 9, {})
+        Assert Equals(match, {})
+      End
+
+      It searches a beginning of the quoted text
+        let match = parser.search_nearest_object('foo"bar"', deepcopy(objects), 0, {})
+        Assert Equals(match.start, 3)
+        Assert Equals(match.kind, 'quotes')
+        Assert Equals(match.pat, ['"', '"'])
+
+        let match = parser.search_nearest_object('"foo"', deepcopy(objects), 0, {})
+        Assert Equals(match.start, 0)
+        Assert Equals(match.kind, 'quotes')
+        Assert Equals(match.pat, ['"', '"'])
+
+        let _objects = deepcopy(objects)
+
+        let match = parser.search_nearest_object('"foo"bar"baz"', _objects, 0, {})
+        Assert Equals(match.start, 0)
+        Assert Equals(match.kind, 'quotes')
+        Assert Equals(match.pat, ['"', '"'])
+
+        let match = parser.search_nearest_object('"foo"bar"baz"', _objects, 5, {})
+        Assert Equals(match.start, 8)
+        Assert Equals(match.kind, 'quotes')
+        Assert Equals(match.pat, ['"', '"'])
+
+        let match = parser.search_nearest_object('"foo"bar"baz"', _objects, 6, {})
+        Assert Equals(match.start, 8)
+        Assert Equals(match.kind, 'quotes')
+        Assert Equals(match.pat, ['"', '"'])
+      End
+
+      It searches a beginning of the literal-quoted text
+        let match = parser.search_nearest_object("foo'bar'", deepcopy(objects), 0, {})
+        Assert Equals(match.start, 3)
+        Assert Equals(match.kind, 'literal_quotes')
+
+        let match = parser.search_nearest_object("'foo'", deepcopy(objects), 0, {})
+        Assert Equals(match.start, 0)
+        Assert Equals(match.kind, 'literal_quotes')
+
+        let _objects = deepcopy(objects)
+
+        let match = parser.search_nearest_object("'foo'bar'baz'", _objects, 0, {})
+        Assert Equals(match.start, 0)
+        Assert Equals(match.kind, 'literal_quotes')
+
+        let match = parser.search_nearest_object("'foo'bar'baz'", _objects, 5, {})
+        Assert Equals(match.start, 8)
+        Assert Equals(match.kind, 'literal_quotes')
+
+        let match = parser.search_nearest_object("'foo'bar'baz'", _objects, 6, {})
+        Assert Equals(match.start, 8)
+        Assert Equals(match.kind, 'literal_quotes')
+      End
+
+      It searches a beginning of the immutable
+        let match = parser.search_nearest_object('  foo, bar', deepcopy(objects), 0, {})
+        Assert Equals(match.start, 0)
+        Assert Equals(match.end, 2)
+        Assert Equals(match.kind, 'immutable')
+        Assert Equals(match.pat, '\%(^\s\|\n\)\s*')
+
+        let match = parser.search_nearest_object('  ,foo', deepcopy(objects), 0, {})
+        Assert Equals(match.start, 0)
+        Assert Equals(match.end, 2)
+        Assert Equals(match.kind, 'immutable')
+        Assert Equals(match.pat, '\%(^\s\|\n\)\s*')
       End
     End
 
-    Context s:shift_to_braket_end()
+    Context s:search_quote_end()
+      It searches the end of a quoted text
+        let idx = parser.search_quote_end('"foo"', ['"', '"'], 1)
+        Assert Equals(idx, 5)
+
+        let idx = parser.search_quote_end('foo"bar"baz', ['"', '"'], 4)
+        Assert Equals(idx, 8)
+
+        let idx = parser.search_quote_end('"foo"bar"baz"', ['"', '"'], 1)
+        Assert Equals(idx, 5)
+
+        let idx = parser.search_quote_end('"foo"bar"baz"', ['"', '"'], 9)
+        Assert Equals(idx, 13)
+
+        let idx = parser.search_quote_end('"foo\"bar"', ['"', '"'], 1)
+        Assert Equals(idx, 10)
+
+        let idx = parser.search_quote_end('"foo\\"bar"', ['"', '"'], 1)
+        Assert Equals(idx, 7)
+
+        let idx = parser.search_quote_end('"foo\\\"bar"', ['"', '"'], 1)
+        Assert Equals(idx, 12)
+
+        let idx = parser.search_quote_end('foobar', ['"', '"'], 1)
+        Assert Equals(idx, 6)
+
+        let idx = parser.search_quote_end('"foobar', ['"', '"'], 1)
+        Assert Equals(idx, 7)
+
+        let idx = parser.search_quote_end('"foo\"bar', ['"', '"'], 1)
+        Assert Equals(idx, 9)
+
+        let idx = parser.search_quote_end('"\"foobar', ['"', '"'], 1)
+        Assert Equals(idx, 9)
+
+        let idx = parser.search_quote_end('"foobar\"', ['"', '"'], 1)
+        Assert Equals(idx, 9)
+
+        let idx = parser.search_quote_end('""', ['"', '"'], 1)
+        Assert Equals(idx, 2)
+
+        let idx = parser.search_quote_end('"\"', ['"', '"'], 1)
+        Assert Equals(idx, 3)
+      End
+    End
+
+    Context s:search_braket_end()
       Before
         let rule = {
         \ 'surrounds': ['(', ')', 1],
@@ -109,150 +222,58 @@ Describe [unit test]
         \ 'quotes': [['"', '"']],
         \ 'literal_quotes': [["'", "'"]],
         \ 'immutable': ['\%(^\s\|\n\)\s*']}
-        let quotes = map(copy(get(rule, 'quotes', [])), '[0, v:val, 0, "quotes"]')
-        let literal_quotes = map(copy(get(rule, 'literal_quotes', [])), '[0, v:val, 0, "literal_quotes"]')
+        let objects = parser.make_objects(rule)
+        let all_quotes = parser.copy_all_quotations(objects)
       End
 
       It searches the end of parenthesis
-        let idx = tokenizer.shift_to_braket_end(
-        \ '(foo)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+        let idx = parser.search_braket_end(
+        \ '(foo)', ['(', ')'], deepcopy(all_quotes), 1)
         Assert Equals(idx, 5)
 
-        let idx = tokenizer.shift_to_braket_end(
-        \ 'foo(bar)baz', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 3)
+        let idx = parser.search_braket_end(
+        \ 'foo(bar)baz', ['(', ')'], deepcopy(all_quotes), 4)
         Assert Equals(idx, 8)
 
-        let idx = tokenizer.shift_to_braket_end(
-        \ '(foo)bar(baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+        let idx = parser.search_braket_end(
+        \ '(foo)bar(baz)', ['(', ')'], deepcopy(all_quotes), 1)
         Assert Equals(idx, 5)
 
-        let idx = tokenizer.shift_to_braket_end(
-        \ '(foo)bar(baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 8)
+        let idx = parser.search_braket_end(
+        \ '(foo)bar(baz)', ['(', ')'], deepcopy(all_quotes), 9)
         Assert Equals(idx, 13)
 
-        let idx = tokenizer.shift_to_braket_end(
-        \ '(foo(bar)baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+        let idx = parser.search_braket_end(
+        \ '(foo(bar)baz)', ['(', ')'], deepcopy(all_quotes), 1)
         Assert Equals(idx, 13)
 
-        let idx = tokenizer.shift_to_braket_end(
-        \ '(foo(bar)baz)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 4)
+        let idx = parser.search_braket_end(
+        \ '(foo(bar)baz)', ['(', ')'], deepcopy(all_quotes), 5)
         Assert Equals(idx, 9)
 
-        let idx = tokenizer.shift_to_braket_end(
-        \ '()', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+        let idx = parser.search_braket_end(
+        \ '()', ['(', ')'], deepcopy(all_quotes), 1)
         Assert Equals(idx, 2)
 
-        let idx = tokenizer.shift_to_braket_end(
-        \ '(foo(bar)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+        let idx = parser.search_braket_end(
+        \ '(foo(bar)', ['(', ')'], deepcopy(all_quotes), 1)
         Assert Equals(idx, 9)
 
-        let idx = tokenizer.shift_to_braket_end(
-        \ ' ()', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+        let idx = parser.search_braket_end(
+        \ ' ()', ['(', ')'], deepcopy(all_quotes), 1)
         Assert Equals(idx, 3)
 
-        let idx = tokenizer.shift_to_braket_end(
-        \ '(foo")"bar)', ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+        let idx = parser.search_braket_end(
+        \ '(foo")"bar)', ['(', ')'], deepcopy(all_quotes), 1)
         Assert Equals(idx, 11)
 
-        let idx = tokenizer.shift_to_braket_end(
-        \ "(foo')'bar)", ['(', ')'], deepcopy(quotes), deepcopy(literal_quotes), 0)
+        let idx = parser.search_braket_end(
+        \ "(foo')'bar)", ['(', ')'], deepcopy(all_quotes), 1)
         Assert Equals(idx, 11)
       End
     End
 
-    Context s:shift_to_quote_end()
-      It searches the end of a quoted text
-        let idx = tokenizer.shift_to_quote_end('"foo"', ['"', '"'], 0)
-        Assert Equals(idx, 5)
-
-        let idx = tokenizer.shift_to_quote_end('foo"bar"baz', ['"', '"'], 3)
-        Assert Equals(idx, 8)
-
-        let idx = tokenizer.shift_to_quote_end('"foo"bar"baz"', ['"', '"'], 0)
-        Assert Equals(idx, 5)
-
-        let idx = tokenizer.shift_to_quote_end('"foo"bar"baz"', ['"', '"'], 8)
-        Assert Equals(idx, 13)
-
-        let idx = tokenizer.shift_to_quote_end('"foo\"bar"', ['"', '"'], 0)
-        Assert Equals(idx, 10)
-
-        let idx = tokenizer.shift_to_quote_end('"foo\\"bar"', ['"', '"'], 0)
-        Assert Equals(idx, 7)
-
-        let idx = tokenizer.shift_to_quote_end('"foo\\\"bar"', ['"', '"'], 0)
-        Assert Equals(idx, 12)
-
-        let idx = tokenizer.shift_to_quote_end('foobar', ['"', '"'], 0)
-        Assert Equals(idx, -1)
-
-        let idx = tokenizer.shift_to_quote_end('"foobar', ['"', '"'], 0)
-        Assert Equals(idx, -1)
-
-        let idx = tokenizer.shift_to_quote_end('"foo\"bar', ['"', '"'], 0)
-        Assert Equals(idx, -1)
-
-        let idx = tokenizer.shift_to_quote_end('"\"foobar', ['"', '"'], 0)
-        Assert Equals(idx, -1)
-
-        let idx = tokenizer.shift_to_quote_end('"foobar\"', ['"', '"'], 0)
-        Assert Equals(idx, -1)
-
-        let idx = tokenizer.shift_to_quote_end('""', ['"', '"'], 0)
-        Assert Equals(idx, 2)
-
-        let idx = tokenizer.shift_to_quote_end('"\"', ['"', '"'], 0)
-        Assert Equals(idx, -1)
-      End
-    End
-
-    Context s:shift_to_literal_quote_end()
-      It searches the end of a literal-quoted text
-        let idx = tokenizer.shift_to_literal_quote_end("'foo'", ["'", "'"], 0)
-        Assert Equals(idx, 5)
-
-        let idx = tokenizer.shift_to_literal_quote_end("foo'bar'baz", ["'", "'"], 3)
-        Assert Equals(idx, 8)
-
-        let idx = tokenizer.shift_to_literal_quote_end("'foo'bar'baz'", ["'", "'"], 0)
-        Assert Equals(idx, 5)
-
-        let idx = tokenizer.shift_to_literal_quote_end("'foo'bar'baz'", ["'", "'"], 8)
-        Assert Equals(idx, 13)
-
-        let idx = tokenizer.shift_to_literal_quote_end('''foo\''bar''', ["'", "'"], 0)
-        Assert Equals(idx, 6)
-
-        let idx = tokenizer.shift_to_literal_quote_end('''foo\\''bar''', ["'", "'"], 0)
-        Assert Equals(idx, 7)
-
-        let idx = tokenizer.shift_to_literal_quote_end('''foo\\\''bar''', ["'", "'"], 0)
-        Assert Equals(idx, 8)
-
-        let idx = tokenizer.shift_to_literal_quote_end('foobar', ["'", "'"], 0)
-        Assert Equals(idx, -1)
-
-        let idx = tokenizer.shift_to_literal_quote_end("'foobar", ["'", "'"], 0)
-        Assert Equals(idx, -1)
-
-        let idx = tokenizer.shift_to_literal_quote_end('''foo\''bar', ["'", "'"], 0)
-        Assert Equals(idx, 6)
-
-        let idx = tokenizer.shift_to_literal_quote_end('''\''foobar', ["'", "'"], 0)
-        Assert Equals(idx, 3)
-
-        let idx = tokenizer.shift_to_literal_quote_end('''foobar\''', ["'", "'"], 0)
-        Assert Equals(idx, 9)
-
-        let idx = tokenizer.shift_to_literal_quote_end("''", ["'", "'"], 0)
-        Assert Equals(idx, 2)
-
-        let idx = tokenizer.shift_to_literal_quote_end('''\''', ["'", "'"], 0)
-        Assert Equals(idx, 3)
-      End
-    End
-
-    Context s:tokenize_charwise()
+    Context s:parse_charwise()
       Before
         let rule = {
         \ 'surrounds': ['(', ')', 1],
@@ -264,234 +285,261 @@ Describe [unit test]
       End
 
       It split a string into items and delimiters
-        let stuffs = tokenizer.tokenize_charwise('foo, bar', rule)
-        Assert Equals(len(stuffs), 3)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  'foo')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  'bar')
+        let elements = parser.parse_charwise('foo, bar', rule)
+        Assert Equals(len(elements), 3, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  'foo')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  'bar')
 
-        let stuffs = tokenizer.tokenize_charwise('foo, bar, baz', rule)
-        Assert Equals(len(stuffs), 5)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  'foo')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  'bar')
-        Assert Equals(stuffs[3]['attr'], 'delimiter')
-        Assert Equals(stuffs[3]['str'],  ', ')
-        Assert Equals(stuffs[4]['attr'], 'item')
-        Assert Equals(stuffs[4]['str'],  'baz')
+        let elements = parser.parse_charwise('foo, bar, baz', rule)
+        Assert Equals(len(elements), 5, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  'foo')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  'bar')
+        Assert Equals(elements[3]['attr'], 'delimiter')
+        Assert Equals(elements[3]['str'],  ', ')
+        Assert Equals(elements[4]['attr'], 'item')
+        Assert Equals(elements[4]['str'],  'baz')
 
-        let stuffs = tokenizer.tokenize_charwise('foo, (bar, baz)', rule)
-        Assert Equals(len(stuffs), 3)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  'foo')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  '(bar, baz)')
+        let elements = parser.parse_charwise('foo, "bar, baz"', rule)
+        Assert Equals(len(elements), 3, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  'foo')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  '"bar, baz"')
 
-        let stuffs = tokenizer.tokenize_charwise('foo, [bar, baz]', rule)
-        Assert Equals(len(stuffs), 3)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  'foo')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  '[bar, baz]')
+        let elements = parser.parse_charwise("foo, 'bar, baz'", rule)
+        Assert Equals(len(elements), 3, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  'foo')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  "'bar, baz'")
 
-        let stuffs = tokenizer.tokenize_charwise('foo, {bar, baz}', rule)
-        Assert Equals(len(stuffs), 3)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  'foo')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  '{bar, baz}')
+        let elements = parser.parse_charwise('foo, (bar, baz)', rule)
+        Assert Equals(len(elements), 3, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  'foo')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  '(bar, baz)')
 
-        let stuffs = tokenizer.tokenize_charwise('foo, "bar, baz"', rule)
-        Assert Equals(len(stuffs), 3)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  'foo')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  '"bar, baz"')
+        let elements = parser.parse_charwise('foo, [bar, baz]', rule)
+        Assert Equals(len(elements), 3, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  'foo')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  '[bar, baz]')
 
-        let stuffs = tokenizer.tokenize_charwise("foo, 'bar, baz'", rule)
-        Assert Equals(len(stuffs), 3)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  'foo')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  "'bar, baz'")
+        let elements = parser.parse_charwise('foo, {bar, baz}', rule)
+        Assert Equals(len(elements), 3, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  'foo')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  '{bar, baz}')
 
-        let stuffs = tokenizer.tokenize_charwise('(foo, bar), baz, qux', rule)
-        Assert Equals(len(stuffs), 5)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  '(foo, bar)')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  'baz')
-        Assert Equals(stuffs[3]['attr'], 'delimiter')
-        Assert Equals(stuffs[3]['str'],  ', ')
-        Assert Equals(stuffs[4]['attr'], 'item')
-        Assert Equals(stuffs[4]['str'],  'qux')
+        let elements = parser.parse_charwise('(foo, bar), baz, qux', rule)
+        Assert Equals(len(elements), 5, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  '(foo, bar)')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  'baz')
+        Assert Equals(elements[3]['attr'], 'delimiter')
+        Assert Equals(elements[3]['str'],  ', ')
+        Assert Equals(elements[4]['attr'], 'item')
+        Assert Equals(elements[4]['str'],  'qux')
 
-        let stuffs = tokenizer.tokenize_charwise('foo, (bar, baz), qux', rule)
-        Assert Equals(len(stuffs), 5)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  'foo')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  '(bar, baz)')
-        Assert Equals(stuffs[3]['attr'], 'delimiter')
-        Assert Equals(stuffs[3]['str'],  ', ')
-        Assert Equals(stuffs[4]['attr'], 'item')
-        Assert Equals(stuffs[4]['str'],  'qux')
+        let elements = parser.parse_charwise('foo, (bar, baz), qux', rule)
+        Assert Equals(len(elements), 5, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  'foo')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  '(bar, baz)')
+        Assert Equals(elements[3]['attr'], 'delimiter')
+        Assert Equals(elements[3]['str'],  ', ')
+        Assert Equals(elements[4]['attr'], 'item')
+        Assert Equals(elements[4]['str'],  'qux')
 
-        let stuffs = tokenizer.tokenize_charwise('foo, bar, (baz, qux)', rule)
-        Assert Equals(len(stuffs), 5)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  'foo')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  'bar')
-        Assert Equals(stuffs[3]['attr'], 'delimiter')
-        Assert Equals(stuffs[3]['str'],  ', ')
-        Assert Equals(stuffs[4]['attr'], 'item')
-        Assert Equals(stuffs[4]['str'],  '(baz, qux)')
+        let elements = parser.parse_charwise('foo, bar, (baz, qux)', rule)
+        Assert Equals(len(elements), 5, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  'foo')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  'bar')
+        Assert Equals(elements[3]['attr'], 'delimiter')
+        Assert Equals(elements[3]['str'],  ', ')
+        Assert Equals(elements[4]['attr'], 'item')
+        Assert Equals(elements[4]['str'],  '(baz, qux)')
 
-        let stuffs = tokenizer.tokenize_charwise('"foo, bar", (baz, qux)', rule)
-        Assert Equals(len(stuffs), 3)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  '"foo, bar"')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  '(baz, qux)')
+        let elements = parser.parse_charwise('"foo, bar", (baz, qux)', rule)
+        Assert Equals(len(elements), 3, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  '"foo, bar"')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  '(baz, qux)')
 
-        let stuffs = tokenizer.tokenize_charwise('"foo, (bar, baz)", qux', rule)
-        Assert Equals(len(stuffs), 3)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  '"foo, (bar, baz)"')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  'qux')
+        let elements = parser.parse_charwise('"foo, (bar, baz)", qux', rule)
+        Assert Equals(len(elements), 3, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  '"foo, (bar, baz)"')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  'qux')
 
-        let stuffs = tokenizer.tokenize_charwise('(foo, "bar, baz"), qux', rule)
-        Assert Equals(len(stuffs), 3)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  '(foo, "bar, baz")')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  'qux')
+        let elements = parser.parse_charwise('(foo, "bar, baz"), qux', rule)
+        Assert Equals(len(elements), 3, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  '(foo, "bar, baz")')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  'qux')
 
-        let stuffs = tokenizer.tokenize_charwise("foo, bar,\n baz, qux", rule)
-        Assert Equals(len(stuffs), 8)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  'foo')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  'bar')
-        Assert Equals(stuffs[3]['attr'], 'delimiter')
-        Assert Equals(stuffs[3]['str'],  ',')
-        Assert Equals(stuffs[4]['attr'], 'immutable')
-        Assert Equals(stuffs[4]['str'],  "\n ")
-        Assert Equals(stuffs[5]['attr'], 'item')
-        Assert Equals(stuffs[5]['str'],  'baz')
-        Assert Equals(stuffs[6]['attr'], 'delimiter')
-        Assert Equals(stuffs[6]['str'],  ', ')
-        Assert Equals(stuffs[7]['attr'], 'item')
-        Assert Equals(stuffs[7]['str'],  'qux')
+        let elements = parser.parse_charwise("foo, bar,\n baz, qux", rule)
+        Assert Equals(len(elements), 8, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  'foo')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  'bar')
+        Assert Equals(elements[3]['attr'], 'delimiter')
+        Assert Equals(elements[3]['str'],  ',')
+        Assert Equals(elements[4]['attr'], 'immutable')
+        Assert Equals(elements[4]['str'],  "\n ")
+        Assert Equals(elements[5]['attr'], 'item')
+        Assert Equals(elements[5]['str'],  'baz')
+        Assert Equals(elements[6]['attr'], 'delimiter')
+        Assert Equals(elements[6]['str'],  ', ')
+        Assert Equals(elements[7]['attr'], 'item')
+        Assert Equals(elements[7]['str'],  'qux')
 
-        let stuffs = tokenizer.tokenize_charwise("foo, bar\n    , baz, qux", rule)
-        Assert Equals(len(stuffs), 8)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  'foo')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  'bar')
-        Assert Equals(stuffs[3]['attr'], 'immutable')
-        Assert Equals(stuffs[3]['str'],  "\n    ")
-        Assert Equals(stuffs[4]['attr'], 'delimiter')
-        Assert Equals(stuffs[4]['str'],  ', ')
-        Assert Equals(stuffs[5]['attr'], 'item')
-        Assert Equals(stuffs[5]['str'],  'baz')
-        Assert Equals(stuffs[6]['attr'], 'delimiter')
-        Assert Equals(stuffs[6]['str'],  ', ')
-        Assert Equals(stuffs[7]['attr'], 'item')
-        Assert Equals(stuffs[7]['str'],  'qux')
+        let elements = parser.parse_charwise("foo, bar\n    , baz, qux", rule)
+        Assert Equals(len(elements), 8, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  'foo')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  'bar')
+        Assert Equals(elements[3]['attr'], 'immutable')
+        Assert Equals(elements[3]['str'],  "\n    ")
+        Assert Equals(elements[4]['attr'], 'delimiter')
+        Assert Equals(elements[4]['str'],  ', ')
+        Assert Equals(elements[5]['attr'], 'item')
+        Assert Equals(elements[5]['str'],  'baz')
+        Assert Equals(elements[6]['attr'], 'delimiter')
+        Assert Equals(elements[6]['str'],  ', ')
+        Assert Equals(elements[7]['attr'], 'item')
+        Assert Equals(elements[7]['str'],  'qux')
 
-        let stuffs = tokenizer.tokenize_charwise("foo, bar, , baz", rule)
-        Assert Equals(len(stuffs), 7)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  'foo')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  'bar')
-        Assert Equals(stuffs[3]['attr'], 'delimiter')
-        Assert Equals(stuffs[3]['str'],  ', ')
-        Assert Equals(stuffs[4]['attr'], 'item')
-        Assert Equals(stuffs[4]['str'],  '')
-        Assert Equals(stuffs[5]['attr'], 'delimiter')
-        Assert Equals(stuffs[5]['str'],  ', ')
-        Assert Equals(stuffs[6]['attr'], 'item')
-        Assert Equals(stuffs[6]['str'],  'baz')
+        let elements = parser.parse_charwise("foo, bar, , baz", rule)
+        Assert Equals(len(elements), 7, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  'foo')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  'bar')
+        Assert Equals(elements[3]['attr'], 'delimiter')
+        Assert Equals(elements[3]['str'],  ', ')
+        Assert Equals(elements[4]['attr'], 'item')
+        Assert Equals(elements[4]['str'],  '')
+        Assert Equals(elements[5]['attr'], 'delimiter')
+        Assert Equals(elements[5]['str'],  ', ')
+        Assert Equals(elements[6]['attr'], 'item')
+        Assert Equals(elements[6]['str'],  'baz')
 
-        let stuffs = tokenizer.tokenize_charwise("foo, bar,", rule)
-        Assert Equals(len(stuffs), 5)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  'foo')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  'bar')
-        Assert Equals(stuffs[3]['attr'], 'delimiter')
-        Assert Equals(stuffs[3]['str'],  ',')
-        Assert Equals(stuffs[4]['attr'], 'item')
-        Assert Equals(stuffs[4]['str'],  '')
+        let elements = parser.parse_charwise("foo, bar,", rule)
+        Assert Equals(len(elements), 5, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  'foo')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  'bar')
+        Assert Equals(elements[3]['attr'], 'delimiter')
+        Assert Equals(elements[3]['str'],  ',')
+        Assert Equals(elements[4]['attr'], 'item')
+        Assert Equals(elements[4]['str'],  '')
 
-        let stuffs = tokenizer.tokenize_charwise(", foo, bar", rule)
-        Assert Equals(len(stuffs), 5)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  '')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  ', ')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  'foo')
-        Assert Equals(stuffs[3]['attr'], 'delimiter')
-        Assert Equals(stuffs[3]['str'],  ', ')
-        Assert Equals(stuffs[4]['attr'], 'item')
-        Assert Equals(stuffs[4]['str'],  'bar')
+        let elements = parser.parse_charwise(", foo, bar", rule)
+        Assert Equals(len(elements), 5, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  '')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  'foo')
+        Assert Equals(elements[3]['attr'], 'delimiter')
+        Assert Equals(elements[3]['str'],  ', ')
+        Assert Equals(elements[4]['attr'], 'item')
+        Assert Equals(elements[4]['str'],  'bar')
+
+        let elements = parser.parse_charwise("'foo' : 'bar', 'baz'", rule)
+        Assert Equals(len(elements), 3, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  "'foo' : 'bar'")
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  "'baz'")
+
+        let elements = parser.parse_charwise('"foo" : "bar", "baz"', rule)
+        Assert Equals(len(elements), 3, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  '"foo" : "bar"')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  '"baz"')
+
+        let elements = parser.parse_charwise('(foo) : (bar), (baz)', rule)
+        Assert Equals(len(elements), 3, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  '(foo) : (bar)')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  ', ')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  '(baz)')
 
         " zero-width delimiter
         let rule = {'body': '\a\+', 'delimiter': ['\C\ze[A-Z]'],}
-        let stuffs = tokenizer.tokenize_charwise('FooBarBaz', rule)
-        Assert Equals(len(stuffs), 5)
-        Assert Equals(stuffs[0]['attr'], 'item')
-        Assert Equals(stuffs[0]['str'],  'Foo')
-        Assert Equals(stuffs[1]['attr'], 'delimiter')
-        Assert Equals(stuffs[1]['str'],  '')
-        Assert Equals(stuffs[2]['attr'], 'item')
-        Assert Equals(stuffs[2]['str'],  'Bar')
-        Assert Equals(stuffs[3]['attr'], 'delimiter')
-        Assert Equals(stuffs[3]['str'],  '')
-        Assert Equals(stuffs[4]['attr'], 'item')
-        Assert Equals(stuffs[4]['str'],  'Baz')
+        let elements = parser.parse_charwise('FooBarBaz', rule)
+        Assert Equals(len(elements), 5, elements)
+        Assert Equals(elements[0]['attr'], 'item')
+        Assert Equals(elements[0]['str'],  'Foo')
+        Assert Equals(elements[1]['attr'], 'delimiter')
+        Assert Equals(elements[1]['str'],  '')
+        Assert Equals(elements[2]['attr'], 'item')
+        Assert Equals(elements[2]['str'],  'Bar')
+        Assert Equals(elements[3]['attr'], 'delimiter')
+        Assert Equals(elements[3]['str'],  '')
+        Assert Equals(elements[4]['attr'], 'item')
+        Assert Equals(elements[4]['str'],  'Baz')
       End
     End
   End
@@ -566,11 +614,11 @@ Describe [unit test]
   Context autoload/swap/swap.vim
     Before
       let swap = s:scope.funcs('autoload/swap/swap.vim')
-      let tokenizer = s:scope.funcs('autoload/swap/tokenizer.vim')
+      let parser = s:scope.funcs('autoload/swap/parser.vim')
 
       let rule = {'delimiter': [',\s*']}
       let buf = {}
-      let buf.all = tokenizer.tokenize_charwise('dd, aa, bb, cc', rule)
+      let buf.all = parser.parse_charwise('dd, aa, bb, cc', rule)
       let buf.items = filter(copy(buf.all), 'v:val.attr is# "item"')
     End
 
