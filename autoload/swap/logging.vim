@@ -28,25 +28,21 @@ let s:WARNING  = {'kind': 'WARNING',  'level': 30, 'hl': 'WarningMsg'}
 let s:INFO     = {'kind': 'INFO',     'level': 20, 'hl': 'NONE'}
 let s:DEBUG    = {'kind': 'DEBUG',    'level': 10, 'hl': 'NONE'}
 
-let g:swap#logging#loglevel = get(g:, 'swap#logging#loglevel', s:WARNING.level)
-
 " Logger object {{{
 let s:Logger = {
 \   'file': '',
-\   'loglevel': 0,
 \ }
 
 function! s:Logger(file, ...) abort "{{{
   let option = get(a:000, 0, {})
   let logger = deepcopy(s:Logger)
   let logger.file = a:file[strlen(s:ROOT) + 1 :]
-  let logger.loglevel = get(option, 'loglevel', g:swap#logging#loglevel)
   return logger
 endfunction "}}}
 
 
 function! s:Logger.log(identifier, text, ...) abort "{{{
-  if g:swap#logging#loglevel > a:identifier.level || s:Logging.n < 1
+  if a:identifier.level < s:Logging.level || s:Logging.n < 1
     return
   endif
 
@@ -114,6 +110,7 @@ let s:Logging = {
 \   'log': [],
 \   'loggers': {},
 \   'Logger': function('s:Logger'),
+\   'level': s:WARNING.level,
 \   'ERROR': s:ERROR,
 \   'WARNING': s:WARNING,
 \   'INFO': s:INFO,
@@ -154,6 +151,11 @@ endfunction "}}}
 
 function! s:Logging.clear() abort "{{{
   call filter(self.log, 0)
+endfunction "}}}
+
+
+function! s:Logging.setlevel(log) abort "{{{
+  let self.level = a:log.level
 endfunction "}}}
 
 
