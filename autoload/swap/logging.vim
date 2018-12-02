@@ -118,6 +118,8 @@ let s:Logging = {
 \   'WARNING': s:WARNING,
 \   'INFO': s:INFO,
 \   'DEBUG': s:DEBUG,
+\   'outputfile': '',
+\   'option': {},
 \ }
 
 
@@ -134,6 +136,19 @@ function! s:Logging._add(entry) abort "{{{
     call filter(self.log, 'v:key < self.n - 1')
   endif
   call add(self.log, a:entry)
+  call self._writefile(a:entry)
+endfunction "}}}
+
+
+function! s:Logging._writefile(entry) abort "{{{
+  if self.outputfile is# ''
+    return
+  endif
+  let option = self.option
+  let pathshorten = get(option, 'pathshorten', s:TRUE)
+  let stacktrace = get(option, 'stacktrace', s:FALSE)
+  let lines = s:buildlines(a:entry, pathshorten, stacktrace)
+  call writefile(lines, self.outputfile, 'a')
 endfunction "}}}
 
 
@@ -142,8 +157,18 @@ function! s:Logging.clear() abort "{{{
 endfunction "}}}
 
 
+function! s:Logging.setfile(filename) abort "{{{
+  let self.outputfile = fnamemodify(a:filename, ':p')
+endfunction "}}}
+
+
+function! s:Logging.setoptions(option) abort "{{{
+  let self.option = a:option
+endfunction "}}}
+
+
 function! s:Logging.getlog(...) abort "{{{
-  let option = get(a:000, 0, {})
+  let option = get(a:000, 0, self.option)
   let log = deepcopy(self.log)
   if has_key(option, 'filter')
     let log = filter(deepcopy(log), option.filter)
@@ -153,7 +178,7 @@ endfunction "}}}
 
 
 function! s:Logging.getlines(...) abort "{{{
-  let option = get(a:000, 0, {})
+  let option = get(a:000, 0, self.option)
   let pathshorten = get(option, 'pathshorten', s:TRUE)
   let stacktrace = get(option, 'stacktrace', s:FALSE)
   let log = self.getlog(option)
@@ -164,14 +189,14 @@ endfunction "}}}
 
 
 function! s:Logging.string(...) abort "{{{
-  let option = get(a:000, 0, {})
+  let option = get(a:000, 0, self.option)
   let lines = self.getlines(option)
   return join(lines, "\n")
 endfunction "}}}
 
 
 function! s:Logging.echo(...) abort "{{{
-  let option = get(a:000, 0, {})
+  let option = get(a:000, 0, self.option)
   let pathshorten = get(option, 'pathshorten', s:TRUE)
   let stacktrace = get(option, 'stacktrace', s:FALSE)
   let log = self.getlog(option)
@@ -186,7 +211,7 @@ endfunction "}}}
 
 
 function! s:Logging.echomsg(...) abort "{{{
-  let option = get(a:000, 0, {})
+  let option = get(a:000, 0, self.option)
   let pathshorten = get(option, 'pathshorten', s:TRUE)
   let stacktrace = get(option, 'stacktrace', s:FALSE)
   let log = self.getlog(option)
@@ -199,7 +224,7 @@ endfunction "}}}
 
 
 function! s:Logging.writefile(fname, ...) abort "{{{
-  let option = get(a:000, 0, {})
+  let option = get(a:000, 0, self.option)
   let pathshorten = get(option, 'pathshorten', s:TRUE)
   let stacktrace = get(option, 'stacktrace', s:FALSE)
   let flags = get(option, 'flags', '')
