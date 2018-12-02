@@ -446,11 +446,11 @@ function! s:search(rules, pos, ...) abort "{{{
   call winrestview(view)
 
   if buffer == {}
-    call s:logger.debug('No match. Swappable region search failed.')
+    call s:logger.info('No match. Swappable region search failed.')
     return [{}, {}]
   endif
-  call s:logger.debug('Matched. start: %s, end: %s', buffer.head, buffer.tail)
-  call s:logger.debug('  matched rule: %s', rule)
+  call s:logger.info('Matched. start: %s, end: %s', buffer.head, buffer.tail)
+  call s:logger.info('  matched rule: %s', rule)
   " call s:logger.debug('  token list: %s', buffer.all)
   return [buffer, rule]
 endfunction "}}}
@@ -579,11 +579,11 @@ function! s:match(region, rules) abort  "{{{
   call winrestview(view)
 
   if buffer == {}
-    call s:logger.debug('No Match. Matching failed.')
+    call s:logger.info('No Match. Matching failed.')
     return [{}, {}]
   endif
-  call s:logger.debug('Matched. start: %s, end: %s', buffer.head, buffer.tail)
-  call s:logger.debug('  matched rule: %s', rule)
+  call s:logger.info('Matched. start: %s, end: %s', buffer.head, buffer.tail)
+  call s:logger.info('  matched rule: %s', rule)
   " call s:logger.debug('  token list: %s', buffer.all)
   return [buffer, rule]
 endfunction "}}}

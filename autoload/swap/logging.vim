@@ -1,9 +1,4 @@
 " Logging Module
-" NOTE: Only for stacking debug information, that is, it has only one channel.
-
-" NOTE: Logging is enabled when `g:swap#logging#debug` is true
-"           let g:swap#logging#debug = 1
-
 " USAGE: Make a logger for each script. This should be done outside of functions.
 "           let s:Logging = swap#logging#import()
 "           let s:logger = s:Logging.Logger(expand('<sfile>'))
@@ -27,26 +22,31 @@ let s:ROOT = expand('<sfile>:h:h:h:p')
 let s:TYPESTR = s:Const.TYPESTR
 let s:TYPENUM = s:Const.TYPENUM
 
-let g:swap#logging#debug = get(g:, 'swap#logging#debug', s:FALSE)
+" Log level
+let s:ERROR    = {'kind': 'ERROR',    'level': 40, 'hl': 'ErrorMsg'}
+let s:WARNING  = {'kind': 'WARNING',  'level': 30, 'hl': 'WarningMsg'}
+let s:INFO     = {'kind': 'INFO',     'level': 20, 'hl': 'NONE'}
+let s:DEBUG    = {'kind': 'DEBUG',    'level': 10, 'hl': 'NONE'}
+
+let g:swap#logging#loglevel = get(g:, 'swap#logging#loglevel', s:WARNING.level)
 
 " Logger object {{{
 let s:Logger = {
 \   'file': '',
+\   'loglevel': 0,
 \ }
 
-function! s:Logger(file) abort "{{{
+function! s:Logger(file, ...) abort "{{{
+  let option = get(a:000, 0, {})
   let logger = deepcopy(s:Logger)
   let logger.file = a:file[strlen(s:ROOT) + 1 :]
+  let logger.loglevel = get(option, 'loglevel', g:swap#logging#loglevel)
   return logger
 endfunction "}}}
 
-" Store a log message
-"   call s:logger.debug('A log message')
-" If more than two arguments are assigned, this function works like printf()
-"   call s:logger.debug('Line %d', line('.'))
-" It will be converted to a string expression other than a string or a number
-function! s:Logger.debug(text, ...) abort "{{{
-  if !g:swap#logging#debug || s:Logging.n < 1
+
+function! s:Logger.log(identifier, text, ...) abort "{{{
+  if g:swap#logging#loglevel > a:identifier.level || s:Logging.n < 1
     return
   endif
 
@@ -59,11 +59,39 @@ function! s:Logger.debug(text, ...) abort "{{{
   let stacktrace = split(expand('<sfile>'), '\.\.')[: -2]
   let entry = {
   \   'time': time,
+  \   'kind': a:identifier.kind,
+  \   'level': a:identifier.level,
+  \   'hl': a:identifier.hl,
   \   'file': self.file,
   \   'text': text,
   \   'stacktrace': stacktrace,
   \ }
   call s:Logging._add(entry)
+endfunction "}}}
+
+
+" Store a log message
+"   call s:logger.info('A log message')
+" If more than two arguments are assigned, this function works like printf()
+"   call s:logger.info('Line %d', line('.'))
+" It will be converted to a string expression other than a string or a number
+function! s:Logger.error(text, ...) abort "{{{
+  call call(self.log, [s:ERROR, a:text] + a:000)
+endfunction "}}}
+
+
+function! s:Logger.warning(text, ...) abort "{{{
+  call call(self.log, [s:WARNING, a:text] + a:000)
+endfunction "}}}
+
+
+function! s:Logger.info(text, ...) abort "{{{
+  call call(self.log, [s:INFO, a:text] + a:000)
+endfunction "}}}
+
+
+function! s:Logger.debug(text, ...) abort "{{{
+  call call(self.log, [s:DEBUG, a:text] + a:000)
 endfunction "}}}
 
 
@@ -86,6 +114,10 @@ let s:Logging = {
 \   'log': [],
 \   'loggers': {},
 \   'Logger': function('s:Logger'),
+\   'ERROR': s:ERROR,
+\   'WARNING': s:WARNING,
+\   'INFO': s:INFO,
+\   'DEBUG': s:DEBUG,
 \ }
 
 
@@ -180,8 +212,10 @@ endfunction "}}}
 
 function! s:buildlines(entry, pathshorten, stacktrace) abort "{{{
   let file = a:pathshorten ? pathshorten(a:entry.file) : a:entry.file
+  let time = a:entry.time
+  let kind = a:entry.kind
   let text = split(a:entry.text, "\n")
-  let msg = [printf('%s %s: %s', a:entry.time, file, text[0])]
+  let msg = [printf('%s %s:%s: %s', time, file, kind, text[0])]
   let msg += text[1:]
   if a:stacktrace
     let stacktracestr = join(a:entry.stacktrace, '..')
@@ -197,6 +231,8 @@ function! s:buildmessage(entry, pathshorten, stacktrace) abort "{{{
   \   [a:entry.time, 'Title'],
   \   [' ', 'Special'],
   \   [file, 'Directory'],
+  \   [':', 'Special'],
+  \   [a:entry.kind, a:entry.hl],
   \   [':', 'Special'],
   \   [a:entry.text, 'NONE'],
   \ ]
