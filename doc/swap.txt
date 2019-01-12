@@ -149,6 +149,9 @@ operation in swap mode~
 	Sort all the items. `s` sorts the items in ascending order, while `S`
 	does in descending.
 
+`r`
+	Reverse all the items.
+
  `g`/`G`
 	Make a grouped item. `g` makes a grouped item of the current and the
 	next item. It behaves like an item. `G` ungroups a grouped item.

@@ -718,6 +718,17 @@ function! s:Swapmode.key_breakup(phase, input, buffer) abort "{{{
 endfunction "}}}
 
 
+function! s:Swapmode.key_reverse(phase, input, buffer) abort "{{{
+  if a:phase >= s:DONE
+    return [a:phase, a:input]
+  endif
+
+  let input = ['reverse']
+  let phase = s:DONE
+  return [phase, input]
+endfunction "}}}
+
+
 function! s:Swapmode.key_Esc(phase, input, buffer) abort  "{{{
   let phase = s:EXIT
   return [phase, a:input]

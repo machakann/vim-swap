@@ -734,6 +734,7 @@ Describe [integration test]
         \   {'input': 'S', 'output': ['SORT']},
         \   {'input': 'g', 'output': ['group']},
         \   {'input': 'G', 'output': ['ungroup']},
+        \   {'input': 'r', 'output': ['reverse']},
         \   {'input': "\<C-g>", 'output': ['breakup']},
         \   {'input': "\<Left>",  'output': ['swap_prev']},
         \   {'input': "\<Right>", 'output': ['swap_next']},
@@ -890,6 +891,11 @@ Describe [integration test]
         call setline(1, '(foo, bar, baz, qux, quux)')
         execute "normal 1Glgsgjgkg\<C-g>l\<Esc>"
         Assert Equals(getline('.'), '(bar, foo, baz, qux, quux)')
+
+        " reverse
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgsr\<Esc>"
+        Assert Equals(getline('.'), '(baz, bar, foo)')
       End
 
       It works well with various 'selection' option

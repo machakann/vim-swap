@@ -165,6 +165,8 @@ function! s:Swap._process(buffer, input, undojoin) abort "{{{
     let [buffer, undojoin] = self._ungroup(a:buffer, a:input, a:undojoin)
   elseif a:input[0] is# 'breakup'
     let [buffer, undojoin] = self._breakup(a:buffer, a:input, a:undojoin)
+  elseif a:input[0] is# 'reverse'
+    let [buffer, undojoin] = self._reverse(a:buffer, a:input, a:undojoin)
   else
     let [buffer, undojoin] = self._swap_once(a:buffer, a:input, a:undojoin)
   endif
@@ -270,6 +272,28 @@ function! s:Swap._breakup(buffer, input, undojoin) abort "{{{
   let pos = a:input[1]
   call a:buffer.breakup(pos)
   return [a:buffer, a:undojoin]
+endfunction "}}}
+
+
+function! s:Swap._reverse(buffer, input, undojoin) abort "{{{
+  if a:input[0] isnot# 'reverse'
+    echoerr 'vim-swap: Invalid arguments for swap._reverse()'
+  endif
+  let curpos = getpos('.')
+
+  " sort items and reflect on the buffer
+  let args = a:input[1:]
+  let newbuffer = s:reverse(a:buffer, args)
+  call s:write(newbuffer, a:undojoin)
+
+  " update buffer information
+  let newbuffer.head = getpos("'[")
+  let newbuffer.tail = getpos("']")
+  call newbuffer.update_tokens()
+  let pos = newbuffer.update_sharp(curpos)
+  call newbuffer.get_item(pos, s:TRUE).cursor()
+  call newbuffer.update_hat()
+  return [newbuffer, s:TRUE]
 endfunction "}}}
 
 
@@ -765,6 +789,28 @@ function! s:getpos(pos) abort "{{{
     return getpos(a:pos)
   endif
   return a:pos
+endfunction "}}}
+
+
+function! s:reverse(buffer, args) abort "{{{
+  let items = deepcopy(a:buffer.items)
+  call reverse(items)
+
+  let newbuffer = s:new_empty_buffer(a:buffer)
+  " Fill items into newbuffer.items without ungrouping
+  for item in items
+    call add(newbuffer.items, item)
+  endfor
+  " Fill reversed items into newbuffer.all with ungrouping
+  let ungrouped_list = s:ungrouped_copy(newbuffer.items)
+  for token in a:buffer.all
+    if token.attr is# 'item'
+      call add(newbuffer.all, remove(ungrouped_list, 0))
+    else
+      call add(newbuffer.all, token)
+    endif
+  endfor
+  return newbuffer
 endfunction "}}}
 
 
