@@ -615,20 +615,23 @@ Describe [unit test]
     Before
       let swap = s:scope.funcs('autoload/swap/swap.vim')
       let parser = s:scope.funcs('autoload/swap/parser.vim')
+      let buffer = s:scope.funcs('autoload/swap/buffer.vim')
 
+      let text = 'dd, aa, bb, cc'
+      call setline(1, text)
+      let region = {'head': [0, 1, 1, 0], 'tail': [0, 1, 14, 0], 'len': -1, 'type': 'char'}
       let rule = {'delimiter': [',\s*']}
-      let buf = {}
-      let buf.all = parser.parse_charwise('dd, aa, bb, cc', rule)
-      let buf.items = filter(copy(buf.all), 'v:val.attr is# "item"')
+      let tokens = parser.Parser_parse(text, region.type, rule)
+      let buf = buffer.Buffer(tokens, region, [0, 1, 1, 0])
     End
 
     Context s:sort()
       It sorts the tokens
-        let newbuf = swap.sort(buf, [s:Lib.compare_ascend])
+        let newbuf = swap.sort(buf, [1, '$', s:Lib.compare_ascend])
         let newstr = swap.string(newbuf)
         Assert Equals(newstr, 'aa, bb, cc, dd')
 
-        let newbuf = swap.sort(buf, [s:Lib.compare_descend])
+        let newbuf = swap.sort(buf, [1, '$', s:Lib.compare_descend])
         let newstr = swap.string(newbuf)
         Assert Equals(newstr, 'dd, cc, bb, aa')
       End
@@ -1400,7 +1403,7 @@ Describe [API]
       let start = [0, 1, 2, 0]
       let end = [0, 1, 15, 0]
       let type = 'char'
-      call swap#region(start, end, type, [['sort', s:Lib.compare_ascend]])
+      call swap#region(start, end, type, [['sort', 1, '$', s:Lib.compare_ascend]])
       Assert Equals(getline('.'), '(aa, bb, cc, dd)')
 
       " grouping
@@ -1498,7 +1501,7 @@ Describe [API]
       " sort
       call setline(1, '(dd, bb, cc, aa)')
       let pos = [0, 1, 2, 0]
-      call swap#around_pos(pos, [['sort', s:Lib.compare_ascend]])
+      call swap#around_pos(pos, [['sort', 1, '$', s:Lib.compare_ascend]])
       Assert Equals(getline('.'), '(aa, bb, cc, dd)')
 
       " grouping

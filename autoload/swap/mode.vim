@@ -562,7 +562,7 @@ function! s:Swapmode.key_sort(phase, input, buffer) abort "{{{
     return [a:phase, a:input]
   endif
 
-  let input = ['sort'] + g:swap#mode#sortfunc
+  let input = ['sort', 1, '$'] + g:swap#mode#sortfunc
   let phase = s:DONE
   return [phase, input]
 endfunction "}}}
@@ -573,7 +573,7 @@ function! s:Swapmode.key_SORT(phase, input, buffer) abort "{{{
     return [a:phase, a:input]
   endif
 
-  let input = ['sort'] + g:swap#mode#SORTFUNC
+  let input = ['sort', 1, '$'] + g:swap#mode#SORTFUNC
   let phase = s:DONE
   return [phase, input]
 endfunction "}}}

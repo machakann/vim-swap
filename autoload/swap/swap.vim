@@ -132,7 +132,7 @@ function! s:Swap._swap_interactive(buffer) abort "{{{
   while s:TRUE
     let input = swapmode.get_input(buffer)
     if input == [] | break | endif
-    let [buffer, undojoin] = self._process(buffer, input, undojoin)
+    let [buffer, undojoin] = self._edit(buffer, input, undojoin)
   endwhile
   call s:logger.debug('Swapmode end')
   return swapmode.export_history()
@@ -147,18 +147,16 @@ function! s:Swap._swap_sequential(buffer) abort  "{{{
   let buffer = a:buffer
   let undojoin = s:FALSE
   for input in self.input_list
-    let [buffer, undojoin] = self._process(buffer, input, undojoin)
+    let [buffer, undojoin] = self._edit(buffer, input, undojoin)
   endfor
   return self.input_list
 endfunction "}}}
 
 
-function! s:Swap._process(buffer, input, undojoin) abort "{{{
+function! s:Swap._edit(buffer, input, undojoin) abort "{{{
   call s:logger.debug('  input: %s', a:input)
   if a:input[0] is# 'undo'
     let [buffer, undojoin] = self._restore_buffer(a:input, a:undojoin)
-  elseif a:input[0] is# 'sort'
-    let [buffer, undojoin] = self._sort_items(a:buffer, a:input, a:undojoin)
   elseif a:input[0] is# 'group'
     let [buffer, undojoin] = self._group(a:buffer, a:input, a:undojoin)
   elseif a:input[0] is# 'ungroup'
@@ -167,6 +165,8 @@ function! s:Swap._process(buffer, input, undojoin) abort "{{{
     let [buffer, undojoin] = self._breakup(a:buffer, a:input, a:undojoin)
   elseif a:input[0] is# 'reverse'
     let [buffer, undojoin] = self._reverse(a:buffer, a:input, a:undojoin)
+  elseif a:input[0] is# 'sort'
+    let [buffer, undojoin] = self._sort_items(a:buffer, a:input, a:undojoin)
   else
     let [buffer, undojoin] = self._swap_once(a:buffer, a:input, a:undojoin)
   endif
@@ -720,15 +720,16 @@ endfunction "}}}
 let s:INVALID = 0
 
 function! s:sort(buffer, args) abort "{{{
+  let start = a:buffer.get_pos(get(a:args, 0, 1), s:TRUE) - 1
+  let end = a:buffer.get_pos(get(a:args, 1, '$'), s:TRUE) - 1
   let items = deepcopy(a:buffer.items)
-  let items = s:lockall(items)
-  sandbox let sorted_items = call(s:Lib.sort, [items] + a:args)
-  let sorted_items = s:unlockall(sorted_items)
-  if len(sorted_items) != len(a:buffer.items)
-    echoerr 'vim-swap: An Error occurred in sorting items; the number of items has been changed.'
-  endif
+  let [front, mid, back] = s:split(items, start, end)
 
-  return s:new_buffer(a:buffer, sorted_items)
+  let mid = s:lockall(mid)
+  sandbox let sorted_items = call(s:Lib.sort, [mid] + a:args[2:])
+  let sorted_items = s:unlockall(sorted_items)
+
+  return s:new_buffer(a:buffer, front + sorted_items + back)
 endfunction "}}}
 
 
@@ -785,6 +786,14 @@ function! s:reverse(buffer, args) abort "{{{
   let items = deepcopy(a:buffer.items)
   call reverse(items)
   return s:new_buffer(a:buffer, items)
+endfunction "}}}
+
+
+function! s:split(list, start, end) abort "{{{
+  let front = a:start == 0 ? [] : a:list[: a:start-1]
+  let mid = a:list[a:start : a:end]
+  let back = a:list[a:end+1 :]
+  return [front, mid, back]
 endfunction "}}}
 
 
