@@ -11,7 +11,6 @@ let s:logger = s:Logging.Logger(expand('<sfile>'))
 let g:swap#timeoutlen  = get(g:, 'swap#timeoutlen', &timeoutlen)
 let g:swap#stimeoutlen = get(g:, 'swap#stimeoutlen', 50)
 let g:swap#highlight   = get(g:, 'swap#highlight', s:TRUE)
-let g:swap#displaymode = get(g:, 'swap#displaymode', '')  " '' or 'itempreview'
 let g:swap#default_rules = [
 \   {
 \     'descripsion': 'Reorder the selected space-delimited word in visual mode.',

@@ -57,10 +57,10 @@ function! s:Swapmode.get_input(buffer) abort "{{{
   let self.pos.end = len(a:buffer.items)
 
   let pos = self.get_nonblank_pos('#', a:buffer)
+  call self.showmode()
   call self.set_current(pos, a:buffer)
   call self.update_highlight(a:buffer) | redraw
   try
-    call self.echo(a:buffer)
     while phase < s:DONE
       let key = s:prompt(key_map)
       let [phase, input] = self.execute(key, phase, input, a:buffer)
@@ -84,110 +84,13 @@ function! s:Swapmode.get_input(buffer) abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.echo(buffer) abort "{{{
-  let message = []
-  if g:swap#displaymode is# 'itempreview'
-    let message += [['Swap mode ', 'ModeMsg']]
-    let message += self._msg_buffer(a:buffer)
-    let message = self._fit_msg(message)
-  else
-    let message += [['-- Swap mode --', 'ModeMsg']]
+function! s:Swapmode.showmode() abort "{{{
+  if !&showmode
+    return
   endif
-
-  for mes in message
-    execute 'echohl ' . mes[1]
-    echon mes[0]
-  endfor
+  echohl ModeMsg
+  echo '-- Swap mode --'
   echohl NONE
-endfunction "}}}
-
-
-let s:SEPARATOR = ' '
-let s:DELIMITER = '-'
-let s:ABBREVIATION = '…'
-
-function! s:Swapmode._msg_buffer(buffer) abort "{{{
-  let max_width = &columns - 25
-  for len in range(10, 4, -2)
-    let msg = []
-    for m in map(copy(a:buffer.items), 's:msg(v:key, v:val, len)')
-      let msg += m
-    endfor
-    if s:msg_width(msg) <= max_width
-      break
-    endif
-  endfor
-  return msg
-endfunction "}}}
-
-
-function! s:msg(i, item, previewlen) abort "{{{
-  if a:item.attr is# 'item'
-    return s:msg_item(a:i, a:item, a:previewlen)
-  elseif a:item.attr is# 'itemgroup'
-    return s:msg_itemgroup(a:i, a:item, a:previewlen)
-  endif
-  return []
-endfunction "}}}
-
-
-function! s:msg_width(msg) abort "{{{
-  let msgstr = join(map(copy(a:msg), 'v:val[0]'), '')
-  return strdisplaywidth(msgstr)
-endfunction "}}}
-
-
-function! s:msg_item(i, item, previewlen) abort "{{{
-  let msg = []
-  call add(msg, [s:SEPARATOR, 'NONE'])
-  call add(msg, [printf('%d:', a:i + 1), 'SpecialKey'])
-  call add(msg, [a:item.str[: a:previewlen - 1], 'SwapItem'])
-  if strchars(a:item.str) > a:previewlen
-    call add(msg, [s:ABBREVIATION, 'SwapItem'])
-  endif
-  return msg
-endfunction "}}}
-
-
-function! s:msg_itemgroup(i, item, previewlen) abort "{{{
-  let msg = []
-  call add(msg, [s:SEPARATOR, 'NONE'])
-  call add(msg, [printf('%d:', a:i + 1), 'SpecialKey'])
-  for included in a:item.flatten()
-    call add(msg, [included.str[: a:previewlen - 1], 'SwapItem'])
-    if strchars(a:item.str) > a:previewlen
-      call add(msg, [s:ABBREVIATION, 'SwapItem'])
-    endif
-    call add(msg, [s:DELIMITER, 'SpecialKey'])
-  endfor
-  call remove(msg, -1)
-  return msg
-endfunction "}}}
-
-
-function! s:Swapmode._fit_msg(message) abort "{{{
-  if empty(a:message)
-    return a:message
-  endif
-
-  let len = eval(join(map(copy(a:message), 'strwidth(v:val[0])'), '+'))
-  let max_len = &columns - 25
-  if len <= max_len
-    return a:message
-  endif
-
-  while len > max_len-1
-    let mes  = remove(a:message, 0)
-    let len -= strwidth(mes[0])
-  endwhile
-  if len < 0
-    let mes = [mes[0][len :], mes[1]]
-    call insert(a:message, mes)
-  endif
-  let precedes = matchstr(&listchars, 'precedes:\zs.\ze')
-  let precedes = precedes is# '' ? '<' : precedes
-  call insert(a:message, [precedes, 'SpecialKey'])
-  return a:message
 endfunction "}}}
 
 
