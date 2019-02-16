@@ -319,7 +319,7 @@ function! s:Buffer.get_pos(pos, ...) abort "{{{
       let clamp = get(a:000, 0, s:FALSE)
       return clamp ? s:clamp(a:pos, 1, len(self.items)) : 0
     endif
-  elseif type(a:pos) is# s:TYPESTR
+  elseif type(a:pos) is# s:TYPESTR && a:pos isnot# ''
     if a:pos =~# '\m^\d\+$'
       " '1', '2', '3', ...
       return self.get_pos(str2nr(a:pos))
