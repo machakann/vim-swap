@@ -281,7 +281,7 @@ function! s:Swap._reverse(buffer, input, undojoin) abort "{{{
   endif
   let curpos = getpos('.')
 
-  " sort items and reflect on the buffer
+  " reverse items and reflect on the buffer
   let args = a:input[1:]
   let newbuffer = s:reverse(a:buffer, args)
   call s:write(newbuffer, a:undojoin)
@@ -783,9 +783,11 @@ endfunction "}}}
 
 
 function! s:reverse(buffer, args) abort "{{{
+  let start = a:buffer.get_pos(get(a:args, 0, 1), s:TRUE) - 1
+  let end = a:buffer.get_pos(get(a:args, 1, '$'), s:TRUE) - 1
   let items = deepcopy(a:buffer.items)
-  call reverse(items)
-  return s:new_buffer(a:buffer, items)
+  let [front, mid, back] = s:split(items, start, end)
+  return s:new_buffer(a:buffer, front + reverse(mid) + back)
 endfunction "}}}
 
 

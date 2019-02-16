@@ -626,7 +626,7 @@ function! s:Swapmode.key_reverse(phase, input, buffer) abort "{{{
     return [a:phase, a:input]
   endif
 
-  let input = ['reverse']
+  let input = ['reverse', 1, '$']
   let phase = s:DONE
   return [phase, input]
 endfunction "}}}
