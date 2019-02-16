@@ -192,7 +192,7 @@ The default layout is available with g:swap#key_layout_impatient again.
 FUNCTIONS				*swap-functions*
 
 					*swap#region()*
-swap#region({start}, {end}, {type}, {inputlist}[, {rules}])
+swap#region({start}, {end}, {type}, {orders}[, {rules}])
 	Swap items in the specific region on the current buffer.
 
 	{start} and {end} are the positions of both edges of the region. These
@@ -205,13 +205,13 @@ swap#region({start}, {end}, {type}, {inputlist}[, {rules}])
 	  "block" (|blockwise-visual|).
 	A return value of |visualmode()| is also acceptable.
 
-	{inputlist} is a |List| of operations to swap items. An operation is a
-	|List| of 2 |Number|s, for example [1, 2]. Thus, if an {inputlist}
+	{orders} is a |List| of orders to swap items. An operation is a
+	|List| of 2 |Number|s, for example [1, 2]. Thus, if an {orders}
 	[[1, 2]] is given, this operation swap the 1st and the 2nd item.
 >
 	(foo, bar, baz) -> (bar, foo, baz)
 <
-	Multiple operations can be used; like [[1, 2], [2, 3]].
+	Multiple orders can be used; like [[1, 2], [2, 3]].
 >
 	(foo, bar, baz) -> (bar, foo, baz) -> (bar, baz, foo)
 <
@@ -224,7 +224,7 @@ swap#region({start}, {end}, {type}, {inputlist}[, {rules}])
 	For example, the operation ['#', '#-1'] swaps the item under the
 	cursor with the previous one.
 
-	There are additional special operations.
+	There are additional special orders.
 
 	To sort items, pass a |List| which first item is a |String| "sort",
 	that is, ["sort"]. All after the first item are optional. The second
@@ -257,13 +257,13 @@ swap#region_interactively({start}, {end}, {type}[, {rules}])
 
 
 					*swap#around_pos()*
-swap#around_pos({pos}, {inputlist}[, {rules}])
+swap#around_pos({pos}, {orders}[, {rules}])
 	Search swappable items around the assigned position and swap them.
 
 	{pos} should be the same format either with the first argument of
 	|getpos()| or with the second argument of |setpos()|.
 
-	See |swap#region()| for {inputlist} and {rules}.
+	See |swap#region()| for {orders} and {rules}.
 
 
 

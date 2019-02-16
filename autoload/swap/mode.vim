@@ -50,7 +50,7 @@ function! s:Swapmode.get_input(buffer) abort "{{{
   endif
 
   let phase = 0
-  let input = ['', '']
+  let orders = []
   let key_map = deepcopy(get(g:, 'swap#keymappings', g:swap#default_keymappings))
   let self.pos.current = 0
   let self.pos.selected = 0
@@ -62,8 +62,8 @@ function! s:Swapmode.get_input(buffer) abort "{{{
   call self.update_highlight(a:buffer) | redraw
   try
     while phase < s:DONE
-      let key = s:prompt(key_map)
-      let [phase, input] = self.execute(key, phase, input, a:buffer)
+      let key = s:wait_input(key_map)
+      let [phase, orders] = self.execute(key, phase, orders, a:buffer)
     endwhile
   catch /^Vim:Interrupt$/
     let phase = s:EXIT
@@ -77,10 +77,12 @@ function! s:Swapmode.get_input(buffer) abort "{{{
     return []
   endif
 
-  if input[0] isnot# 'undo'
-    call self.add_history(input, a:buffer)
+  " NOTE: 'undo' should be always single order!
+  let order = s:latest(orders)
+  if order[0] isnot# 'undo'
+    call self.add_history(orders, a:buffer)
   endif
-  return input
+  return orders
 endfunction "}}}
 
 
@@ -117,30 +119,30 @@ function! s:Swapmode.revise_cursor_pos(buffer) abort  "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.execute(funclist, phase, input, buffer) abort "{{{
+function! s:Swapmode.execute(funclist, phase, orders, buffer) abort "{{{
   let phase = a:phase
-  let input = a:input
+  let orders = a:orders
   for name in a:funclist
     let fname = 'key_' . name
-    let [phase, input] = self[fname](phase, input, a:buffer)
+    let [phase, orders] = self[fname](phase, orders, a:buffer)
     if phase is# s:DONE
       break
     endif
   endfor
   call self.revise_cursor_pos(a:buffer)
   redraw
-  return [phase, input]
+  return [phase, orders]
 endfunction "}}}
 
 
 " A history item is a dictionary which has the following keys:
-"   input : the determined input
-"   buffer: the buffer before changed by the input
+"   orders: the determined orders
+"   buffer: the buffer before changed by the order
 "   cursor: the positional number of cursor when the buffer is restored
-function! s:Swapmode.add_history(input, buffer) abort  "{{{
+function! s:Swapmode.add_history(orders, buffer) abort  "{{{
   call self._truncate_history()
   let histitem = {
-  \   'input': copy(a:input),
+  \   'orders': copy(a:orders),
   \   'buffer': deepcopy(a:buffer),
   \   'cursor': self.pos.current,
   \ }
@@ -160,7 +162,7 @@ endfunction "}}}
 
 
 function! s:Swapmode.export_history() abort "{{{
-  return map(copy(self.history), 'v:val.input')
+  return s:flatten(map(copy(self.history), 'v:val.orders'))
 endfunction "}}}
 
 
@@ -244,7 +246,7 @@ function! s:Swapmode.pos.is_valid(pos) abort  "{{{
 endfunction "}}}
 
 
-function! s:prompt(key_map) abort "{{{
+function! s:wait_input(key_map) abort "{{{
   let key_map = insert(copy(a:key_map), {'input': "\<Esc>", 'output': ['Esc']})   " for safety
   let clock = s:Clocks.Clock()
   let timeoutlen = g:swap#timeoutlen
@@ -354,13 +356,14 @@ endfunction "}}}
 "    move_next : Move to the next item.
 "    swap_prev : Swap the current item with the previous item.
 "    swap_next : Swap the current item with the next item.
-function! s:Swapmode.key_nr(nr, phase, input, buffer) abort  "{{{
+function! s:Swapmode.key_nr(nr, phase, orders, buffer) abort  "{{{
   if a:phase >= s:DONE
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
 
-  let input = s:append(a:input, a:phase, a:nr)
-  return [a:phase, input]
+  let ord = s:latest(a:orders)
+  let ord[a:phase] .= a:nr
+  return [a:phase, a:orders]
 endfunction "}}}
 function! s:Swapmode.key_0(phase, input, buffer) abort "{{{
   return self.key_nr(0, a:phase, a:input, a:buffer)
@@ -394,283 +397,282 @@ function! s:Swapmode.key_9(phase, input, buffer) abort "{{{
 endfunction "}}}
 
 
-function! s:Swapmode.key_CR(phase, input, buffer) abort  "{{{
+function! s:Swapmode.key_CR(phase, orders, buffer) abort  "{{{
   if a:phase >= s:DONE
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
 
-  let input = a:input[a:phase]
-  if input is# ''
-    return self.key_current(a:phase, a:input, a:buffer)
+  let ord = s:latest(a:orders)
+  if ord[a:phase] is# ''
+    return self.key_current(a:phase, a:orders, a:buffer)
   endif
-  return self.key_fix_nr(a:phase, a:input, a:buffer)
+  return self.key_fix_nr(a:phase, a:orders, a:buffer)
 endfunction "}}}
 
 
-function! s:Swapmode.key_BS(phase, input, buffer) abort  "{{{
+function! s:Swapmode.key_BS(phase, orders, buffer) abort  "{{{
   let phase = a:phase
-  let input = a:input
+  let orders = a:orders
+  let ord = s:latest(orders)
   if phase is# s:FIRST
-    if a:input[s:FIRST] isnot# ''
-      let input = s:truncate(a:input, s:FIRST)
+    if ord[s:FIRST] isnot# ''
+      let orders = s:truncate(orders, s:FIRST)
     endif
   elseif phase is# s:SECOND
-    if a:input[s:SECOND] isnot# ''
-      let input = s:truncate(a:input, s:SECOND)
+    if ord[s:SECOND] isnot# ''
+      let orders = s:truncate(orders, s:SECOND)
     else
-      let input = s:truncate(a:input, s:FIRST)
+      let orders = s:truncate(orders, s:FIRST)
       let phase = s:FIRST
       call self.select(s:NOTHING)
       call self.update_highlight(a:buffer)
     endif
   endif
-  return [phase, input]
+  return [phase, orders]
 endfunction "}}}
 
 
-function! s:Swapmode.key_undo(phase, input, buffer) abort "{{{
+function! s:Swapmode.key_undo(phase, orders, buffer) abort "{{{
   if a:phase >= s:DONE
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
 
   if len(self.history) <= self.undolevel
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
 
   let phase = s:DONE
   let prev = self.history[-1*(self.undolevel+1)]
   " The last input item is the cursor position after undoing
-  let input = ['undo', prev.buffer, prev.cursor]
+  let ord = ['undo', prev.buffer, prev.cursor]
+  call add(a:orders, ord)
   let self.undolevel += 1
-  return [phase, input]
+  return [phase, a:orders]
 endfunction "}}}
 
 
-function! s:Swapmode.key_redo(phase, input, buffer) abort "{{{
+function! s:Swapmode.key_redo(phase, orders, buffer) abort "{{{
   if a:phase >= s:DONE
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
 
   if self.undolevel == 0
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
 
   let phase = s:DONE
   let next = self.history[-1*self.undolevel]
-  let input = next.input
+  let orders = next.orders
   let self.undolevel -= 1
-  return [phase, input]
+  return [phase, orders]
 endfunction "}}}
 
 
-function! s:Swapmode.key_current(phase, input, buffer) abort "{{{
-  let phase = a:phase
-  let input = s:set(a:input, phase, string(self.pos.current))
-  if phase is# s:FIRST
+function! s:Swapmode.key_current(phase, orders, buffer) abort "{{{
+  let ord = s:latest(a:orders)
+  let ord[a:phase] = string(self.pos.current)
+  if a:phase is# s:FIRST
     let phase = s:SECOND
-    call self.select(input[0])
+    call self.select(ord[0])
     call self.update_highlight(a:buffer)
-  elseif phase is# s:SECOND
+  elseif a:phase is# s:SECOND
     let phase = s:DONE
   endif
-  return [phase, input]
+  return [phase, a:orders]
 endfunction "}}}
 
 
-function! s:Swapmode.key_fix_nr(phase, input, buffer) abort "{{{
+function! s:Swapmode.key_fix_nr(phase, orders, buffer) abort "{{{
+  let ord = s:latest(a:orders)
   let phase = a:phase
   if phase is# s:FIRST
-    let pos = str2nr(a:input[s:FIRST])
+    let pos = str2nr(ord[s:FIRST])
     if self.pos.is_valid(pos)
       call self.set_current(pos, a:buffer)
       let phase = s:SECOND
-      call self.select(a:input[0])
+      call self.select(ord[s:FIRST])
       call self.update_highlight(a:buffer)
     endif
   elseif phase is# s:SECOND
-    let pos = str2nr(a:input[s:SECOND])
+    let pos = str2nr(ord[s:SECOND])
     if self.pos.is_valid(pos)
       let phase = s:DONE
     endif
   endif
-  return [phase, a:input]
+  return [phase, a:orders]
 endfunction "}}}
 
 
-function! s:Swapmode.key_move_prev(phase, input, buffer) abort  "{{{
+function! s:Swapmode.key_move_prev(phase, orders, buffer) abort  "{{{
   if a:phase >= s:DONE
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
   if self.pos.current <= 0
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
 
   let pos = s:prev_nonblank(a:buffer.items,
   \                         min([self.pos.current, self.pos.end+1]))
   call self.set_current(pos, a:buffer)
   call self.update_highlight(a:buffer)
-  return [a:phase, a:input]
+  return [a:phase, a:orders]
 endfunction "}}}
 
 
-function! s:Swapmode.key_move_next(phase, input, buffer) abort  "{{{
+function! s:Swapmode.key_move_next(phase, orders, buffer) abort  "{{{
   if a:phase >= s:DONE
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
   if self.pos.current >= self.pos.end
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
 
   let pos = s:next_nonblank(a:buffer.items,
   \                         max([0, self.pos.current]))
   call self.set_current(pos, a:buffer)
   call self.update_highlight(a:buffer)
-  return [a:phase, a:input]
+  return [a:phase, a:orders]
 endfunction "}}}
 
 
-function! s:Swapmode.key_swap_prev(phase, input, buffer) abort  "{{{
+function! s:Swapmode.key_swap_prev(phase, orders, buffer) abort  "{{{
   if a:phase >= s:DONE
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
   if self.pos.current < 2 || self.pos.current > self.pos.end
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
 
-  let input = [self.pos.current, self.pos.current - 1]
-  let phase = s:DONE
-  return [phase, input]
+  let ord = [self.pos.current, self.pos.current - 1]
+  call add(a:orders, ord)
+  return [s:DONE, a:orders]
 endfunction "}}}
 
 
-function! s:Swapmode.key_swap_next(phase, input, buffer) abort  "{{{
+function! s:Swapmode.key_swap_next(phase, orders, buffer) abort  "{{{
   if a:phase >= s:DONE
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
   if self.pos.current < 1 || self.pos.current > self.pos.end - 1
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
 
-  let input = [self.pos.current, self.pos.current + 1]
-  let phase = s:DONE
-  return [phase, input]
+  let ord = [self.pos.current, self.pos.current + 1]
+  call add(a:orders, ord)
+  return [s:DONE, a:orders]
 endfunction "}}}
 
 
-function! s:Swapmode.key_sort(phase, input, buffer) abort "{{{
+function! s:Swapmode.key_sort(phase, orders, buffer) abort "{{{
   if a:phase >= s:DONE
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
 
-  let input = ['sort', 1, '$'] + g:swap#mode#sortfunc
-  let phase = s:DONE
-  return [phase, input]
+  let ord = ['sort', 1, '$'] + g:swap#mode#sortfunc
+  call add(a:orders, ord)
+  return [s:DONE, a:orders]
 endfunction "}}}
 
 
-function! s:Swapmode.key_SORT(phase, input, buffer) abort "{{{
+function! s:Swapmode.key_SORT(phase, orders, buffer) abort "{{{
   if a:phase >= s:DONE
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
 
-  let input = ['sort', 1, '$'] + g:swap#mode#SORTFUNC
-  let phase = s:DONE
-  return [phase, input]
+  let ord = ['sort', 1, '$'] + g:swap#mode#SORTFUNC
+  call add(a:orders, ord)
+  return [s:DONE, a:orders]
 endfunction "}}}
 
 
-function! s:Swapmode.key_group(phase, input, buffer) abort  "{{{
+function! s:Swapmode.key_group(phase, orders, buffer) abort  "{{{
   if a:phase >= s:DONE
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
   if len(a:buffer.items) < 2
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
   if self.pos.current < 1 || self.pos.current > self.pos.end - 1
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
 
-  let input = ['group', self.pos.current, self.pos.current + 1]
-  return [s:DONE, input]
+  let ord = ['group', self.pos.current, self.pos.current + 1]
+  call add(a:orders, ord)
+  return [s:DONE, a:orders]
 endfunction "}}}
 
 
-function! s:Swapmode.key_ungroup(phase, input, buffer) abort  "{{{
+function! s:Swapmode.key_ungroup(phase, orders, buffer) abort  "{{{
   if a:phase >= s:DONE
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
   if self.pos.current < 1 || self.pos.current > self.pos.end
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
 
-  let input = ['ungroup', self.pos.current]
-  return [s:DONE, input]
+  let ord = ['ungroup', self.pos.current]
+  call add(a:orders, ord)
+  return [s:DONE, a:orders]
 endfunction "}}}
 
 
-function! s:Swapmode.key_breakup(phase, input, buffer) abort "{{{
+function! s:Swapmode.key_breakup(phase, orders, buffer) abort "{{{
   if a:phase >= s:DONE
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
   if self.pos.current < 1 || self.pos.current > self.pos.end
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
 
-  let input = ['breakup', self.pos.current]
-  return [s:DONE, input]
+  let ord = ['breakup', self.pos.current]
+  call add(a:orders, ord)
+  return [s:DONE, a:orders]
 endfunction "}}}
 
 
-function! s:Swapmode.key_reverse(phase, input, buffer) abort "{{{
+function! s:Swapmode.key_reverse(phase, orders, buffer) abort "{{{
   if a:phase >= s:DONE
-    return [a:phase, a:input]
+    return [a:phase, a:orders]
   endif
 
-  let input = ['reverse', 1, '$']
-  let phase = s:DONE
-  return [phase, input]
+  let ord = ['reverse', 1, '$']
+  call add(a:orders, ord)
+  return [s:DONE, a:orders]
 endfunction "}}}
 
 
-function! s:Swapmode.key_Esc(phase, input, buffer) abort  "{{{
-  let phase = s:EXIT
-  return [phase, a:input]
+function! s:Swapmode.key_Esc(phase, orders, buffer) abort  "{{{
+  return [s:EXIT, a:orders]
 endfunction "}}}
 
 
-function! s:set(input, phase, v) abort "{{{
+function! s:truncate(orders, phase) abort "{{{
+  let ord = s:latest(a:orders)
   if a:phase is# s:FIRST
-    let a:input[0] = a:v
+    let ord[0] = ord[0][0:-2]
   elseif a:phase is# s:SECOND
-    let a:input[1] = a:v
-  else
-    echoerr 'vim-swap: Invalid argument for s:set() in autoload/swap/swapmode.vim'
-  endif
-  return a:input
-endfunction "}}}
-
-
-function! s:append(input, phase, v) abort "{{{
-  if a:phase is# s:FIRST
-    let a:input[0] .= a:v
-  elseif a:phase is# s:SECOND
-    let a:input[1] .= a:v
-  else
-    echoerr 'vim-swap: Invalid argument for s:append() in autoload/swap/swapmode.vim'
-  endif
-  return a:input
-endfunction "}}}
-
-
-function! s:truncate(input, phase) abort "{{{
-  if a:phase is# s:FIRST
-    let a:input[0] = a:input[0][0:-2]
-  elseif a:phase is# s:SECOND
-    let a:input[1] = a:input[1][0:-2]
+    let ord[1] = ord[1][0:-2]
   else
     echoerr 'vim-swap: Invalid argument for s:truncate() in autoload/swap/swapmode.vim'
   endif
-  return a:input
+  return a:orders
+endfunction "}}}
+
+
+function! s:latest(orders) abort "{{{
+  if empty(a:orders)
+    call add(a:orders, ['', ''])
+  endif
+  return a:orders[-1]
+endfunction "}}}
+
+
+function! s:flatten(list) abort "{{{
+  let newlist = []
+  for item in a:list
+    let newlist += item
+  endfor
+  return newlist
 endfunction "}}}
 
 

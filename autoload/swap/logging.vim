@@ -6,7 +6,7 @@
 "           call s:logger.debug('A log message')
 
 " USAGE: Output log via the Logging module
-"           let g:Logging = swap#logging#import()
+"           let g:Log = swap#logging#import()
 "
 "           call g:Log.echo()
 "               or

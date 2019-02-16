@@ -1,5 +1,5 @@
 *swap.txt*	いれかえたりする。
-						Last change:16-Feb-2019.
+						Last change:03-Mar-2019.
 
 書いた人   : machakann <mckn{at}outlook.jp>
 ライセンス : NYSL ライセンス
@@ -187,7 +187,7 @@ swap mode における操作~
 FUNCTIONS				*swap-functions*
 
 					*swap#region()*
-swap#region({start}, {end}, {type}, {inputlist}[, {rules}])
+swap#region({start}, {end}, {type}, {orders}[, {rules}])
 	バッファ上の特定の範囲を対象に要素の順番の入れ替えを行います。
 
 	{start} と {end} はバッファ上の範囲の開始と終了位置です。これらは
@@ -200,9 +200,9 @@ swap#region({start}, {end}, {type}, {inputlist}[, {rules}])
 	  "block" は矩形 (|blockwise-visual|) の範囲を指定します。
 	また、|visualmode()| の返り値を替わりに使うこともできます。
 
-	{inputlist} は要素入れ替え命令のリスト |List| です。ひとつの入れ替え命
+	{orders} は要素入れ替え命令のリスト |List| です。ひとつの入れ替え命
 	令は二つの整数 |Number| を要素に持つリスト |List| です。
-	例えば [[1, 2]] という {inputlist} を与えると、最初の二つの要素を入れ
+	例えば [[1, 2]] という {orders} を与えると、最初の二つの要素を入れ
 	替えます。
 >
 	(foo, bar, baz) -> (bar, foo, baz)
@@ -256,13 +256,13 @@ swap#region_interactively({start}, {end}, {type}[, {rules}])
 
 
 					*swap#around_pos()*
-swap#around_pos({pos}, {inputlist}[, {rules}])
+swap#around_pos({pos}, {orders}[, {rules}])
 	{pos} 付近で入れ替え可能な範囲を検索し、順番の入れ替えを実行すします。
 
 	{pos} は |getpos()| 関数の第一引数か、あるいは |setpos()| 関数の第二引
 	数と同じ形式を取ります。
 
-	{inputlist} と {rules} については |swap#region()| と同様です。
+	{orders} と {rules} については |swap#region()| と同様です。
 
 
 

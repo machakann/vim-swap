@@ -20,10 +20,10 @@ let s:GUI_RUNNING = has('gui_running')
 let s:logger = s:Logging.Logger(expand('<sfile>'))
 
 
-function! swap#swap#new(mode, input_list, rules) abort "{{{
+function! swap#swap#new(mode, orders, rules) abort "{{{
   let swap = deepcopy(s:Swap)
   let swap.mode = a:mode
-  let swap.input_list = a:input_list
+  let swap.orders = a:orders
   let swap.rules = s:get_rules(a:rules, &l:filetype, a:mode)
   return swap
 endfunction "}}}
@@ -33,7 +33,7 @@ let s:Swap = {
 \   'dotrepeat': s:FALSE,
 \   'mode': '',
 \   'rules': [],
-\   'input_list': [],
+\   'orders': [],
 \ }
 
 
@@ -57,8 +57,8 @@ function! s:Swap._around(pos) abort "{{{
   if self.dotrepeat
     call self._swap_sequential(buffer)
   else
-    if empty(self.input_list)
-      let self.input_list = self._swap_interactive(buffer)
+    if empty(self.orders)
+      let self.orders = self._swap_interactive(buffer)
     else
       call self._swap_sequential(buffer)
     endif
@@ -94,8 +94,8 @@ function! s:Swap._region(start, end, type) abort "{{{
   if self.dotrepeat
     call self._swap_sequential(buffer)
   else
-    if empty(self.input_list)
-      let self.input_list = self._swap_interactive(buffer)
+    if empty(self.orders)
+      let self.orders = self._swap_interactive(buffer)
     else
       call self._swap_sequential(buffer)
     endif
@@ -130,9 +130,9 @@ function! s:Swap._swap_interactive(buffer) abort "{{{
   let swapmode = s:Mode.Swapmode()
   call s:logger.debug('Swapmode start')
   while s:TRUE
-    let input = swapmode.get_input(buffer)
-    if input == [] | break | endif
-    let [buffer, undojoin] = self._edit(buffer, input, undojoin)
+    let orders = swapmode.get_input(buffer)
+    if orders == [] | break | endif
+    let [buffer, undojoin] = self._edit(buffer, orders, undojoin)
   endwhile
   call s:logger.debug('Swapmode end')
   return swapmode.export_history()
@@ -144,53 +144,51 @@ function! s:Swap._swap_sequential(buffer) abort  "{{{
     return
   endif
 
-  let buffer = a:buffer
-  let undojoin = s:FALSE
-  for input in self.input_list
-    let [buffer, undojoin] = self._edit(buffer, input, undojoin)
-  endfor
-  return self.input_list
+  call self._edit(a:buffer, self.orders, s:FALSE)
 endfunction "}}}
 
 
-function! s:Swap._edit(buffer, input, undojoin) abort "{{{
-  call s:logger.debug('  input: %s', a:input)
-  if a:input[0] is# 'undo'
-    let [buffer, undojoin] = self._restore_buffer(a:input, a:undojoin)
-  elseif a:input[0] is# 'group'
-    let [buffer, undojoin] = self._group(a:buffer, a:input, a:undojoin)
-  elseif a:input[0] is# 'ungroup'
-    let [buffer, undojoin] = self._ungroup(a:buffer, a:input, a:undojoin)
-  elseif a:input[0] is# 'breakup'
-    let [buffer, undojoin] = self._breakup(a:buffer, a:input, a:undojoin)
-  elseif a:input[0] is# 'reverse'
-    let [buffer, undojoin] = self._reverse(a:buffer, a:input, a:undojoin)
-  elseif a:input[0] is# 'sort'
-    let [buffer, undojoin] = self._sort_items(a:buffer, a:input, a:undojoin)
-  else
-    let [buffer, undojoin] = self._swap_once(a:buffer, a:input, a:undojoin)
-  endif
-  call s:logger.debug('  buffer: %s', s:string(a:buffer))
+function! s:Swap._edit(buffer, orders, undojoin) abort "{{{
+  let buffer = a:buffer
+  for order in a:orders
+    call s:logger.debug('  order: %s', order)
+    if order[0] is# 'undo'
+      let [buffer, undojoin] = self._restore_buffer(order, a:undojoin)
+    elseif order[0] is# 'group'
+      let [buffer, undojoin] = self._group(buffer, order, a:undojoin)
+    elseif order[0] is# 'ungroup'
+      let [buffer, undojoin] = self._ungroup(buffer, order, a:undojoin)
+    elseif order[0] is# 'breakup'
+      let [buffer, undojoin] = self._breakup(buffer, order, a:undojoin)
+    elseif order[0] is# 'reverse'
+      let [buffer, undojoin] = self._reverse(buffer, order, a:undojoin)
+    elseif order[0] is# 'sort'
+      let [buffer, undojoin] = self._sort_items(buffer, order, a:undojoin)
+    else
+      let [buffer, undojoin] = self._swap_once(buffer, order, a:undojoin)
+    endif
+    call s:logger.debug('  buffer: %s', s:string(buffer))
+  endfor
   return [buffer, undojoin]
 endfunction "}}}
 
 
-function! s:Swap._swap_once(buffer, input, undojoin) abort "{{{
+function! s:Swap._swap_once(buffer, order, undojoin) abort "{{{
   " substitute and eval symbols
-  let input = map(copy(a:input), 'a:buffer.get_pos(v:val)')
-  if !s:is_valid_input(input, a:buffer)
+  let order = map(copy(a:order), 'a:buffer.get_pos(v:val)')
+  if !s:is_valid_input(order, a:buffer)
     return [a:buffer, a:undojoin]
   endif
 
   " swap items on the buffer
-  let newbuffer = s:swap(a:buffer, input)
+  let newbuffer = s:swap(a:buffer, order)
   call s:write(newbuffer, a:undojoin)
 
   " update buffer information
   let newbuffer.head = getpos("'[")
   let newbuffer.tail = getpos("']")
   call newbuffer.update_tokens()
-  call newbuffer.get_item(input[1], s:TRUE).cursor()
+  call newbuffer.get_item(order[1], s:TRUE).cursor()
   call newbuffer.update_sharp(getpos('.'))
   call newbuffer.update_hat()
   call newbuffer.update_dollar()
@@ -198,20 +196,20 @@ function! s:Swap._swap_once(buffer, input, undojoin) abort "{{{
 endfunction "}}}
 
 
-function! s:Swap._restore_buffer(input, undojoin) abort "{{{
-  if a:input[0] isnot# 'undo'
+function! s:Swap._restore_buffer(order, undojoin) abort "{{{
+  if a:order[0] isnot# 'undo'
     echoerr 'vim-swap: Invalid arguments for swap._restore_buffer()'
   endif
 
-  " restore the buffer in input
-  let newbuffer = a:input[1]
+  " restore the buffer in order
+  let newbuffer = a:order[1]
   call s:write(newbuffer, a:undojoin)
 
   " update buffer information
   let newbuffer.head = getpos("'[")
   let newbuffer.tail = getpos("']")
   call newbuffer.update_tokens()
-  call newbuffer.get_item(a:input[2], s:TRUE).cursor()
+  call newbuffer.get_item(a:order[2], s:TRUE).cursor()
   call newbuffer.update_sharp(getpos('.'))
   call newbuffer.update_hat()
   call newbuffer.update_dollar()
@@ -219,14 +217,14 @@ function! s:Swap._restore_buffer(input, undojoin) abort "{{{
 endfunction "}}}
 
 
-function! s:Swap._sort_items(buffer, input, undojoin) abort "{{{
-  if a:input[0] isnot# 'sort'
+function! s:Swap._sort_items(buffer, order, undojoin) abort "{{{
+  if a:order[0] isnot# 'sort'
     echoerr 'vim-swap: Invalid arguments for swap._sort_items()'
   endif
   let curpos = getpos('.')
 
   " sort items and reflect on the buffer
-  let args = a:input[1:]
+  let args = a:order[1:]
   let newbuffer = s:sort(a:buffer, args)
   call s:write(newbuffer, a:undojoin)
 
@@ -241,48 +239,48 @@ function! s:Swap._sort_items(buffer, input, undojoin) abort "{{{
 endfunction "}}}
 
 
-function! s:Swap._group(buffer, input, undojoin) abort "{{{
-  if a:input[0] isnot# 'group'
+function! s:Swap._group(buffer, order, undojoin) abort "{{{
+  if a:order[0] isnot# 'group'
     echoerr 'vim-swap: Invalid arguments for swap._group()'
   endif
 
-  let start = a:input[1]
-  let end = a:input[2]
+  let start = a:order[1]
+  let end = a:order[2]
   call a:buffer.group(start, end)
   return [a:buffer, a:undojoin]
 endfunction "}}}
 
 
-function! s:Swap._ungroup(buffer, input, undojoin) abort "{{{
-  if a:input[0] isnot# 'ungroup'
+function! s:Swap._ungroup(buffer, order, undojoin) abort "{{{
+  if a:order[0] isnot# 'ungroup'
     echoerr 'vim-swap: Invalid arguments for swap._ungroup()'
   endif
 
-  let pos = a:input[1]
+  let pos = a:order[1]
   call a:buffer.ungroup(pos)
   return [a:buffer, a:undojoin]
 endfunction "}}}
 
 
-function! s:Swap._breakup(buffer, input, undojoin) abort "{{{
-  if a:input[0] isnot# 'breakup'
+function! s:Swap._breakup(buffer, order, undojoin) abort "{{{
+  if a:order[0] isnot# 'breakup'
     echoerr 'vim-swap: Invalid arguments for swap._breakup()'
   endif
 
-  let pos = a:input[1]
+  let pos = a:order[1]
   call a:buffer.breakup(pos)
   return [a:buffer, a:undojoin]
 endfunction "}}}
 
 
-function! s:Swap._reverse(buffer, input, undojoin) abort "{{{
-  if a:input[0] isnot# 'reverse'
+function! s:Swap._reverse(buffer, order, undojoin) abort "{{{
+  if a:order[0] isnot# 'reverse'
     echoerr 'vim-swap: Invalid arguments for swap._reverse()'
   endif
   let curpos = getpos('.')
 
   " reverse items and reflect on the buffer
-  let args = a:input[1:]
+  let args = a:order[1:]
   let newbuffer = s:reverse(a:buffer, args)
   call s:write(newbuffer, a:undojoin)
 
@@ -699,10 +697,10 @@ function! s:new_buffer(buffer, items) abort "{{{
 endfunction "}}}
 
 
-function! s:swap(buffer, input) abort "{{{
+function! s:swap(buffer, order) abort "{{{
   let itemindexes = range(len(a:buffer.items))
-  let idx1 = a:input[0] - 1
-  let idx2 = a:input[1] - 1
+  let idx1 = a:order[0] - 1
+  let idx2 = a:order[1] - 1
   call remove(itemindexes, idx1)
   call insert(itemindexes, idx2, idx1)
   call remove(itemindexes, idx2)
