@@ -167,7 +167,7 @@ function! s:Swap._edit(buffer, orders, undojoin) abort "{{{
     else
       let [buffer, undojoin] = self._swap_once(buffer, order, a:undojoin)
     endif
-    call s:logger.debug('  buffer: %s', s:string(buffer))
+    " call s:logger.debug('  buffer: %s', s:string(buffer))
   endfor
   return [buffer, undojoin]
 endfunction "}}}
