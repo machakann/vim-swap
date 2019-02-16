@@ -199,6 +199,17 @@ let g:swap#default_rules = [
 \     'quotes': [['"', '"'], ["'", "'"]],
 \     'immutable': ['^\n', '\n\zs\s\+', '\s\+$']
 \   },
+\
+\   {
+\     'description': 'Reorder the comma-separated items in () for julia.',
+\     'filetype': ['julia'],
+\     'mode': 'n',
+\     'surrounds': ['(', ')', 1],
+\     'delimiter': ['\s*[,;]\s*'],
+\     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
+\     'quotes': [['"', '"'], ["'", "'"]],
+\     'immutable': ['\%(^\_s\|\n\)\s*', '\s\+$']
+\   },
 \ ]
 
 
