@@ -91,7 +91,7 @@ function! s:Swapmode.showmode() abort "{{{
     return
   endif
   echohl ModeMsg
-  echo '-- Swap mode --'
+  echo '-- SWAP --'
   echohl NONE
 endfunction "}}}
 
