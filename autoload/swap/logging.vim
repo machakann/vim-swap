@@ -41,7 +41,7 @@ function! s:Logger(file, ...) abort "{{{
 endfunction "}}}
 
 
-function! s:Logger.log(identifier, text, ...) abort "{{{
+function! s:Logger.log(identifier, text, ...) dict abort "{{{
   if a:identifier.level < s:Logging.level || s:Logging.n < 1
     return
   endif
@@ -72,22 +72,22 @@ endfunction "}}}
 "   call s:logger.info('Line %d', line('.'))
 " It will be converted to a string expression other than a string or a number
 function! s:Logger.error(text, ...) abort "{{{
-  call call(self.log, [s:ERROR, a:text] + a:000)
+  call call(self.log, [s:ERROR, a:text] + a:000, self)
 endfunction "}}}
 
 
 function! s:Logger.warning(text, ...) abort "{{{
-  call call(self.log, [s:WARNING, a:text] + a:000)
+  call call(self.log, [s:WARNING, a:text] + a:000, self)
 endfunction "}}}
 
 
 function! s:Logger.info(text, ...) abort "{{{
-  call call(self.log, [s:INFO, a:text] + a:000)
+  call call(self.log, [s:INFO, a:text] + a:000, self)
 endfunction "}}}
 
 
 function! s:Logger.debug(text, ...) abort "{{{
-  call call(self.log, [s:DEBUG, a:text] + a:000)
+  call call(self.log, [s:DEBUG, a:text] + a:000, self)
 endfunction "}}}
 
 
