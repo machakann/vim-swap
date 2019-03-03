@@ -247,13 +247,13 @@ endfunction "}}}
 
 
 function! s:wait_input(key_map) abort "{{{
-  let key_map = insert(copy(a:key_map), {'input': "\<Esc>", 'output': ['Esc']})   " for safety
+  let key_map = extend(copy(a:key_map), {"\<Esc>": ['Esc']})   " for safety
   let clock = s:Clocks.Clock()
   let timeoutlen = g:swap#timeoutlen
 
   let input = ''
   let last_compl_match = ['', []]
-  while key_map != []
+  while key_map != {}
     let c = getchar(0)
     if empty(c)
       if clock.started && timeoutlen > 0 && clock.elapsed() > timeoutlen
@@ -269,10 +269,11 @@ function! s:wait_input(key_map) abort "{{{
     let input .= c
 
     " check forward match
-    let n_fwd = len(filter(key_map, 's:is_input_matched(v:val, input, 0)'))
+    let idx = strlen(input) - 1
+    let n_fwd = len(filter(key_map, 'v:key[: idx] is# input'))
 
     " check complete match
-    let n_comp = len(filter(copy(key_map), 's:is_input_matched(v:val, input, 1)'))
+    let n_comp = len(filter(copy(key_map), 'v:key is# input'))
     if n_comp
       if len(key_map) == n_comp
         break
@@ -289,32 +290,7 @@ function! s:wait_input(key_map) abort "{{{
     endif
   endwhile
   call clock.stop()
-
-  if filter(key_map, 's:is_input_matched(v:val, input, 1)') != []
-    let key = key_map[-1]
-  else
-    let key = {}
-  endif
-  return get(key, 'output', [])
-endfunction "}}}
-
-
-function! s:is_input_matched(candidate, input, flag) abort "{{{
-  if !has_key(a:candidate, 'output') || !has_key(a:candidate, 'input')
-    return 0
-  endif
-
-  if !a:flag && a:input is# ''
-    return 1
-  endif
-
-  " If a:flag == 0, check forward match. Otherwise, check complete match.
-  if a:flag
-    return a:input is# a:candidate.input
-  endif
-
-  let idx = strlen(a:input) - 1
-  return a:input is# a:candidate.input[: idx]
+  return has_key(key_map, input) ? key_map[input] : []
 endfunction "}}}
 
 
