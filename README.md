@@ -65,3 +65,12 @@ Those textobjects work well with `[count]` assignment.
 
 # Demo
 ![swap.vim](http://art9.photozou.jp/pub/986/3080986/photo/232868997_org.v1453815504.gif)
+
+## Group
+![swap.vim:group](https://imgur.com/kPJui7J.gif)
+
+## Sort
+![swap.vim:sort](https://imgur.com/TuzzV7d.gif)
+
+## Reverse
+![swap.vim:reverse](https://imgur.com/WXOOPCW.gif)
