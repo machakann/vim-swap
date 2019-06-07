@@ -312,7 +312,7 @@ function! s:displace_options() abort  "{{{
   let [&virtualedit, &whichwrap, &selection] = ['onemore', 'h,l', 'inclusive']
   if s:GUI_RUNNING
     let options.cursor = &guicursor
-    set guicursor+=n-o:block-NONE
+    set guicursor+=a:block-NONE
   else
     let options.cursor = &t_ve
     set t_ve=
