@@ -1,5 +1,5 @@
 *swap.txt*	いれかえたりする。
-						Last change:03-Mar-2019.
+						Last change:07-Jun-2019.
 
 書いた人   : machakann <mckn{at}outlook.jp>
 ライセンス : NYSL ライセンス
@@ -16,6 +16,7 @@ INDEX					*swap-index*
 INTRODUCTION				|swap-introduction|
 KEYMAPPINGS				|swap-keymappings|
 FUNCTIONS				|swap-functions|
+  SORT FUNCTIONS			|swap-sort-function-examples|
 CUSTOMIZATION				|swap-customization|
 HIGHLIGHT GROUPS			|swap-highlight-groups|
 CONFIGURATION				|swap-configuration|
@@ -43,6 +44,7 @@ INTRODUCTION				*swap-introduction*
 >
 	call foo(arg1, arg3, arg2)
 <
+`g<` と `g>` は [count] が与えられた場合、その回数繰り返します。
 `gs` は入れ替えに際して、より対話的なインターフェースを提供します。これはあた
 かも Vim エディタに新しいモード "swap mode" があるかのように働きます。このモー
 ドでは `h`/`l` により要素を入れ替え、 `j`/`k` により要素間を移動し、また数字の
@@ -115,9 +117,11 @@ g:swap_no_default_key_mappings を vimrc で定義してください。
 キーマッピング~
 *<Plug>(swap-prev)*
 	カーソル下の要素と直前の要素を入れ替えます。 `g<` に割り当てられます。
+	[count] が与えられた場合、その回数繰り返します。
 
 *<Plug>(swap-next)*
 	カーソル下の要素と直後の要素を入れ替えます。 `g>` に割り当てられます。
+	[count] が与えられた場合、その回数繰り返します。
 
 *<Plug>(swap-interactive)*
 	"swap mode" を開始します。 `gs` に割り当てられます。

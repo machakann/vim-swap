@@ -950,6 +950,16 @@ Describe [integration test]
         normal ggfbg>
         Assert Equals(getline('.'), '(foo, baz, bar)')
       End
+
+      It takes count
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Gl2g>"
+        Assert Equals(getline('.'), '(bar, baz, foo)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Gl3g>"
+        Assert Equals(getline('.'), '(bar, baz, foo)')
+      End
     End
 
     Context g<
@@ -987,6 +997,16 @@ Describe [integration test]
         call setline(1, '(foo, bar, baz)')
         normal ggfbg<
         Assert Equals(getline('.'), '(bar, foo, baz)')
+      End
+
+      It takes count
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1G11l2g<"
+        Assert Equals(getline('.'), '(baz, foo, bar)')
+
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1G11l3g<"
+        Assert Equals(getline('.'), '(baz, foo, bar)')
       End
     End
   End
