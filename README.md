@@ -15,7 +15,7 @@ call func(arg1, arg2, arg3)
 Indeed, it is not difficult to swap `arg2` and `arg3`. Just cutting `, arg2` and pasting it following `arg3`. However it is annoying to swap `arg1` and `arg3` because no way to avoid repeating cut&paste. Anyway I feel bothering in both cases. It should be automated such an boring processes!
 
 # How to use
-This plugin defines three key mappings in default, **g<**, **g>**, **gs**. These all functions can be repeated by dot command.
+This plugin defines three key mappings by default, **g<**, **g>**, **gs**. These all functions can be repeated by dot command.
 
 ## g<
 **g<** swaps the item under the cursor with the former item. Moving cursor on the `arg2` and pressing **g<**, then it swaps `arg2` and the former one, `arg1`, to get:
@@ -49,9 +49,9 @@ baz
 ```
 
 
-# textobject
+# Text objects
 
-The following lines enables to use textobjects to select "swappable" items.
+The following configuration enables text objects to select "swappable" items.
 
 ```vim
 omap i, <Plug>(swap-textobject-i)
@@ -60,7 +60,7 @@ omap a, <Plug>(swap-textobject-a)
 xmap a, <Plug>(swap-textobject-a)
 ```
 
-Those textobjects work well with `[count]` assignment.
+These text objects work well with `[count]` prefix.
 
 
 # Demo
