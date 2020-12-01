@@ -9,10 +9,10 @@ function! swap#textobj#select(type, ...) abort "{{{
   let rules = get(a:000, 0, get(g:, 'swap#rules', g:swap#default_rules))
   let swap = swap#swap#new('n', [], rules)
   let [buffer, rule] = swap.search(getpos('.'), TEXTOBJ)
-  call map(buffer.all, 'extend(v:val, {"idx": v:key})')
   if empty(buffer) || empty(buffer.items)
     return
   endif
+  call map(buffer.all, 'extend(v:val, {"idx": v:key})')
   if a:type is# 'a'
     let [first, last] = s:get_target_a(buffer, l:count)
   elseif a:type is# 'i'
