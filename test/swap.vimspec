@@ -899,6 +899,51 @@ Describe [integration test]
         call setline(1, '(foo, bar, baz)')
         execute "normal 1Glgsr\<Esc>"
         Assert Equals(getline('.'), '(baz, bar, foo)')
+
+        " issue 14: swap_prev
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Gfbgs\<CR>h\<Esc>"
+        Assert Equals(getline('.'), '(bar, foo, baz)')
+
+        " issue 14: swap_next
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgs\<CR>l\<Esc>"
+        Assert Equals(getline('.'), '(bar, foo, baz)')
+
+        " issue 14: sort
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgs\<CR>s\<Esc>"
+        Assert Equals(getline('.'), '(bar, baz, foo)')
+
+        " issue 14: SORT
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgs\<CR>S\<Esc>"
+        Assert Equals(getline('.'), '(foo, baz, bar)')
+
+        " issue 14: undo
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgsl\<CR>u\<Esc>"
+        Assert Equals(getline('.'), '(foo, bar, baz)')
+
+        " issue 14: redo
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgslu\<CR>\<C-r>\<Esc>"
+        Assert Equals(getline('.'), '(bar, foo, baz)')
+
+        " issue 14: group
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgs\<CR>gl\<Esc>"
+        Assert Equals(getline('.'), '(baz, foo, bar)')
+
+        " issue 14: ungroup
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgsg\<CR>Gl\<Esc>"
+        Assert Equals(getline('.'), '(bar, foo, baz)')
+
+        " issue 14: reverse
+        call setline(1, '(foo, bar, baz)')
+        execute "normal 1Glgs\<CR>r\<Esc>"
+        Assert Equals(getline('.'), '(baz, bar, foo)')
       End
 
       It works well with various 'selection' option

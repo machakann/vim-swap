@@ -412,9 +412,11 @@ function! s:Swapmode.key_undo(phase, orders, buffer) abort "{{{
   if a:phase >= s:DONE
     return [a:phase, a:orders]
   endif
-
   if len(self.history) <= self.undolevel
     return [a:phase, a:orders]
+  endif
+  if a:phase is# s:SECOND
+    call remove(a:orders, -1)
   endif
 
   let phase = s:DONE
@@ -518,6 +520,9 @@ function! s:Swapmode.key_swap_prev(phase, orders, buffer) abort  "{{{
   if self.pos.current < 2 || self.pos.current > self.pos.end
     return [a:phase, a:orders]
   endif
+  if a:phase is# s:SECOND
+    call remove(a:orders, -1)
+  endif
 
   let ord = [self.pos.current, self.pos.current - 1]
   call add(a:orders, ord)
@@ -532,6 +537,9 @@ function! s:Swapmode.key_swap_next(phase, orders, buffer) abort  "{{{
   if self.pos.current < 1 || self.pos.current > self.pos.end - 1
     return [a:phase, a:orders]
   endif
+  if a:phase is# s:SECOND
+    call remove(a:orders, -1)
+  endif
 
   let ord = [self.pos.current, self.pos.current + 1]
   call add(a:orders, ord)
@@ -543,6 +551,9 @@ function! s:Swapmode.key_sort(phase, orders, buffer) abort "{{{
   if a:phase >= s:DONE
     return [a:phase, a:orders]
   endif
+  if a:phase is# s:SECOND
+    call remove(a:orders, -1)
+  endif
 
   let ord = ['sort', 1, '$'] + g:swap#mode#sortfunc
   call add(a:orders, ord)
@@ -553,6 +564,9 @@ endfunction "}}}
 function! s:Swapmode.key_SORT(phase, orders, buffer) abort "{{{
   if a:phase >= s:DONE
     return [a:phase, a:orders]
+  endif
+  if a:phase is# s:SECOND
+    call remove(a:orders, -1)
   endif
 
   let ord = ['sort', 1, '$'] + g:swap#mode#SORTFUNC
@@ -571,6 +585,9 @@ function! s:Swapmode.key_group(phase, orders, buffer) abort  "{{{
   if self.pos.current < 1 || self.pos.current > self.pos.end - 1
     return [a:phase, a:orders]
   endif
+  if a:phase is# s:SECOND
+    call remove(a:orders, -1)
+  endif
 
   let ord = ['group', self.pos.current, self.pos.current + 1]
   call add(a:orders, ord)
@@ -584,6 +601,9 @@ function! s:Swapmode.key_ungroup(phase, orders, buffer) abort  "{{{
   endif
   if self.pos.current < 1 || self.pos.current > self.pos.end
     return [a:phase, a:orders]
+  endif
+  if a:phase is# s:SECOND
+    call remove(a:orders, -1)
   endif
 
   let ord = ['ungroup', self.pos.current]
@@ -599,6 +619,9 @@ function! s:Swapmode.key_breakup(phase, orders, buffer) abort "{{{
   if self.pos.current < 1 || self.pos.current > self.pos.end
     return [a:phase, a:orders]
   endif
+  if a:phase is# s:SECOND
+    call remove(a:orders, -1)
+  endif
 
   let ord = ['breakup', self.pos.current]
   call add(a:orders, ord)
@@ -609,6 +632,9 @@ endfunction "}}}
 function! s:Swapmode.key_reverse(phase, orders, buffer) abort "{{{
   if a:phase >= s:DONE
     return [a:phase, a:orders]
+  endif
+  if a:phase is# s:SECOND
+    call remove(a:orders, -1)
   endif
 
   let ord = ['reverse', 1, '$']
