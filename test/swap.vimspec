@@ -915,10 +915,30 @@ Describe [integration test]
         execute "normal 1Glgs\<CR>s\<Esc>"
         Assert Equals(getline('.'), '(bar, baz, foo)')
 
+        " issue 15: sort: treat numbers as special
+        call setline(1, '(2, 12, 1)')
+        execute "normal 1Glgs\<CR>s\<Esc>"
+        Assert Equals(getline('.'), '(1, 2, 12)')
+
+        " issue 15: sort: treat numbers as special
+        call setline(1, '(2, a, 12, b, 1, ab)')
+        execute "normal 1Glgs\<CR>s\<Esc>"
+        Assert Equals(getline('.'), '(1, 2, 12, a, ab, b)')
+
         " issue 14: SORT
         call setline(1, '(foo, bar, baz)')
         execute "normal 1Glgs\<CR>S\<Esc>"
         Assert Equals(getline('.'), '(foo, baz, bar)')
+
+        " issue 15: SORT: treat numbers as special
+        call setline(1, '(2, 12, 1)')
+        execute "normal 1Glgs\<CR>S\<Esc>"
+        Assert Equals(getline('.'), '(12, 2, 1)')
+
+        " issue 15: SORT: treat numbers as special
+        call setline(1, '(2, a, 12, b, 1, ab)')
+        execute "normal 1Glgs\<CR>S\<Esc>"
+        Assert Equals(getline('.'), '(b, ab, a, 12, 2, 1)')
 
         " issue 14: undo
         call setline(1, '(foo, bar, baz)')
