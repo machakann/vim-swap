@@ -142,7 +142,13 @@ endfunction "}}}
 function! s:get_left_pos(pos, ...) abort  "{{{
   call setpos('.', a:pos)
   if a:pos != [0, 1, 1, 0]
-    execute printf('normal! %dh', get(a:000, 0, 1))
+    let whichwrap = &whichwrap
+    set whichwrap=h
+    try
+      execute printf('normal! %dh', get(a:000, 0, 1))
+    finally
+      let &whichwrap = whichwrap
+    endtry
   endif
   return getpos('.')
 endfunction "}}}
