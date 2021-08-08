@@ -1289,7 +1289,9 @@ Describe [integration test]
       set debug=beep
       call setline(1, ['{', '4,2', '}'])
       call cursor(2, 1)
-      Assert Empty(execute("normal d\<Plug>(swap-textobject-i)"))
+      if exists('*execute')
+        Assert Empty(execute("normal d\<Plug>(swap-textobject-i)"))
+      endif
       Assert Equals(getline(1, '$'), ['{', ',2', '}'])
     End
   End
