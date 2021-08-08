@@ -1291,8 +1291,8 @@ Describe [integration test]
       call cursor(2, 1)
       if exists('*execute')
         Assert Empty(execute("normal d\<Plug>(swap-textobject-i)"))
+        Assert Equals(getline(1, '$'), ['{', ',2', '}'])
       endif
-      Assert Equals(getline(1, '$'), ['{', ',2', '}'])
     End
   End
 
