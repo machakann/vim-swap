@@ -13,7 +13,7 @@ let g:swap#stimeoutlen = get(g:, 'swap#stimeoutlen', 50)
 let g:swap#highlight   = get(g:, 'swap#highlight', s:TRUE)
 let g:swap#default_rules = [
 \   {
-\     'descripsion': 'Reorder the selected space-delimited word in visual mode.',
+\     'description': 'Reorder the selected space-delimited word in visual mode.',
 \     'mode': 'x',
 \     'delimiter': ['\s\+'],
 \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
@@ -32,7 +32,7 @@ let g:swap#default_rules = [
 \   },
 \
 \   {
-\     'descripsion': 'Reorder the space-delimited word under the cursor in normal mode.',
+\     'description': 'Reorder the space-delimited word under the cursor in normal mode.',
 \     'mode': 'n',
 \     'body': '\%(\h\w*\s*\)\+\%(\h\w*\)\?',
 \     'delimiter': ['\s\+'],
@@ -208,6 +208,15 @@ let g:swap#default_rules = [
 \     'braket': [['(', ')'], ['[', ']'], ['{', '}']],
 \     'quotes': [['"', '"'], ["'", "'"]],
 \     'immutable': ['\%(^\_s\|\n\)\s*', '\s\+$']
+\   },
+\   {
+\     'description': 'Reorder the space-separated items in () for lisp.',
+\     'filetype': ['lisp'],
+\     'mode': 'n',
+\     'surrounds': ['(', ')', 1],
+\     'braket': [['(', ')']],
+\     'quotes': [['"', '"']],
+\     'delimiter': [' '],
 \   },
 \ ]
 
